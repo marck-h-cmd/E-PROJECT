@@ -1,0 +1,243 @@
+import { prisma } from '@/lib/prisma';
+import { redis } from '@/lib/redis';
+import { AppError } from '@/services/auth/AuthService';
+import { EstadoAtencion } from '@prisma/client';
+
+export interface DocenteEnCola {
+  atencionId: string;
+  posicion: number;
+  docenteId: string;
+  codigo: string;
+  nombre: string;
+  apellidos: string;
+  email: string;
+  categoria: string;
+  estado: EstadoAtencion;
+  horaInicio: Date | null;
+  horaFin: Date | null;
+}
+
+export class ControladorColaDocentes {
+  /**
+   * Reordena la cola de docentes en una ventana
+   */
+  async reordenarCola(ventanaId: string, nuevoOrden: string[]): Promise<void> {
+    const atenciones = await prisma.atencionVentana.findMany({
+      where: { ventanaId },
+    });
+
+    const atencionesMap = new Map(atenciones.map(a => [a.id, a]));
+
+    // Validar que todos los IDs existan
+    for (const id of nuevoOrden) {
+      if (!atencionesMap.has(id)) {
+        throw new AppError(`Atención no encontrada: ${id}`, 404, 'ATENCION_NOT_FOUND');
+      }
+    }
+
+    // Actualizar posiciones
+    const updates = nuevoOrden.map((id, index) =>
+      prisma.atencionVentana.update({
+        where: { id },
+        data: { posicion: index + 1 },
+      })
+    );
+
+    await prisma.$transaction(updates);
+
+    // Notificar cambio via WebSocket
+    await redis.publish('ws:ventanas', JSON.stringify({
+      type: 'COLA_REORDENADA',
+      channel: `ventana:${ventanaId}`,
+      data: { ventanaId, nuevoOrden },
+      timestamp: new Date().toISOString(),
+    }));
+  }
+
+  /**
+   * Agrega un docente a la cola
+   */
+  async agregarDocente(ventanaId: string, docenteId: string, posicion?: number): Promise<void> {
+    // Verificar que el docente no esté ya en la cola
+    const existente = await prisma.atencionVentana.findFirst({
+      where: {
+        ventanaId,
+        docenteId,
+        estado: { in: ['ESPERANDO', 'EN_ATENCION'] },
+      },
+    });
+
+    if (existente) {
+      throw new AppError('El docente ya está en la cola de esta ventana', 409, 'DOCENTE_DUPLICADO');
+    }
+
+    // Determinar posición
+    let nuevaPosicion = posicion;
+    if (!nuevaPosicion) {
+      const ultima = await prisma.atencionVentana.findFirst({
+        where: { ventanaId },
+        orderBy: { posicion: 'desc' },
+      });
+      nuevaPosicion = (ultima?.posicion || 0) + 1;
+    } else {
+      // Desplazar docentes desde la posición indicada
+      await prisma.atencionVentana.updateMany({
+        where: {
+          ventanaId,
+          posicion: { gte: nuevaPosicion },
+        },
+        data: {
+          posicion: { increment: 1 },
+        },
+      });
+    }
+
+    await prisma.atencionVentana.create({
+      data: {
+        ventanaId,
+        docenteId,
+        posicion: nuevaPosicion,
+        estado: 'ESPERANDO',
+      },
+    });
+  }
+
+  /**
+   * Elimina un docente de la cola
+   */
+  async eliminarDocente(ventanaId: string, atencionId: string): Promise<void> {
+    const atencion = await prisma.atencionVentana.findFirst({
+      where: { id: atencionId, ventanaId },
+    });
+
+    if (!atencion) {
+      throw new AppError('Atención no encontrada', 404, 'ATENCION_NOT_FOUND');
+    }
+
+    if (atencion.estado === 'EN_ATENCION') {
+      throw new AppError('No se puede eliminar un docente en atención', 400, 'DOCENTE_EN_ATENCION');
+    }
+
+    await prisma.atencionVentana.delete({
+      where: { id: atencionId },
+    });
+
+    // Reordenar posiciones
+    const restantes = await prisma.atencionVentana.findMany({
+      where: {
+        ventanaId,
+        posicion: { gt: atencion.posicion },
+      },
+      orderBy: { posicion: 'asc' },
+    });
+
+    const updates = restantes.map(a =>
+      prisma.atencionVentana.update({
+        where: { id: a.id },
+        data: { posicion: a.posicion - 1 },
+      })
+    );
+
+    await prisma.$transaction(updates);
+  }
+
+  /**
+   * Intercambia la posición de dos docentes en la cola
+   */
+  async intercambiarPosiciones(
+    ventanaId: string,
+    atencionId1: string,
+    atencionId2: string
+  ): Promise<void> {
+    const [atencion1, atencion2] = await Promise.all([
+      prisma.atencionVentana.findFirst({ where: { id: atencionId1, ventanaId } }),
+      prisma.atencionVentana.findFirst({ where: { id: atencionId2, ventanaId } }),
+    ]);
+
+    if (!atencion1 || !atencion2) {
+      throw new AppError('Una o ambas atenciones no encontradas', 404, 'ATENCION_NOT_FOUND');
+    }
+
+    await prisma.$transaction([
+      prisma.atencionVentana.update({
+        where: { id: atencionId1 },
+        data: { posicion: atencion2.posicion },
+      }),
+      prisma.atencionVentana.update({
+        where: { id: atencionId2 },
+        data: { posicion: atencion1.posicion },
+      }),
+    ]);
+  }
+
+  /**
+   * Obtiene la cola formateada para mostrar
+   */
+  async obtenerColaFormateada(ventanaId: string): Promise<{
+    ventanaId: string;
+    total: number;
+    enEspera: DocenteEnCola[];
+    enAtencion: DocenteEnCola | null;
+    atendidos: number;
+    ausentes: number;
+  }> {
+    const atenciones = await prisma.atencionVentana.findMany({
+      where: { ventanaId },
+      include: {
+        docente: {
+          include: {
+            usuario: {
+              select: { nombre: true, apellidos: true, email: true },
+            },
+          },
+        },
+      },
+      orderBy: { posicion: 'asc' },
+    });
+
+    const enEspera: DocenteEnCola[] = [];
+    let enAtencion: DocenteEnCola | null = null;
+    let atendidos = 0;
+    let ausentes = 0;
+
+    for (const atencion of atenciones) {
+      const docenteEnCola: DocenteEnCola = {
+        atencionId: atencion.id,
+        posicion: atencion.posicion,
+        docenteId: atencion.docenteId,
+        codigo: atencion.docente.codigo,
+        nombre: atencion.docente.usuario.nombre,
+        apellidos: atencion.docente.usuario.apellidos,
+        email: atencion.docente.usuario.email,
+        categoria: atencion.docente.categoria,
+        estado: atencion.estado,
+        horaInicio: atencion.horaInicio,
+        horaFin: atencion.horaFin,
+      };
+
+      switch (atencion.estado) {
+        case 'ESPERANDO':
+          enEspera.push(docenteEnCola);
+          break;
+        case 'EN_ATENCION':
+          enAtencion = docenteEnCola;
+          break;
+        case 'ATENDIDO':
+          atendidos++;
+          break;
+        case 'AUSENTE':
+          ausentes++;
+          break;
+      }
+    }
+
+    return {
+      ventanaId,
+      total: atenciones.length,
+      enEspera,
+      enAtencion,
+      atendidos,
+      ausentes,
+    };
+  }
+}
