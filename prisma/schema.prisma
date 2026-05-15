@@ -1,0 +1,586 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Rol {
+  SUPER_ADMIN
+  ADMINISTRADOR
+  OPERADOR
+  DOCENTE
+  MONITOR
+}
+
+enum CategoriaDocente {
+  PRINCIPAL
+  ASOCIADO
+  AUXILIAR
+  CONTRATADO
+  INVITADO
+}
+
+enum TipoAmbiente {
+  AULA
+  LABORATORIO
+  AUDITORIO
+  SALA_CONFERENCIAS
+}
+
+enum DiaSemana {
+  LUNES
+  MARTES
+  MIERCOLES
+  JUEVES
+  VIERNES
+  SABADO
+  DOMINGO
+}
+
+enum EstadoPeriodo {
+  BORRADOR
+  ACTIVO
+  FINALIZADO
+  ARCHIVADO
+}
+
+enum EstadoHorario {
+  BORRADOR
+  SELECCION_TEMPORAL
+  CONFIRMADO
+  PUBLICADO
+  CANCELADO
+}
+
+enum EstadoVentana {
+  PROGRAMADA
+  ABIERTA
+  EN_CURSO
+  CERRADA
+  CANCELADA
+}
+
+enum EstadoAtencion {
+  ESPERANDO
+  EN_ATENCION
+  ATENDIDO
+  AUSENTE
+  CANCELADO
+}
+
+enum TipoNotificacion {
+  SELECCION_HORARIO
+  CONFIRMACION_HORARIO
+  CAMBIO_HORARIO
+  VENTANA_ATENCION
+  RECORDATORIO
+  SISTEMA
+}
+
+enum CanalNotificacion {
+  CORREO
+  WHATSAPP
+  TELEGRAM
+  SISTEMA
+}
+
+enum EstadoNotificacion {
+  PENDIENTE
+  ENVIADA
+  FALLIDA
+  LEIDA
+  CANCELADA
+}
+
+enum PrioridadNotificacion {
+  BAJA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+// ============================================
+// MODELOS PRINCIPALES
+// ============================================
+
+model Usuario {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  nombre        String
+  apellidos     String
+  rol           Rol       @default(DOCENTE)
+  activo        Boolean   @default(true)
+  verificado    Boolean   @default(false)
+  tokenVersion  Int       @default(0)
+  ultimoAcceso  DateTime?
+  
+  // Relaciones
+  docente       Docente?
+  sesiones      Sesion[]
+  notificaciones Notificacion[]
+  auditorias    RegistroAuditoria[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([rol])
+  @@map("usuarios")
+}
+
+model Sesion {
+  id           String   @id @default(uuid())
+  usuarioId    String
+  token        String   @unique
+  refreshToken String   @unique
+  expiraEn     DateTime
+  ipAddress    String?
+  userAgent    String?
+  activa       Boolean  @default(true)
+  
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([usuarioId])
+  @@index([token])
+  @@index([refreshToken])
+  @@map("sesiones")
+}
+
+model Docente {
+  id              String    @id @default(uuid())
+  usuarioId       String    @unique
+  codigo          String    @unique
+  categoria       CategoriaDocente
+  departamento    String?
+  telefono        String?
+  whatsapp        String?
+  telegramId      String?
+  verificadoWhatsapp  Boolean @default(false)
+  verificadoTelegram  Boolean @default(false)
+  
+  // Relaciones
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  preferenciasNotificacion PreferenciasNotificacion?
+  horarios        Horario[]
+  cursos          CursoDocente[]
+  ventanasAtendidas AtencionVentana[]
+  disponibilidad  DisponibilidadDocente[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([codigo])
+  @@index([categoria])
+  @@index([departamento])
+  @@map("docentes")
+}
+
+model Curso {
+  id              String    @id @default(uuid())
+  codigo          String    @unique
+  nombre          String
+  creditos        Int
+  horasTeoria     Int
+  horasPractica   Int
+  horasLaboratorio Int    @default(0)
+  ciclo           Int
+  planEstudios    String?
+  activo          Boolean   @default(true)
+  
+  // Relaciones
+  grupos          Grupo[]
+  cursosDocente   CursoDocente[]
+  horarios        Horario[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([codigo])
+  @@index([ciclo])
+  @@index([activo])
+  @@map("cursos")
+}
+
+model Grupo {
+  id          String   @id @default(uuid())
+  cursoId     String
+  nombre      String   // Ej: "A", "B", "C"
+  capacidad   Int
+  activo      Boolean  @default(true)
+  
+  // Relaciones
+  curso       Curso    @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  horarios    Horario[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([cursoId])
+  @@unique([cursoId, nombre])
+  @@map("grupos")
+}
+
+model Ambiente {
+  id              String    @id @default(uuid())
+  codigo          String    @unique
+  nombre          String
+  tipo            TipoAmbiente
+  capacidad       Int
+  ubicacion       String?
+  activo          Boolean   @default(true)
+  
+  // Relaciones
+  horarios        Horario[]
+  mantenimientos  MantenimientoAmbiente[]
+  restricciones   RestriccionAmbiente[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([tipo])
+  @@index([activo])
+  @@map("ambientes")
+}
+
+model PeriodoAcademico {
+  id              String        @id @default(uuid())
+  nombre          String
+  fechaInicio     DateTime
+  fechaFin        DateTime
+  estado          EstadoPeriodo @default(BORRADOR)
+  activo          Boolean       @default(false)
+  
+  // Relaciones
+  horarios        Horario[]
+  ventanas        VentanaAtencion[]
+  configuraciones ConfiguracionPeriodo?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([estado])
+  @@index([activo])
+  @@map("periodos_academicos")
+}
+
+model Horario {
+  id              String        @id @default(uuid())
+  periodoId       String
+  cursoId         String
+  docenteId       String
+  grupoId         String?
+  ambienteId      String
+  diaSemana       DiaSemana
+  horaInicio      String        // Formato: "HH:mm"
+  horaFin         String        // Formato: "HH:mm"
+  estado          EstadoHorario @default(BORRADOR)
+  publicado       Boolean       @default(false)
+  
+  // Metadatos
+  creadoPor       String?
+  fechaCreacion   DateTime      @default(now())
+  confirmadoPor   String?
+  fechaConfirmacion DateTime?
+  
+  // Relaciones
+  periodo         PeriodoAcademico @relation(fields: [periodoId], references: [id])
+  curso           Curso            @relation(fields: [cursoId], references: [id])
+  docente         Docente          @relation(fields: [docenteId], references: [id])
+  grupo           Grupo?           @relation(fields: [grupoId], references: [id])
+  ambiente        Ambiente         @relation(fields: [ambienteId], references: [id])
+  
+  validaciones    ValidacionHorario[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([periodoId, diaSemana, horaInicio, ambienteId])
+  @@unique([periodoId, diaSemana, horaInicio, docenteId])
+  @@index([periodoId, estado])
+  @@index([docenteId, periodoId])
+  @@index([ambienteId, periodoId])
+  @@map("horarios")
+}
+
+// ============================================
+// MODELOS DE SOPORTE
+// ============================================
+
+model CursoDocente {
+  id            String   @id @default(uuid())
+  cursoId       String
+  docenteId     String
+  horasAsignadas Int    @default(0)
+  activo        Boolean  @default(true)
+  
+  curso         Curso    @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  docente       Docente  @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([cursoId, docenteId])
+  @@index([docenteId])
+  @@map("cursos_docentes")
+}
+
+model DisponibilidadDocente {
+  id          String    @id @default(uuid())
+  docenteId   String
+  diaSemana   DiaSemana
+  horaInicio  String
+  horaFin     String
+  prioridad   Int       @default(1) // 1=Alta, 2=Media, 3=Baja
+  
+  docente     Docente   @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([docenteId, diaSemana])
+  @@map("disponibilidad_docentes")
+}
+
+model RestriccionAmbiente {
+  id          String   @id @default(uuid())
+  ambienteId  String
+  diaSemana   DiaSemana
+  horaInicio  String
+  horaFin     String
+  motivo      String?
+  
+  ambiente    Ambiente @relation(fields: [ambienteId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ambienteId])
+  @@map("restricciones_ambientes")
+}
+
+model MantenimientoAmbiente {
+  id          String    @id @default(uuid())
+  ambienteId  String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  descripcion String
+  completado  Boolean   @default(false)
+  
+  ambiente    Ambiente  @relation(fields: [ambienteId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ambienteId, fechaInicio])
+  @@map("mantenimientos_ambientes")
+}
+
+model ValidacionHorario {
+  id          String   @id @default(uuid())
+  horarioId   String
+  tipoRegla   String   // Ej: "CRUCE_DOCENTE", "CRUCE_AULA", etc.
+  cumple      Boolean
+  mensaje     String?
+  metadata    Json?
+  
+  horario     Horario  @relation(fields: [horarioId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([horarioId])
+  @@map("validaciones_horarios")
+}
+
+// ============================================
+// VENTANAS DE ATENCIÓN
+// ============================================
+
+model VentanaAtencion {
+  id            String        @id @default(uuid())
+  periodoId     String
+  nombre        String
+  categoria     CategoriaDocente
+  fechaInicio   DateTime
+  fechaFin      DateTime
+  estado        EstadoVentana @default(PROGRAMADA)
+  ordenAtencion Json          // Orden de categorías y prioridades
+  
+  periodo       PeriodoAcademico @relation(fields: [periodoId], references: [id])
+  atenciones    AtencionVentana[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([periodoId, estado])
+  @@index([categoria])
+  @@map("ventanas_atencion")
+}
+
+model AtencionVentana {
+  id            String          @id @default(uuid())
+  ventanaId     String
+  docenteId     String
+  posicion      Int
+  estado        EstadoAtencion  @default(ESPERANDO)
+  horaInicio    DateTime?
+  horaFin       DateTime?
+  
+  ventana       VentanaAtencion @relation(fields: [ventanaId], references: [id], onDelete: Cascade)
+  docente       Docente         @relation(fields: [docenteId], references: [id])
+
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([ventanaId, posicion])
+  @@index([docenteId, ventanaId])
+  @@map("atencion_ventanas")
+}
+
+// ============================================
+// NOTIFICACIONES
+// ============================================
+
+model Notificacion {
+  id              String              @id @default(uuid())
+  usuarioId       String
+  tipo            TipoNotificacion
+  titulo          String
+  mensaje         String
+  prioridad       PrioridadNotificacion @default(MEDIA)
+  canal           CanalNotificacion
+  estado          EstadoNotificacion  @default(PENDIENTE)
+  metadata        Json?
+  
+  usuario         Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  envios          EnvioNotificacion[]
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([usuarioId, estado])
+  @@index([tipo])
+  @@index([createdAt])
+  @@map("notificaciones")
+}
+
+model EnvioNotificacion {
+  id              String            @id @default(uuid())
+  notificacionId  String
+  canal           CanalNotificacion
+  estado          EstadoNotificacion @default(PENDIENTE)
+  intento         Int              @default(1)
+  error           String?
+  enviadoEn       DateTime?
+  
+  notificacion    Notificacion      @relation(fields: [notificacionId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime          @default(now())
+
+  @@index([notificacionId])
+  @@index([estado])
+  @@map("envios_notificaciones")
+}
+
+model PreferenciasNotificacion {
+  id              String    @id @default(uuid())
+  docenteId       String    @unique
+  correoActivo    Boolean   @default(true)
+  whatsappActivo  Boolean   @default(true)
+  telegramActivo  Boolean   @default(true)
+  sistemaActivo   Boolean   @default(true)
+  frecuenciaMaxDiaria Int  @default(10)
+  
+  docente         Docente   @relation(fields: [docenteId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("preferencias_notificaciones")
+}
+
+// ============================================
+// AUDITORÍA Y CONFIGURACIÓN
+// ============================================
+
+model RegistroAuditoria {
+  id          String   @id @default(uuid())
+  usuarioId   String?
+  accion      String
+  entidad     String
+  entidadId   String?
+  datos       Json?
+  ipAddress   String?
+  
+  usuario     Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+
+  @@index([usuarioId])
+  @@index([accion])
+  @@index([entidad])
+  @@index([createdAt])
+  @@map("registros_auditoria")
+}
+
+model ConfiguracionPeriodo {
+  id                  String    @id @default(uuid())
+  periodoId           String    @unique
+  horasMaxDiariasDocente Int   @default(8)
+  horasMaxContinuas   Int       @default(4)
+  descansoMinEntreHoras Int    @default(1) // en horas
+  ordenCategorias     Json      // Array de categorías en orden de atención
+  
+  periodo             PeriodoAcademico @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("configuraciones_periodo")
+}
+
+model DiaNoLaborable {
+  id          String   @id @default(uuid())
+  fecha       DateTime @unique
+  motivo      String
+  periodoId   String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([fecha])
+  @@map("dias_no_laborables")
+}
+
+// ============================================
+// SELECTIONES TEMPORALES (para Redis, referencia)
+// Nota: Estos datos se almacenan en Redis, 
+// este modelo es para documentación
+// ============================================
+
+model SeleccionTemporal {
+  id          String   @id @default(uuid())
+  sessionId   String
+  docenteId   String
+  periodoId   String
+  cursoId     String
+  datos       Json     // Matriz de selección
+  expiraEn    DateTime
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([sessionId])
+  @@index([expiraEn])
+  @@map("selecciones_temporales")
+}

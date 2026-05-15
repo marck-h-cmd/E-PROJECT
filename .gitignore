@@ -1,0 +1,118 @@
+# ======================
+# Dependencias
+# ======================
+node_modules/
+.pnp
+.pnp.js
+
+# ======================
+# Next.js
+# ======================
+.next/
+out/
+build/
+dist/
+
+# ======================
+# Variables de entorno
+# ======================
+.env
+.env.local
+.env.development
+.env.development.local
+.env.test
+.env.test.local
+.env.production
+.env.production.local
+
+# Mantener el ejemplo como referencia
+!.env.ejemplo
+
+# ======================
+# Base de datos / Prisma
+# ======================
+prisma/migraciones/*/migration_lock.toml
+
+# ======================
+# Logs
+# ======================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ======================
+# Testing
+# ======================
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ======================
+# Cache
+# ======================
+.cache/
+.turbo/
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+next-env.d.ts
+
+# ======================
+# Sistema operativo
+# ======================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ======================
+# Editores e IDEs
+# ======================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# ======================
+# Docker
+# ======================
+.docker/
+
+# ======================
+# Respaldos y temporales
+# ======================
+*.bak
+*.tmp
+*.temp
+tmp/
+temp/
+
+# ======================
+# Archivos generados
+# ======================
+public/uploads/
+public/reportes-generados/
+
+# ======================
+# Miscellaneous
+# ======================
+.vercel
+.netlify
