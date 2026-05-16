@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Obtener la selección temporal
     const seleccion = await gestorSeleccion.obtenerSeleccion(validation.data.sessionId);
 
-    // Crear horarios para cada celda
+    // Crear y confirmar horarios para cada celda
     const horariosCreados = [];
     for (const celda of seleccion.celdas) {
       const horario = await servicioHorario.crear({
@@ -38,7 +38,9 @@ export async function POST(request: NextRequest) {
         horaFin: celda.horaFin,
       }, user.userId);
       
-      horariosCreados.push(horario);
+      // Confirmar el horario inmediatamente después de crearlo desde la selección
+      const horarioConfirmado = await servicioHorario.confirmar(horario.id, user.userId);
+      horariosCreados.push(horarioConfirmado);
     }
 
     // Limpiar la selección temporal

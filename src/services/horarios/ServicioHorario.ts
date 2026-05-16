@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
 import { AppError } from '@/services/auth/AuthService';
 import { DiaSemana, EstadoHorario, Prisma } from '@prisma/client';
+import { GestorNotificaciones } from '../notificaciones/GestorNotificaciones';
 
 export interface CrearHorarioDTO {
   periodoId: string;
@@ -31,6 +32,12 @@ export interface PaginacionParams {
 }
 
 export class ServicioHorario {
+  private gestorNotificaciones: GestorNotificaciones;
+
+  constructor() {
+    this.gestorNotificaciones = new GestorNotificaciones();
+  }
+
   async listar(filtros: FiltrosHorario, paginacion: PaginacionParams) {
     const { page, limit, sortBy = 'createdAt', sortOrder = 'desc' } = paginacion;
     const where: Prisma.HorarioWhereInput = {};
@@ -171,6 +178,57 @@ export class ServicioHorario {
     });
 
     return horario;
+  }
+
+  async confirmar(id: string, usuarioId: string) {
+    const horario = await this.obtenerPorId(id);
+
+    if (horario.estado === 'CONFIRMADO') {
+      return horario;
+    }
+
+    if (horario.estado === 'PUBLICADO') {
+      throw new AppError('No se puede confirmar un horario que ya está publicado', 400, 'HORARIO_PUBLICADO');
+    }
+
+    const horarioConfirmado = await prisma.horario.update({
+      where: { id },
+      data: {
+        estado: 'CONFIRMADO',
+        confirmadoPor: usuarioId,
+        fechaConfirmacion: new Date(),
+      },
+      include: {
+        curso: true,
+        docente: {
+          include: {
+            usuario: { select: { id: true, nombre: true, apellidos: true, email: true } }
+          }
+        },
+        ambiente: true,
+      },
+    });
+
+    // Enviar notificación al docente
+    try {
+      await this.gestorNotificaciones.enviarNotificacion({
+        usuarioId: horarioConfirmado.docente.usuarioId,
+        tipo: 'CONFIRMACION_HORARIO',
+        titulo: 'Horario Confirmado',
+        mensaje: `Se ha confirmado tu horario para el curso ${horarioConfirmado.curso.nombre} el día ${horarioConfirmado.diaSemana} de ${horarioConfirmado.horaInicio} a ${horarioConfirmado.horaFin} en el ambiente ${horarioConfirmado.ambiente.nombre}.`,
+        prioridad: 'ALTA',
+        canal: 'SISTEMA',
+        metadata: {
+          horarioId: horarioConfirmado.id,
+          cursoId: horarioConfirmado.cursoId,
+        },
+      });
+    } catch (error) {
+      console.error('Error enviando notificación de confirmación:', error);
+      // No lanzamos error para no revertir la confirmación del horario
+    }
+
+    return horarioConfirmado;
   }
 
   async actualizar(id: string, datos: Partial<CrearHorarioDTO>) {

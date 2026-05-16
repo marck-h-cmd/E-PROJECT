@@ -1,65 +1,42 @@
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { ServicioDocente } from '@/services/docentes/ServicioDocente';
 import { createSuccessResponse, createErrorResponse, createPaginatedResponse } from '@/lib/respuestas';
-import { withAuth } from '@/middleware/auth';
+import { z } from 'zod';
 import { CategoriaDocente } from '@prisma/client';
+
+const servicioDocente = new ServicioDocente();
+
+const docenteSchema = z.object({
+  email: z.string().email(),
+  nombre: z.string().min(2).max(100),
+  apellidos: z.string().min(2).max(100),
+  codigo: z.string().min(3).max(20),
+  categoria: z.nativeEnum(CategoriaDocente),
+  departamento: z.string().optional(),
+  telefono: z.string().optional(),
+  whatsapp: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
-    const search = searchParams.get('search') || '';
-    const categoria = searchParams.get('categoria') as CategoriaDocente | null;
-    const activo = searchParams.get('activo');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const search = searchParams.get('search') || undefined;
+    const categoria = searchParams.get('categoria') as CategoriaDocente || undefined;
+    const activo = searchParams.get('activo') === 'true' ? true : 
+                   searchParams.get('activo') === 'false' ? false : undefined;
 
-    const where: any = {};
-    
-    if (search) {
-      where.OR = [
-        { codigo: { contains: search, mode: 'insensitive' } },
-        { usuario: { nombre: { contains: search, mode: 'insensitive' } } },
-        { usuario: { apellidos: { contains: search, mode: 'insensitive' } } },
-        { usuario: { email: { contains: search, mode: 'insensitive' } } },
-      ];
-    }
-    
-    if (categoria) where.categoria = categoria;
-    if (activo !== null && activo !== '') {
-      where.activo = activo === 'true';
-    }
+    const resultado = await servicioDocente.listar({
+      page,
+      limit,
+      search,
+      categoria,
+      activo,
+    });
 
-    const [docentes, total] = await Promise.all([
-      prisma.docente.findMany({
-        where,
-        include: {
-          usuario: {
-            select: {
-              id: true,
-              email: true,
-              nombre: true,
-              apellidos: true,
-              rol: true,
-              activo: true,
-              ultimoAcceso: true,
-            },
-          },
-          _count: {
-            select: {
-              horarios: true,
-              cursos: true,
-            },
-          },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.docente.count({ where }),
-    ]);
-
-    return createPaginatedResponse(docentes, page, limit, total);
-  } catch (error) {
+    return createPaginatedResponse(resultado.data, page, limit, resultado.meta.total);
+  } catch (error: any) {
     console.error('Error listando docentes:', error);
     return createErrorResponse('INTERNAL_ERROR', 'Error al listar docentes', 500);
   }
@@ -68,58 +45,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validar datos requeridos
-    if (!body.email || !body.nombre || !body.apellidos || !body.codigo || !body.categoria) {
-      return createErrorResponse('VALIDATION_ERROR', 'Faltan campos requeridos', 400);
+    const validation = docenteSchema.safeParse(body);
+
+    if (!validation.success) {
+      return createErrorResponse('VALIDATION_ERROR', 'Datos inválidos', 400, validation.error.errors);
     }
 
-    // Crear usuario y docente en una transacción
-    const bcrypt = require('bcryptjs');
-    const passwordHash = await bcrypt.hash('unt123456', 12); // Contraseña temporal
-
-    const docente = await prisma.docente.create({
-      data: {
-        codigo: body.codigo,
-        categoria: body.categoria,
-        departamento: body.departamento,
-        telefono: body.telefono,
-        whatsapp: body.whatsapp,
-        usuario: {
-          create: {
-            email: body.email,
-            password: passwordHash,
-            nombre: body.nombre,
-            apellidos: body.apellidos,
-            rol: 'DOCENTE',
-            verificado: true,
-          },
-        },
-        preferenciasNotificacion: {
-          create: {
-            correoActivo: true,
-            whatsappActivo: true,
-            telegramActivo: false,
-            sistemaActivo: true,
-          },
-        },
-      },
-      include: {
-        usuario: {
-          select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-          },
-        },
-      },
-    });
-
+    const docente = await servicioDocente.crear(validation.data);
     return createSuccessResponse(docente, undefined, 201);
   } catch (error: any) {
-    if (error.code === 'P2002') {
-      return createErrorResponse('DUPLICATE', 'Ya existe un docente con ese código o email', 409);
+    if (error.statusCode) {
+      return createErrorResponse(error.code, error.message, error.statusCode);
     }
     console.error('Error creando docente:', error);
     return createErrorResponse('INTERNAL_ERROR', 'Error al crear docente', 500);
