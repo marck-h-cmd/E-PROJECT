@@ -230,7 +230,7 @@ model Grupo {
   @@unique([cursoId, nombre])
   @@map("grupos")
 }
-
+// ambiente o aula
 model Ambiente {
   id              String    @id @default(uuid())
   codigo          String    @unique
