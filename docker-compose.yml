@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Base de datos PostgreSQL
   postgres:
     image: postgres:16-alpine
     container_name: unt_postgres
@@ -14,7 +15,6 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - unt_network
     healthcheck:
@@ -23,32 +23,40 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis para caché y WebSockets
   redis:
     image: redis:7-alpine
     container_name: unt_redis
     restart: unless-stopped
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-unt_redis_secret}
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     networks:
       - unt_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-unt_redis_secret}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  # Aplicación Next.js (Frontend + Backend)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      target: ${NODE_ENV:-development}
+      target: development
     container_name: unt_app
     restart: unless-stopped
     env_file:
       - .env.local
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://${DB_USER:-unt_admin}:${DB_PASSWORD:-unt_secret_2024}@postgres:5432/${DB_NAME:-unt_horarios}?schema=public
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-unt_redis_secret}@redis:6379
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,10 +70,31 @@ services:
       - /app/.next
     networks:
       - unt_network
-    command: ${DOCKER_COMMAND:-npm run dev}
+    command: sh -c "npx prisma generate && npx prisma db push && npm run dev"
+
+  # Prisma Studio (opcional, para desarrollo)
+  prisma-studio:
+    image: node:20-alpine
+    container_name: unt_prisma_studio
+    restart: unless-stopped
+    working_dir: /app
+    env_file:
+      - .env.local
     environment:
-      - NODE_ENV=${NODE_ENV:-development}
-      - WATCHPACK_POLLING=true
+      - DATABASE_URL=postgresql://${DB_USER:-unt_admin}:${DB_PASSWORD:-unt_secret_2024}@postgres:5432/${DB_NAME:-unt_horarios}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5555:5555"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - unt_network
+    command: sh -c "npx prisma generate && npx prisma studio"
+    profiles:
+      - tools
 
 volumes:
   postgres_data:

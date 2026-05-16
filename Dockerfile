@@ -10,10 +10,12 @@ RUN apk add --no-cache \
     freetype \
     harfbuzz \
     ca-certificates \
+    openssl \
     ttf-freefont \
     python3 \
     make \
-    g++
+    g++ \
+    git
 
 # Configurar Puppeteer
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
@@ -23,15 +25,20 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY next.config.js ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY .eslintrc.json ./
+COPY .prettierrc ./
 
 # Instalar dependencias
-RUN npm ci
+RUN npm install
+
+# Generar Prisma Client
+COPY prisma ./prisma
+RUN npx prisma generate
 
 # Copiar el resto del código
 COPY . .
-
-# Generar Prisma Client
-RUN npx prisma generate
 
 EXPOSE 3000
 
@@ -43,14 +50,22 @@ FROM node:20-alpine AS production
 WORKDIR /app
 
 # Instalar chromium para puppeteer
-RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont
+RUN apk add --no-cache \
+    chromium \
+    nss \
+    freetype \
+    harfbuzz \
+    ca-certificates \
+    openssl \
+    ttf-freefont
 
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --omit=dev
 
 COPY . .
 RUN npx prisma generate
