@@ -355,7 +355,6 @@ export class GestorVentanasAtencion {
     const docentes = await prisma.docente.findMany({
       where: {
         categoria: ventana.categoria,
-        activo: true,
         usuario: { activo: true },
       },
       orderBy: { codigo: 'asc' },

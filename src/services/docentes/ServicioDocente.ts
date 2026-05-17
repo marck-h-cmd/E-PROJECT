@@ -361,7 +361,6 @@ export class ServicioDocente {
     const docentes = await prisma.docente.findMany({
       where: {
         categoria,
-        activo: true,
         usuario: { activo: true },
       },
       include: {
@@ -396,7 +395,7 @@ export class ServicioDocente {
 
     const docentes = await prisma.docente.findMany({
       where: {
-        activo: true,
+        usuario: { activo: true },
         OR: [
           { codigo: { contains: termino, mode: 'insensitive' } },
           { usuario: { nombre: { contains: termino, mode: 'insensitive' } } },

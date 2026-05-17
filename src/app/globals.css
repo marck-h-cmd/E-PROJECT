@@ -8,9 +8,11 @@
     --foreground: 15 23 42;
     --card: 255 255 255;
     --card-foreground: 15 23 42;
+    --primary: 26 54 93;
+    --primary-foreground: 255 255 255;
     --border: 226 232 240;
     --input: 226 232 240;
-    --ring: 59 130 246;
+    --ring: 26 54 93;
     --radius: 0.5rem;
   }
 

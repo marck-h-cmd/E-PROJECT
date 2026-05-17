@@ -157,7 +157,7 @@ export class CalculadorEstadisticas {
       docentesConHorarios,
       cursosConHorarios,
     ] = await Promise.all([
-      prisma.docente.count({ where: { activo: true } }),
+      prisma.docente.count({ where: { usuario: { activo: true } } }),
       prisma.curso.count({ where: { activo: true } }),
       prisma.ambiente.count({ where: { activo: true } }),
       prisma.horario.count({

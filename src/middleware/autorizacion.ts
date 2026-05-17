@@ -3,13 +3,6 @@ import { createErrorResponse } from '@/lib/respuestas';
 import { TokenPayload } from '@/lib/tipos';
 import { ROLES, PERMISOS } from '@/lib/constantes';
 
-// Extender el tipo de NextRequest
-declare module 'next/server' {
-  interface NextRequest {
-    user?: TokenPayload;
-  }
-}
-
 type PermisoRequerido = string | string[];
 
 /**

@@ -31,7 +31,7 @@ export class ReporteGestionService {
     // Estadísticas adicionales
     const totalDocentesPorCategoria = await prisma.docente.groupBy({
       by: ['categoria'],
-      where: { activo: true },
+      where: { usuario: { activo: true } },
       _count: true,
     });
 

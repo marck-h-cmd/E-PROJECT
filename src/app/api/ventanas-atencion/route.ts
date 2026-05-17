@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
       return createErrorResponse('VALIDATION_ERROR', 'Datos inválidos', 400, validation.error.errors);
     }
 
-    const ventana = await gestorVentanas.crearVentana(validation.data);
+    const ventana = await gestorVentanas.crearVentana({
+      ...validation.data,
+      ordenAtencion: validation.data.ordenAtencion ?? [],
+    });
 
     return createSuccessResponse(ventana, undefined, 201);
   } catch (error: any) {

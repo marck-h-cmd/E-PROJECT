@@ -42,7 +42,7 @@ export class ImportadorDocentes {
       const { headers, datos } = ImportadorCSV.parsearCSV(contenido);
 
       // Validar columnas requeridas
-      const faltantes = ImportadorCSV.validarColumnesRequeridas(
+      const faltantes = ImportadorCSV.validarColumnasRequeridas(
         headers,
         this.COLUMNAS_REQUERIDAS
       );

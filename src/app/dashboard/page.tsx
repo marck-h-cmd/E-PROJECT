@@ -1,156 +1,222 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Building2, CalendarClock, GraduationCap, Loader2, Users } from 'lucide-react';
+import { BarChartCard } from '@/components/charts/BarChartCard';
+import { PieChartCard } from '@/components/charts/PieChartCard';
+import { ErrorAlert } from '@/components/feedback/ErrorAlert';
+import { KpiCard } from '@/components/feedback/KpiCard';
+import { PageHeader } from '@/components/layout/PageHeader';
+import { apiGet, ApiClientError } from '@/lib/api-client';
+import { Formateadores } from '@/lib/formateadores';
+import { usePeriodo } from '@/contexts/PeriodoContext';
+
+interface ResumenEstadisticas {
+  totalDocentes: number;
+  totalCursos: number;
+  totalAmbientes: number;
+  totalHorarios: number;
+  horariosPorEstado: Record<string, number>;
+  horariosPorDia: Record<string, number>;
+}
+
+interface OcupacionAmbiente {
+  codigo: string;
+  nombre: string;
+  porcentajeOcupacion: number;
+}
+
+type AvanceCategoria = Record<
+  string,
+  {
+    porcentajeAvance: number;
+    totalDocentes: number;
+  }
+>;
+
+type MapaCalor = Record<string, Record<string, number>>;
+
+const DIAS_CORTO: Record<string, string> = {
+  LUNES: 'Lun',
+  MARTES: 'Mar',
+  MIERCOLES: 'Mié',
+  JUEVES: 'Jue',
+  VIERNES: 'Vie',
+};
+
+const ORDEN_DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<any>(null);
+  const { periodoSeleccionado, loading: periodoLoading } = usePeriodo();
+  const periodoId = periodoSeleccionado?.id;
+
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [resumen, setResumen] = useState<ResumenEstadisticas | null>(null);
+  const [ocupacion, setOcupacion] = useState<OcupacionAmbiente[]>([]);
+  const [avance, setAvance] = useState<AvanceCategoria | null>(null);
+  const [mapaCalor, setMapaCalor] = useState<MapaCalor | null>(null);
 
   useEffect(() => {
-    cargarEstadisticas();
-  }, []);
-
-  const cargarEstadisticas = async () => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      if (!token) return;
-
-      // Intentar cargar resumen
-      const response = await fetch('/api/salud', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStats(data.data);
-      }
-    } catch (err) {
-      setError('Error al cargar estadísticas');
-    } finally {
+    if (!periodoId) {
+      setResumen(null);
+      setOcupacion([]);
+      setAvance(null);
+      setMapaCalor(null);
       setLoading(false);
+      return;
     }
-  };
+
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const [r, o, a, m] = await Promise.all([
+          apiGet<ResumenEstadisticas>('/api/estadisticas/resumen', { periodoId }),
+          apiGet<OcupacionAmbiente[]>('/api/estadisticas/ocupacion-ambientes', { periodoId }),
+          apiGet<AvanceCategoria>('/api/estadisticas/avance-categoria', { periodoId }),
+          apiGet<MapaCalor>('/api/estadisticas/mapa-calor', { periodoId }),
+        ]);
+        if (cancelled) return;
+        setResumen(r.data ?? null);
+        setOcupacion(o.data ?? []);
+        setAvance(a.data ?? null);
+        setMapaCalor(m.data ?? null);
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof ApiClientError ? e.message : 'Error al cargar el dashboard');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [periodoId]);
+
+  const pieAvance = useMemo(() => {
+    if (!avance) return [];
+    return Object.entries(avance).map(([cat, v]) => ({
+      name: Formateadores.categoriaDocente(cat),
+      value: Math.max(0, v.porcentajeAvance),
+    }));
+  }, [avance]);
+
+  const barMapaCalor = useMemo(() => {
+    if (!mapaCalor) return [];
+    const rows: Record<string, unknown>[] = [];
+    for (const dia of ORDEN_DIAS) {
+      const bloques = mapaCalor[dia];
+      if (!bloques) continue;
+      for (const hora of Object.keys(bloques).sort()) {
+        rows.push({
+          franja: `${DIAS_CORTO[dia] ?? dia} ${hora}`,
+          sesiones: bloques[hora],
+        });
+      }
+    }
+    return rows;
+  }, [mapaCalor]);
+
+  const barOcupacion = useMemo(
+    () =>
+      ocupacion.slice(0, 12).map((a) => ({
+        ambiente: `${a.codigo}`,
+        pct: a.porcentajeOcupacion,
+      })),
+    [ocupacion]
+  );
+
+  if (periodoLoading) {
+    return (
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
+      </div>
+    );
+  }
+
+  if (!periodoId) {
+    return (
+      <div>
+        <PageHeader title="Panel principal" description="Resumen operativo del sistema de horarios UNT." />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Seleccione un período académico en la barra superior para ver indicadores y gráficos.
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Bienvenido al Sistema de Gestión de Horarios
-        </p>
-      </div>
+    <div>
+      <PageHeader
+        title="Panel principal"
+        description={`Datos del período: ${periodoSeleccionado?.nombre ?? periodoId}`}
+      />
 
-      {/* Estado del sistema */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card">
-          <div className="card-body">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">API Backend</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats?.services?.database === 'healthy' ? '✅ Online' : '❌ Offline'}
-                </p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                stats?.services?.database === 'healthy' ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <span className="text-2xl">🖥️</span>
-              </div>
-            </div>
+      {error && <ErrorAlert message={error} className="mb-6" />}
+
+      {loading ? (
+        <div className="flex min-h-[30vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
+        </div>
+      ) : (
+        <div className="space-y-8">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              title="Docentes activos"
+              value={resumen?.totalDocentes ?? 0}
+              subtitle="Registro general"
+              icon={Users}
+            />
+            <KpiCard
+              title="Cursos activos"
+              value={resumen?.totalCursos ?? 0}
+              subtitle="Catálogo vigente"
+              icon={GraduationCap}
+            />
+            <KpiCard
+              title="Ambientes"
+              value={resumen?.totalAmbientes ?? 0}
+              subtitle="Aulas y laboratorios"
+              icon={Building2}
+            />
+            <KpiCard
+              title="Horarios (período)"
+              value={resumen?.totalHorarios ?? 0}
+              subtitle="Sesiones programadas"
+              icon={CalendarClock}
+            />
           </div>
-        </div>
 
-        <div className="card">
-          <div className="card-body">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Base de Datos</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats?.services?.database === 'healthy' ? '✅ Conectada' : '❌ Error'}
-                </p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                stats?.services?.database === 'healthy' ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <span className="text-2xl">🗄️</span>
-              </div>
-            </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <BarChartCard
+              title="Ocupación por ambiente"
+              description="Porcentaje aproximado de franjas usadas (top 12)"
+              data={barOcupacion}
+              xKey="ambiente"
+              dataKey="pct"
+              color="#1a365d"
+            />
+            <PieChartCard
+              title="Avance por categoría docente"
+              description="Progreso de horas asignadas vs requeridas"
+              data={pieAvance}
+            />
           </div>
-        </div>
 
-        <div className="card">
-          <div className="card-body">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Redis Cache</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">
-                  {stats?.services?.redis === 'healthy' ? '✅ Conectado' : '❌ Error'}
-                </p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                stats?.services?.redis === 'healthy' ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <span className="text-2xl">⚡</span>
-              </div>
-            </div>
-          </div>
+          <BarChartCard
+            title="Mapa de calor — sesiones por día y hora"
+            description="Conteo de inicios de clase entre 8:00 y 19:00 (Lun–Vie)"
+            data={barMapaCalor}
+            xKey="franja"
+            dataKey="sesiones"
+            color="#1a365d"
+          />
         </div>
-      </div>
-
-      {/* Accesos rápidos */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="text-lg font-semibold text-gray-900">Accesos Rápidos</h2>
-        </div>
-        <div className="card-body">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { nombre: 'Docentes', href: '/dashboard/docentes', icono: '👨‍🏫', color: 'bg-blue-100 text-blue-700' },
-              { nombre: 'Cursos', href: '/dashboard/cursos', icono: '📚', color: 'bg-green-100 text-green-700' },
-              { nombre: 'Horarios', href: '/dashboard/horarios', icono: '🕐', color: 'bg-purple-100 text-purple-700' },
-              { nombre: 'Reportes', href: '/dashboard/reportes', icono: '📄', color: 'bg-orange-100 text-orange-700' },
-            ].map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                className={`${item.color} rounded-lg p-4 text-center hover:opacity-80 transition-opacity`}
-              >
-                <span className="text-3xl block mb-2">{item.icono}</span>
-                <span className="text-sm font-medium">{item.nombre}</span>
-              </a>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Estado de la API */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="text-lg font-semibold text-gray-900">Información del Sistema</h2>
-        </div>
-        <div className="card-body">
-          {loading ? (
-            <div className="space-y-3">
-              <div className="skeleton h-4 w-3/4"></div>
-              <div className="skeleton h-4 w-1/2"></div>
-              <div className="skeleton h-4 w-2/3"></div>
-            </div>
-          ) : error ? (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-              {error}
-            </div>
-          ) : (
-            <div className="space-y-2 text-sm">
-              <p><strong>Servidor:</strong> {stats?.server || 'N/A'}</p>
-              <p><strong>Timestamp:</strong> {stats?.timestamp ? new Date(stats.timestamp).toLocaleString() : 'N/A'}</p>
-              <p><strong>Base de Datos:</strong> {stats?.services?.database || 'unknown'}</p>
-              <p><strong>Redis:</strong> {stats?.services?.redis || 'unknown'}</p>
-            </div>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }

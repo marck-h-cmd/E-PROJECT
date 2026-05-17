@@ -18,7 +18,7 @@ export class ServicioEstadisticas {
       horariosPorEstado,
       horariosPorDia,
     ] = await Promise.all([
-      prisma.docente.count({ where: { activo: true } }),
+      prisma.docente.count({ where: { usuario: { activo: true } } }),
       prisma.curso.count({ where: { activo: true } }),
       prisma.ambiente.count({ where: { activo: true } }),
       prisma.horario.count({ where: { periodoId, estado: { not: 'CANCELADO' } } }),
@@ -56,7 +56,7 @@ export class ServicioEstadisticas {
 
   async obtenerAvanceCategoria(periodoId: string) {
     const docentes = await prisma.docente.findMany({
-      where: { activo: true },
+      where: { usuario: { activo: true } },
       include: {
         cursos: {
           where: { activo: true },

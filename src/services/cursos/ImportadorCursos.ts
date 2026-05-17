@@ -39,7 +39,7 @@ export class ImportadorCursos {
     try {
       const { headers, datos } = ImportadorCSV.parsearCSV(contenido);
 
-      const faltantes = ImportadorCSV.validarColumnesRequeridas(
+      const faltantes = ImportadorCSV.validarColumnasRequeridas(
         headers,
         this.COLUMNAS_REQUERIDAS
       );
@@ -84,4 +84,41 @@ export class ImportadorCursos {
     const ciclo = parseInt(fila.ciclo);
     const planEstudios = fila.planEstudios?.trim();
 
-    if (!cod
+    if (!codigo || !nombre || isNaN(creditos) || isNaN(ciclo)) {
+      throw new Error('Faltan datos requeridos (código, nombre, créditos, ciclo)');
+    }
+
+    const existente = await prisma.curso.findUnique({ where: { codigo } });
+
+    if (existente) {
+      if (sobrescribir) {
+        await this.servicioCurso.actualizar(existente.id, {
+          nombre,
+          creditos,
+          horasTeoria,
+          horasPractica,
+          horasLaboratorio,
+          ciclo,
+          planEstudios,
+        });
+        resultado.exitosos++;
+        return;
+      }
+      throw new Error(`Ya existe un curso con código ${codigo}`);
+    }
+
+    const curso = await this.servicioCurso.crear({
+      codigo,
+      nombre,
+      creditos,
+      horasTeoria,
+      horasPractica,
+      horasLaboratorio,
+      ciclo,
+      planEstudios,
+    });
+
+    resultado.exitosos++;
+    resultado.cursosCreados.push(curso);
+  }
+}

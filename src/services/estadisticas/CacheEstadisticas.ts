@@ -96,7 +96,7 @@ export class CacheEstadisticas {
     const pipeline = redis.pipeline();
     
     for (const key of keys) {
-      pipeline.memory('usage', key);
+      pipeline.memory('USAGE', key);
     }
     
     const resultados = await pipeline.exec();

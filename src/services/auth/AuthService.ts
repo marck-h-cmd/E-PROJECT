@@ -262,12 +262,12 @@ export class AuthService {
 
     const accessToken = jwt.sign(payload, this.jwtSecret, {
       expiresIn: this.accessTokenExpiry,
-    });
+    } as jwt.SignOptions);
 
     const refreshToken = jwt.sign(
       { userId: usuario.id, type: 'refresh' },
       this.jwtRefreshSecret,
-      { expiresIn: this.refreshTokenExpiry }
+      { expiresIn: this.refreshTokenExpiry } as jwt.SignOptions
     );
 
     // Calcular expiración en segundos

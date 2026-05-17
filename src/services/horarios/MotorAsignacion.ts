@@ -6,7 +6,8 @@ import {
   EstadoHorario,
   TipoAmbiente 
 } from '@prisma/client';
-import { ValidadorHorario } from './ValidadorHorario';
+import { ValidadorHorario, type ValidacionConflicto } from './ValidadorHorario';
+import { ConflictoHorario } from './ValidadorConflictos';
 import { AppError } from '@/services/auth/AuthService';
 
 /**
@@ -133,6 +134,10 @@ export class MotorAsignacion {
       mensajes.push(`Docente asignado por jerarquía: ${mejorDocente.usuario.nombre} ${mejorDocente.usuario.apellidos} (${mejorDocente.categoria})`);
     }
 
+    if (!docenteId) {
+      return { exitoso: false, mensaje: 'No se pudo determinar un docente para la asignación.' };
+    }
+
     // Verificar que el docente tenga el curso asignado
     const cursoDocente = await prisma.cursoDocente.findUnique({
       where: {
@@ -203,6 +208,10 @@ export class MotorAsignacion {
 
       ambienteId = mejorAmbiente.id;
       mensajes.push(`Ambiente asignado: ${mejorAmbiente.codigo} - ${mejorAmbiente.nombre}`);
+    }
+
+    if (!ambienteId) {
+      return { exitoso: false, mensaje: 'No se pudo determinar un ambiente para la asignación.' };
     }
 
     // ==========================================
@@ -333,7 +342,6 @@ export class MotorAsignacion {
         cursoId,
         activo: true,
         docente: {
-          activo: true,
           usuario: { activo: true },
         },
       },
@@ -432,7 +440,7 @@ export class MotorAsignacion {
     diaSemanaOriginal: DiaSemana,
     horaInicioOriginal: string,
     horaFinOriginal: string,
-    conflictos: ConflictoHorario[]
+    conflictos: ValidacionConflicto[]
   ): Promise<ResultadoAsignacion['asignacionAlternativa'] | null> {
     const diasAlternativos: DiaSemana[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO']
       .filter(d => d !== diaSemanaOriginal) as DiaSemana[];
@@ -449,7 +457,11 @@ export class MotorAsignacion {
       where: {
         tipo: tipoNecesario as TipoAmbiente,
         activo: true,
-        id: { notIn: conflictos.map(c => c.metadata?.ambienteId).filter(Boolean) },
+        id: {
+          notIn: conflictos
+            .map((c) => c.detalle?.ambienteId)
+            .filter((id): id is string => Boolean(id)),
+        },
       },
     });
 
@@ -512,12 +524,19 @@ export class MotorAsignacion {
     diaSemana: DiaSemana,
     horaInicio: string,
     horaFin: string,
-    conflicto: ConflictoHorario
+    conflicto: ValidacionConflicto | ConflictoHorario
   ): Promise<void> {
+    const horarioId =
+      'horarioConflicto' in conflicto
+        ? conflicto.horarioConflicto.id
+        : conflicto.detalle?.horarioId;
+
+    if (!horarioId) return;
+
     try {
       await prisma.validacionHorario.create({
         data: {
-          horarioId: conflicto.horarioConflicto.id,
+          horarioId,
           tipoRegla: conflicto.tipo,
           cumple: false,
           mensaje: conflicto.mensaje,
@@ -532,7 +551,7 @@ export class MotorAsignacion {
             conflictoDetalle: {
               tipo: conflicto.tipo,
               severidad: conflicto.severidad,
-              horarioConflictoId: conflicto.horarioConflicto.id,
+              horarioConflictoId: horarioId,
             },
           },
         },

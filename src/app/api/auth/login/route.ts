@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { AuthService } from '@/services/auth/AuthService';
 import { createSuccessResponse, createErrorResponse } from '@/lib/respuestas';
-import { withRateLimit } from '@/middleware/limite-tasa';
 
 const authService = new AuthService();
 
