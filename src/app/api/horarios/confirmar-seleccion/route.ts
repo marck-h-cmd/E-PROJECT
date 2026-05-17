@@ -2,6 +2,8 @@ import { NextRequest } from 'next/server';
 import { GestorSeleccionTemporal } from '@/services/horarios/GestorSeleccionTemporal';
 import { ServicioHorario } from '@/services/horarios/ServicioHorario';
 import { createSuccessResponse, createErrorResponse } from '@/lib/respuestas';
+import { withAuth } from '@/middleware/auth';
+import { ROLES } from '@/lib/constantes';
 import { z } from 'zod';
 
 const gestorSeleccion = new GestorSeleccionTemporal();
@@ -12,8 +14,15 @@ const confirmarSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const authResult = await withAuth(request, [
+    ROLES.SUPER_ADMIN,
+    ROLES.ADMINISTRADOR,
+    ROLES.OPERADOR,
+  ]);
+  if (authResult) return authResult;
+
   try {
-    const user = (request as any).user;
+    const user = request.user!;
     const body = await request.json();
     
     const validation = confirmarSchema.safeParse(body);

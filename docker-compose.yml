@@ -11,8 +11,9 @@ services:
       POSTGRES_USER: ${DB_USER:-unt_admin}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-unt_secret_2024}
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "${DB_PORT:-5432}:5432"
+    # Sin puerto publicado en host (la app usa la red interna "postgres:5432")
+    expose:
+      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:

@@ -2,7 +2,9 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { ServicioHorario } from '@/services/horarios/ServicioHorario';
 import { createSuccessResponse, createErrorResponse, createPaginatedResponse } from '@/lib/respuestas';
+import { withAuth } from '@/middleware/auth';
 import { DiaSemana, EstadoHorario } from '@prisma/client';
+import { ROLES } from '@/lib/constantes';
 
 const servicioHorario = new ServicioHorario();
 
@@ -137,10 +139,17 @@ const crearHorarioSchema = z.object({
  *         description: Horario creado exitosamente
  */
 export async function POST(request: NextRequest) {
+  const authResult = await withAuth(request, [
+    ROLES.SUPER_ADMIN,
+    ROLES.ADMINISTRADOR,
+    ROLES.OPERADOR,
+  ]);
+  if (authResult) return authResult;
+
   try {
-    const user = (request as any).user;
+    const user = request.user!;
     const body = await request.json();
-    
+
     const validation = crearHorarioSchema.safeParse(body);
     if (!validation.success) {
       return createErrorResponse('VALIDATION_ERROR', 'Datos inválidos', 400, validation.error.errors);

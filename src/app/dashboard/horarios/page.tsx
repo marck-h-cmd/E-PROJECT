@@ -16,6 +16,7 @@ import { DataTable, type Column } from '@/components/data/DataTable';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { apiGet, apiPost, ApiClientError } from '@/lib/api-client';
+import { formatApiError, normalizeTimeHHmm } from '@/lib/format-api-error';
 import { Formateadores } from '@/lib/formateadores';
 import { useAuth, useRequireAuth } from '@/contexts/AuthContext';
 import { usePeriodo } from '@/contexts/PeriodoContext';
@@ -68,6 +69,10 @@ interface GrupoOpt {
   nombre: string;
 }
 
+interface CargaAcademicaRow {
+  docente: DocenteOpt;
+}
+
 const DIAS: DiaSemana[] = [
   DiaSemana.LUNES,
   DiaSemana.MARTES,
@@ -105,6 +110,8 @@ export default function HorariosPage() {
   const [busyAction, setBusyAction] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [savingCreate, setSavingCreate] = useState(false);
+  const [loadingDocentesCurso, setLoadingDocentesCurso] = useState(false);
   const [cursos, setCursos] = useState<CursoOpt[]>([]);
   const [docentes, setDocentes] = useState<DocenteOpt[]>([]);
   const [ambientes, setAmbientes] = useState<AmbienteOpt[]>([]);
@@ -182,21 +189,18 @@ export default function HorariosPage() {
     if (!createOpen) return;
     (async () => {
       try {
-        const [c, d, a] = await Promise.all([
+        const [c, a] = await Promise.all([
           apiGet<CursoOpt[]>('/api/cursos', { limit: 100, page: 1 }),
-          apiGet<DocenteOpt[]>('/api/docentes', { limit: 100, page: 1 }),
           apiGet<AmbienteOpt[]>('/api/ambientes', { limit: 100, page: 1 }),
         ]);
         const cL = c.data ?? [];
-        const dL = d.data ?? [];
         const aL = a.data ?? [];
         setCursos(cL);
-        setDocentes(dL);
         setAmbientes(aL);
         setForm((f) => ({
           ...f,
           cursoId: cL[0]?.id ?? '',
-          docenteId: dL[0]?.id ?? '',
+          docenteId: '',
           ambienteId: aL[0]?.id ?? '',
         }));
       } catch {
@@ -208,22 +212,59 @@ export default function HorariosPage() {
   useEffect(() => {
     if (!createOpen || !form.cursoId) {
       setGrupos([]);
+      setDocentes([]);
       return;
     }
     (async () => {
+      setLoadingDocentesCurso(true);
       try {
-        const res = await apiGet<GrupoOpt[]>('/api/grupos', { cursoId: form.cursoId });
-        const g = res.data ?? [];
+        const [gruposRes, cargaRes] = await Promise.all([
+          apiGet<GrupoOpt[]>('/api/grupos', { cursoId: form.cursoId }),
+          apiGet<CargaAcademicaRow[]>('/api/carga-academica', {
+            cursoId: form.cursoId,
+            limit: 100,
+            page: 1,
+          }),
+        ]);
+        const g = gruposRes.data ?? [];
         setGrupos(g);
-        setForm((f) => ({ ...f, grupoId: g[0]?.id ?? '' }));
+
+        const docentesDelCurso = (cargaRes.data ?? []).map((row) => row.docente);
+        setDocentes(docentesDelCurso);
+        setForm((f) => ({
+          ...f,
+          grupoId: g[0]?.id ?? '',
+          docenteId: docentesDelCurso[0]?.id ?? '',
+        }));
       } catch {
         setGrupos([]);
+        setDocentes([]);
+      } finally {
+        setLoadingDocentesCurso(false);
       }
     })();
   }, [createOpen, form.cursoId]);
 
   const handleCreate = async () => {
     if (!periodoId) return;
+
+    if (!form.cursoId || !form.docenteId || !form.ambienteId) {
+      toast.error('Complete curso, docente y ambiente');
+      return;
+    }
+
+    const horaInicio = normalizeTimeHHmm(form.horaInicio);
+    const horaFin = normalizeTimeHHmm(form.horaFin);
+    if (!/^\d{2}:\d{2}$/.test(horaInicio) || !/^\d{2}:\d{2}$/.test(horaFin)) {
+      toast.error('Use formato de hora válido (HH:mm)');
+      return;
+    }
+    if (horaInicio >= horaFin) {
+      toast.error('La hora de fin debe ser posterior a la de inicio');
+      return;
+    }
+
+    setSavingCreate(true);
     try {
       await apiPost('/api/horarios', {
         periodoId,
@@ -232,15 +273,17 @@ export default function HorariosPage() {
         ambienteId: form.ambienteId,
         grupoId: form.grupoId || undefined,
         diaSemana: form.diaSemana,
-        horaInicio: form.horaInicio,
-        horaFin: form.horaFin,
+        horaInicio,
+        horaFin,
       });
-      toast.success('Horario creado');
+      toast.success('Horario creado correctamente');
       setCreateOpen(false);
       fetchHorarios();
       fetchConflictos();
     } catch (e) {
-      toast.error(e instanceof ApiClientError ? e.message : 'No se pudo crear');
+      toast.error(formatApiError(e, 'No se pudo crear el horario'));
+    } finally {
+      setSavingCreate(false);
     }
   };
 
@@ -459,17 +502,26 @@ export default function HorariosPage() {
             </div>
             <div>
               <Label>Docente</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                value={form.docenteId}
-                onChange={(e) => setForm((f) => ({ ...f, docenteId: e.target.value }))}
-              >
-                {docentes.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {Formateadores.nombreUsuario(d.usuario)}
-                  </option>
-                ))}
-              </select>
+              {loadingDocentesCurso ? (
+                <p className="text-sm text-gray-500">Cargando docentes del curso…</p>
+              ) : docentes.length === 0 ? (
+                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                  No hay docentes con carga académica en este curso. Asigne uno en{' '}
+                  <strong>Carga académica</strong> antes de crear el horario.
+                </p>
+              ) : (
+                <select
+                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  value={form.docenteId}
+                  onChange={(e) => setForm((f) => ({ ...f, docenteId: e.target.value }))}
+                >
+                  {docentes.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {Formateadores.nombreUsuario(d.usuario)}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <Label>Ambiente</Label>
@@ -503,6 +555,7 @@ export default function HorariosPage() {
               <div>
                 <Label>Inicio</Label>
                 <Input
+                  type="time"
                   value={form.horaInicio}
                   onChange={(e) => setForm((f) => ({ ...f, horaInicio: e.target.value }))}
                 />
@@ -510,6 +563,7 @@ export default function HorariosPage() {
               <div>
                 <Label>Fin</Label>
                 <Input
+                  type="time"
                   value={form.horaFin}
                   onChange={(e) => setForm((f) => ({ ...f, horaFin: e.target.value }))}
                 />
@@ -523,9 +577,17 @@ export default function HorariosPage() {
             <Button
               type="button"
               onClick={handleCreate}
+              disabled={savingCreate || loadingDocentesCurso || docentes.length === 0}
               className="bg-unt-blue hover:bg-unt-blue/90 text-white"
             >
-              Guardar
+              {savingCreate ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Guardando…
+                </>
+              ) : (
+                'Guardar'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
