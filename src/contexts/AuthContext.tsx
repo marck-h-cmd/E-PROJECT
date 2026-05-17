@@ -109,8 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const can = useCallback(
     (permission: keyof typeof PERMISOS) => {
-      if (!user) return false;
-      return (PERMISOS[permission] as readonly string[]).includes(user.rol);
+      if (!user || !PERMISOS) return false;
+      const allowedRoles = PERMISOS[permission];
+      if (!Array.isArray(allowedRoles)) return false;
+      return (allowedRoles as readonly string[]).includes(user.rol);
     },
     [user]
   );

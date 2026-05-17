@@ -17,7 +17,15 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const visibleSections = MENU_SECTIONS.map((section) => ({
     ...section,
-    items: section.items.filter((item) => !item.permission || can(item.permission)),
+    items: section.items.filter((item) => {
+      if (!item.permission) return true;
+      try {
+        return can(item.permission);
+      } catch (e) {
+        console.warn(`Error verificando permiso ${item.permission}:`, e);
+        return false;
+      }
+    }),
   })).filter((s) => s.items.length > 0);
 
   const sidebar = (
