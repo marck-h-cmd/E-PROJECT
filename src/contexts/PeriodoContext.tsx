@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { apiGet } from '@/lib/api-client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Periodo {
   id: string;
@@ -32,12 +33,22 @@ interface PeriodoContextValue {
 const PeriodoContext = createContext<PeriodoContextValue | undefined>(undefined);
 
 export function PeriodoProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [periodos, setPeriodos] = useState<Periodo[]>([]);
   const [periodoActivo, setPeriodoActivo] = useState<Periodo | null>(null);
   const [periodoSeleccionado, setPeriodoSeleccionado] = useState<Periodo | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
+    if (typeof window !== 'undefined' && !localStorage.getItem('accessToken')) {
+      setPeriodos([]);
+      setPeriodoActivo(null);
+      setPeriodoSeleccionado(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
     try {
       const [listaRes, activoRes] = await Promise.all([
         apiGet<Periodo[]>('/api/periodos', { limit: 50 }),
@@ -63,8 +74,16 @@ export function PeriodoProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (authLoading) return;
+    if (isAuthenticated) {
+      refresh();
+    } else {
+      setPeriodos([]);
+      setPeriodoActivo(null);
+      setPeriodoSeleccionado(null);
+      setLoading(false);
+    }
+  }, [isAuthenticated, authLoading, refresh]);
 
   const value = useMemo(
     () => ({

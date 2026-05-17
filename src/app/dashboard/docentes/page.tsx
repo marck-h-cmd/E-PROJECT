@@ -5,13 +5,8 @@ import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FormModalFooter } from '@/components/forms';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { DataTable, type Column } from '@/components/data/DataTable';
@@ -279,6 +274,12 @@ export default function DocentesPage() {
         keyExtractor={(r) => r.id}
         emptyTitle="No hay docentes"
         emptyDescription="Ajuste la búsqueda o registre un nuevo docente."
+        emptyAction={
+          <Button type="button" onClick={openCreate} className="bg-unt-blue text-white hover:bg-primary-700">
+            <Plus className="h-4 w-4" />
+            Registrar docente
+          </Button>
+        }
       />
 
       {meta && (
@@ -391,19 +392,11 @@ export default function DocentesPage() {
               </div>
             )}
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              disabled={saving}
-              onClick={handleSave}
-              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
-            </Button>
-          </DialogFooter>
+          <FormModalFooter
+            onCancel={() => setDialogOpen(false)}
+            onSubmit={handleSave}
+            saving={saving}
+          />
         </DialogContent>
       </Dialog>
 

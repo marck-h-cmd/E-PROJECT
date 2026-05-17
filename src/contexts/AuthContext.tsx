@@ -45,6 +45,20 @@ function clearSession() {
   document.cookie = 'auth_token=; path=/; max-age=0';
 }
 
+function toUserSession(usuario: Record<string, unknown>): UserSession {
+  return {
+    id: String(usuario.id),
+    email: String(usuario.email),
+    nombre: String(usuario.nombre),
+    apellidos: String(usuario.apellidos),
+    rol: usuario.rol as UserSession['rol'],
+    docenteId:
+      typeof usuario.docenteId === 'string'
+        ? usuario.docenteId
+        : (usuario.docente as { id?: string } | null | undefined)?.id,
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<UserSession | null>(null);
@@ -55,7 +69,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem('accessToken');
       const raw = localStorage.getItem('user');
       if (token && raw) {
-        setUser(JSON.parse(raw));
+        const parsed = JSON.parse(raw) as Record<string, unknown>;
+        setUser(toUserSession(parsed));
+        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
       }
     } catch {
       clearSession();
@@ -77,13 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.data) throw new Error('Respuesta inválida del servidor');
 
+      const sessionUser = toUserSession(
+        res.data.usuario as unknown as Record<string, unknown>
+      );
+
       persistSession(
         res.data.tokens.accessToken,
         res.data.tokens.refreshToken,
-        res.data.usuario
+        sessionUser
       );
-      setUser(res.data.usuario);
-      router.push('/dashboard');
+      setUser(sessionUser);
+      router.replace('/dashboard');
+      router.refresh();
     },
     [router]
   );

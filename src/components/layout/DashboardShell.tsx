@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, Menu, X } from 'lucide-react';
@@ -8,12 +8,24 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Formateadores } from '@/lib/formateadores';
 import { MENU_SECTIONS } from '@/lib/menu-config';
 import { PeriodoSelector } from '@/components/layout/PeriodoSelector';
-import { cn } from '@/lib/cn';
+
+function resolvePageTitle(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const items = MENU_SECTIONS.flatMap((s) => s.items);
+  const exact = items.find((i) => i.href === pathname);
+  if (exact) return exact.nombre;
+  const partial = items
+    .filter((i) => i.href !== '/dashboard' && pathname.startsWith(i.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  return partial?.nombre ?? null;
+}
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, logout, can } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const pageTitle = useMemo(() => resolvePageTitle(pathname), [pathname]);
 
   const visibleSections = MENU_SECTIONS.map((section) => ({
     ...section,
@@ -31,22 +43,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 border-b border-white/10 px-6 py-5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white">
-          <span className="text-lg font-bold text-unt-blue">UNT</span>
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
+          <span className="font-display text-base font-bold text-unt-blue">UNT</span>
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-sm font-semibold">Gestión de Horarios</h1>
-          <p className="truncate text-xs text-blue-300">Ing. de Sistemas</p>
+          <h1 className="truncate font-display text-sm font-semibold tracking-tight">
+            Gestión de Horarios
+          </h1>
+          <p className="truncate text-xs text-unt-gold-light">Ing. de Sistemas</p>
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {visibleSections.map((section) => (
-          <div key={section.titulo} className="mb-4">
-            <h3 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-blue-300">
+          <div key={section.titulo} className="mb-5">
+            <h3 className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-unt-gold/90">
               {section.titulo}
             </h3>
-            <ul className="space-y-1">
+            <ul className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon = item.icon;
                 const active =
@@ -57,12 +71,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                     <Link
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
-                        active
-                          ? 'bg-white/20 text-white'
-                          : 'text-blue-200 hover:bg-white/10 hover:text-white'
-                      )}
+                      className={active ? 'nav-item-active' : 'nav-item-inactive'}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       <span>{item.nombre}</span>
@@ -78,7 +87,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       {user && (
         <div className="border-t border-white/10 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-unt-gold text-xs font-bold text-unt-blue">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-unt-gold text-xs font-bold text-unt-blue shadow-sm">
               {user.nombre?.charAt(0)}
               {user.apellidos?.charAt(0)}
             </div>
@@ -86,14 +95,14 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               <p className="truncate text-sm font-medium">
                 {user.nombre} {user.apellidos}
               </p>
-              <p className="truncate text-xs text-blue-300">
+              <p className="truncate text-xs text-blue-200">
                 {Formateadores.rolUsuario(user.rol)}
               </p>
             </div>
             <button
               type="button"
               onClick={() => logout()}
-              className="rounded p-1 hover:bg-white/10"
+              className="rounded-lg p-2 text-blue-200 transition-colors hover:bg-white/10 hover:text-white"
               title="Cerrar sesión"
             >
               <LogOut className="h-4 w-4" />
@@ -105,19 +114,24 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <aside className="fixed left-0 top-0 z-40 hidden h-full w-64 bg-unt-blue text-white lg:block">
+    <div className="min-h-screen bg-slate-50">
+      <aside className="fixed left-0 top-0 z-40 hidden h-full w-64 bg-unt-blue text-white shadow-lg lg:block">
         {sidebar}
       </aside>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 h-full w-64 bg-unt-blue text-white shadow-xl">
+          <div
+            className="absolute inset-0 bg-unt-blue/60 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden
+          />
+          <aside className="absolute left-0 top-0 h-full w-64 bg-unt-blue text-white shadow-2xl">
             <button
               type="button"
-              className="absolute right-3 top-3 rounded p-1 hover:bg-white/10"
+              className="absolute right-3 top-3 rounded-lg p-1.5 hover:bg-white/10"
               onClick={() => setMobileOpen(false)}
+              aria-label="Cerrar menú"
             >
               <X className="h-5 w-5" />
             </button>
@@ -127,20 +141,40 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="lg:ml-64">
-        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white">
-          <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
-            <button
-              type="button"
-              className="rounded-md p-2 hover:bg-gray-100 lg:hidden"
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <p className="text-sm font-medium text-gray-500 lg:hidden">UNT Horarios</p>
-            <PeriodoSelector className="ml-auto" />
+        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 shadow-header backdrop-blur-sm">
+          <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8 lg:py-3.5">
+            <div className="flex min-w-0 items-center gap-3">
+              <button
+                type="button"
+                className="rounded-lg p-2 text-slate-600 transition-colors hover:bg-slate-100 lg:hidden"
+                onClick={() => setMobileOpen(true)}
+                aria-label="Abrir menú"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="min-w-0">
+                {pageTitle && (
+                  <p className="hidden truncate font-display text-lg font-semibold tracking-tight text-unt-blue sm:block">
+                    {pageTitle}
+                  </p>
+                )}
+                <p className="truncate text-xs text-slate-500 sm:hidden">
+                  {pageTitle ?? 'UNT Horarios'}
+                </p>
+                {user && (
+                  <p className="hidden text-xs text-slate-400 lg:block">
+                    Bienvenido,{' '}
+                    <span className="font-medium text-slate-600">{user.nombre}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <PeriodoSelector />
           </div>
         </header>
-        <main className="p-4 lg:p-8">{children}</main>
+        <main className="mx-auto max-w-[1600px] p-4 lg:p-8">
+          <div className="animate-fadeIn">{children}</div>
+        </main>
       </div>
     </div>
   );

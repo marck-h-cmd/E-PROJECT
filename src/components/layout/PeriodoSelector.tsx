@@ -20,7 +20,7 @@ export function PeriodoSelector({ className }: PeriodoSelectorProps) {
     <div className={cn('flex items-center gap-2', className)}>
       <Calendar className="h-4 w-4 text-unt-blue shrink-0" />
       <select
-        className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm focus:border-unt-blue focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
         value={periodoSeleccionado?.id || ''}
         onChange={(e) => {
           const p = periodos.find((x) => x.id === e.target.value);

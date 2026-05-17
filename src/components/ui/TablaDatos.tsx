@@ -29,7 +29,16 @@ TablaDatos.displayName = 'TablaDatos';
 const TablaHeader = React.forwardRef<HTMLTableSectionElement, TablaHeaderProps>(
   function TablaHeader(props, ref) {
     const { className, ...rest } = props;
-    return <thead ref={ref} className={cn('border-b bg-gray-50', className)} {...rest} />;
+    return (
+      <thead
+        ref={ref}
+        className={cn(
+          'sticky top-0 z-10 border-b bg-slate-50/95 backdrop-blur-sm',
+          className
+        )}
+        {...rest}
+      />
+    );
   }
 );
 TablaHeader.displayName = 'TablaHeader';
@@ -69,7 +78,7 @@ const TablaRow = React.forwardRef<HTMLTableRowElement, TablaRowProps>(
       <tr
         ref={ref}
         className={cn(
-          'border-b transition-colors hover:bg-gray-50 data-[state=selected]:bg-gray-100',
+          'border-b transition-colors duration-150 even:bg-slate-50/40 hover:bg-unt-blue/[0.04] data-[state=selected]:bg-unt-blue/10',
           className
         )}
         {...rest}
@@ -86,7 +95,7 @@ const TablaHead = React.forwardRef<HTMLTableCellElement, TablaHeadProps>(
       <th
         ref={ref}
         className={cn(
-          'h-12 px-4 text-left align-middle font-semibold text-gray-700 [&:has([role=checkbox])]:pr-0',
+          'h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider text-slate-600 [&:has([role=checkbox])]:pr-0',
           className
         )}
         {...rest}

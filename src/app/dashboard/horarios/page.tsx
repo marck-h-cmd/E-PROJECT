@@ -1,17 +1,18 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Loader2, Plus } from 'lucide-react';
+import { CalendarDays, LayoutList, Loader2, Plus } from 'lucide-react';
+import { HorarioWeeklyCalendar } from '@/components/horarios/HorarioWeeklyCalendar';
+import { FormField, FormModalFooter, FormSection, FormSelect } from '@/components/forms';
+import { formControlClass } from '@/components/forms/FormField';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { DataTable, type Column } from '@/components/data/DataTable';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -108,6 +109,8 @@ export default function HorariosPage() {
   const [conflictos, setConflictos] = useState<ConflictosPayload | null>(null);
   const [loadingConf, setLoadingConf] = useState(false);
   const [busyAction, setBusyAction] = useState(false);
+  const [vista, setVista] = useState<'calendario' | 'tabla'>('calendario');
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [savingCreate, setSavingCreate] = useState(false);
@@ -264,6 +267,7 @@ export default function HorariosPage() {
       return;
     }
 
+    setFormError(null);
     setSavingCreate(true);
     try {
       await apiPost('/api/horarios', {
@@ -281,7 +285,9 @@ export default function HorariosPage() {
       fetchHorarios();
       fetchConflictos();
     } catch (e) {
-      toast.error(formatApiError(e, 'No se pudo crear el horario'));
+      const msg = formatApiError(e, 'No se pudo crear el horario');
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setSavingCreate(false);
     }
@@ -319,17 +325,31 @@ export default function HorariosPage() {
     }
   };
 
-  const celdas = useMemo(() => {
-    const map = new Map<string, HorarioCell[]>();
-    for (const h of horarios) {
-      const hour = parseInt(h.horaInicio.split(':')[0], 10);
-      const key = `${h.diaSemana}-${hour}`;
-      const prev = map.get(key) ?? [];
-      prev.push(h);
-      map.set(key, prev);
-    }
-    return map;
-  }, [horarios]);
+  const columnsHorarios: Column<HorarioCell>[] = [
+    {
+      key: 'dia',
+      header: 'Día',
+      cell: (r) => DIA_LABEL[r.diaSemana] ?? r.diaSemana,
+    },
+    {
+      key: 'hora',
+      header: 'Horario',
+      cell: (r) => `${r.horaInicio.slice(0, 5)} – ${r.horaFin.slice(0, 5)}`,
+    },
+    {
+      key: 'curso',
+      header: 'Curso',
+      cell: (r) => (
+        <span className="font-medium text-unt-blue">{r.curso.codigo}</span>
+      ),
+    },
+    {
+      key: 'docente',
+      header: 'Docente',
+      cell: (r) => Formateadores.nombreUsuario(r.docente.usuario),
+    },
+    { key: 'amb', header: 'Ambiente', cell: (r) => r.ambiente.codigo },
+  ];
 
   const columnsConflictos: Column<ConflictoDetalle>[] = [
     { key: 't', header: 'Tipo', cell: (r) => r.tipoRegla },
@@ -398,56 +418,61 @@ export default function HorariosPage() {
 
       {error && <ErrorAlert message={error} onRetry={fetchHorarios} />}
 
-      <div className="card overflow-x-auto">
-        <div className="card-body p-2">
-          {loadingHor ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
-            </div>
-          ) : (
-            <div
-              className="grid min-w-[720px] gap-px bg-gray-200 text-xs"
-              style={{ gridTemplateColumns: `80px repeat(${DIAS.length}, minmax(0,1fr))` }}
-            >
-              <div className="bg-gray-100 p-2 font-semibold text-gray-600">Hora</div>
-              {DIAS.map((d) => (
-                <div key={d} className="bg-unt-blue p-2 text-center font-semibold text-white">
-                  {DIA_LABEL[d] ?? d}
-                </div>
-              ))}
-              {HORAS.map((h) => (
-                <div key={h} className="contents">
-                  <div className="flex items-center bg-gray-50 p-2 font-mono text-gray-700">
-                    {h}:00
-                  </div>
-                  {DIAS.map((d) => {
-                    const list = celdas.get(`${d}-${h}`) ?? [];
-                    return (
-                      <div
-                        key={`${d}-${h}`}
-                        className={cn(
-                          'min-h-[52px] bg-white p-1',
-                          list.length > 1 ? 'bg-amber-50' : ''
-                        )}
-                      >
-                        {list.map((x) => (
-                          <div
-                            key={x.id}
-                            className="mb-1 rounded border border-gray-200 bg-gray-50 px-1 py-0.5 leading-tight"
-                          >
-                            <div className="font-semibold text-unt-blue">{x.curso.codigo}</div>
-                            <div className="truncate text-[10px] text-gray-600">{x.ambiente.codigo}</div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+      <div className="mb-4 flex gap-2">
+        <Button
+          type="button"
+          variant={vista === 'calendario' ? 'default' : 'outline'}
+          onClick={() => setVista('calendario')}
+          className={cn(
+            'transition-colors duration-150',
+            vista === 'calendario' && 'bg-unt-blue text-white hover:bg-primary-700'
           )}
-        </div>
+        >
+          <CalendarDays className="h-4 w-4" />
+          Calendario
+        </Button>
+        <Button
+          type="button"
+          variant={vista === 'tabla' ? 'default' : 'outline'}
+          onClick={() => setVista('tabla')}
+          className={cn(
+            'transition-colors duration-150',
+            vista === 'tabla' && 'bg-unt-blue text-white hover:bg-primary-700'
+          )}
+        >
+          <LayoutList className="h-4 w-4" />
+          Tabla
+        </Button>
       </div>
+
+      {vista === 'calendario' ? (
+        <HorarioWeeklyCalendar
+          horarios={horarios}
+          dias={DIAS}
+          diaLabels={DIA_LABEL}
+          horas={HORAS}
+          loading={loadingHor}
+        />
+      ) : (
+        <DataTable
+          columns={columnsHorarios}
+          data={horarios}
+          loading={loadingHor}
+          keyExtractor={(r) => r.id}
+          emptyTitle="No hay horarios"
+          emptyDescription="Aún no hay sesiones programadas en este período."
+          emptyAction={
+            <Button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="bg-unt-blue text-white hover:bg-primary-700"
+            >
+              <Plus className="h-4 w-4" />
+              Crear horario
+            </Button>
+          }
+        />
+      )}
 
       <div>
         <h2 className="mb-2 text-lg font-semibold text-unt-blue">Conflictos de validación</h2>
@@ -465,131 +490,137 @@ export default function HorariosPage() {
         )}
       </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog
+        open={createOpen}
+        onOpenChange={(open) => {
+          setCreateOpen(open);
+          if (!open) setFormError(null);
+        }}
+      >
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Nuevo horario</DialogTitle>
           </DialogHeader>
-          <div className="grid max-h-[60vh] gap-3 overflow-y-auto py-2">
-            <div>
-              <Label>Curso</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                value={form.cursoId}
-                onChange={(e) => setForm((f) => ({ ...f, cursoId: e.target.value }))}
-              >
-                {cursos.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.codigo} — {c.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Grupo (opcional)</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                value={form.grupoId}
-                onChange={(e) => setForm((f) => ({ ...f, grupoId: e.target.value }))}
-              >
-                <option value="">— Sin grupo —</option>
-                {grupos.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Docente</Label>
-              {loadingDocentesCurso ? (
-                <p className="text-sm text-gray-500">Cargando docentes del curso…</p>
-              ) : docentes.length === 0 ? (
-                <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  No hay docentes con carga académica en este curso. Asigne uno en{' '}
-                  <strong>Carga académica</strong> antes de crear el horario.
-                </p>
-              ) : (
-                <select
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                  value={form.docenteId}
-                  onChange={(e) => setForm((f) => ({ ...f, docenteId: e.target.value }))}
+
+          {formError && (
+            <p
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+              role="alert"
+              aria-live="polite"
+            >
+              {formError}
+            </p>
+          )}
+          <div className="grid max-h-[65vh] gap-6 overflow-y-auto py-2 md:grid-cols-2">
+            <FormSection title="Curso y docente">
+              <FormField label="Curso" htmlFor="hor-curso" required>
+                <FormSelect
+                  id="hor-curso"
+                  value={form.cursoId}
+                  onChange={(e) => setForm((f) => ({ ...f, cursoId: e.target.value }))}
                 >
-                  {docentes.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {Formateadores.nombreUsuario(d.usuario)}
+                  {cursos.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.codigo} — {c.nombre}
                     </option>
                   ))}
-                </select>
-              )}
-            </div>
-            <div>
-              <Label>Ambiente</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                value={form.ambienteId}
-                onChange={(e) => setForm((f) => ({ ...f, ambienteId: e.target.value }))}
-              >
-                {ambientes.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.codigo} — {a.nombre}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Día</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                value={form.diaSemana}
-                onChange={(e) => setForm((f) => ({ ...f, diaSemana: e.target.value as DiaSemana }))}
-              >
-                {DIAS.map((d) => (
-                  <option key={d} value={d}>
-                    {DIA_LABEL[d] ?? d}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Inicio</Label>
-                <Input
-                  type="time"
-                  value={form.horaInicio}
-                  onChange={(e) => setForm((f) => ({ ...f, horaInicio: e.target.value }))}
-                />
+                </FormSelect>
+              </FormField>
+              <FormField label="Grupo (opcional)" htmlFor="hor-grupo">
+                <FormSelect
+                  id="hor-grupo"
+                  value={form.grupoId}
+                  onChange={(e) => setForm((f) => ({ ...f, grupoId: e.target.value }))}
+                >
+                  <option value="">— Sin grupo —</option>
+                  {grupos.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.nombre}
+                    </option>
+                  ))}
+                </FormSelect>
+              </FormField>
+              <FormField label="Docente" htmlFor="hor-docente" required>
+                {loadingDocentesCurso ? (
+                  <p className="text-sm text-slate-500">Cargando docentes del curso…</p>
+                ) : docentes.length === 0 ? (
+                  <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                    No hay docentes con carga académica en este curso. Asigne uno en{' '}
+                    <strong>Carga académica</strong> antes de crear el horario.
+                  </p>
+                ) : (
+                  <FormSelect
+                    id="hor-docente"
+                    value={form.docenteId}
+                    onChange={(e) => setForm((f) => ({ ...f, docenteId: e.target.value }))}
+                  >
+                    {docentes.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {Formateadores.nombreUsuario(d.usuario)}
+                      </option>
+                    ))}
+                  </FormSelect>
+                )}
+              </FormField>
+            </FormSection>
+
+            <FormSection title="Fecha y hora">
+              <FormField label="Ambiente" htmlFor="hor-ambiente" required>
+                <FormSelect
+                  id="hor-ambiente"
+                  value={form.ambienteId}
+                  onChange={(e) => setForm((f) => ({ ...f, ambienteId: e.target.value }))}
+                >
+                  {ambientes.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.codigo} — {a.nombre}
+                    </option>
+                  ))}
+                </FormSelect>
+              </FormField>
+              <FormField label="Día" htmlFor="hor-dia" required>
+                <FormSelect
+                  id="hor-dia"
+                  value={form.diaSemana}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, diaSemana: e.target.value as DiaSemana }))
+                  }
+                >
+                  {DIAS.map((d) => (
+                    <option key={d} value={d}>
+                      {DIA_LABEL[d] ?? d}
+                    </option>
+                  ))}
+                </FormSelect>
+              </FormField>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Inicio" htmlFor="hor-inicio" required>
+                  <Input
+                    id="hor-inicio"
+                    type="time"
+                    className={formControlClass()}
+                    value={form.horaInicio}
+                    onChange={(e) => setForm((f) => ({ ...f, horaInicio: e.target.value }))}
+                  />
+                </FormField>
+                <FormField label="Fin" htmlFor="hor-fin" required>
+                  <Input
+                    id="hor-fin"
+                    type="time"
+                    className={formControlClass()}
+                    value={form.horaFin}
+                    onChange={(e) => setForm((f) => ({ ...f, horaFin: e.target.value }))}
+                  />
+                </FormField>
               </div>
-              <div>
-                <Label>Fin</Label>
-                <Input
-                  type="time"
-                  value={form.horaFin}
-                  onChange={(e) => setForm((f) => ({ ...f, horaFin: e.target.value }))}
-                />
-              </div>
-            </div>
+            </FormSection>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancelar
-            </Button>
-            <Button
-              type="button"
-              onClick={handleCreate}
-              disabled={savingCreate || loadingDocentesCurso || docentes.length === 0}
-              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-            >
-              {savingCreate ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Guardando…
-                </>
-              ) : (
-                'Guardar'
-              )}
-            </Button>
-          </DialogFooter>
+          <FormModalFooter
+            onCancel={() => setCreateOpen(false)}
+            onSubmit={handleCreate}
+            saving={savingCreate}
+            disabled={loadingDocentesCurso || docentes.length === 0}
+          />
         </DialogContent>
       </Dialog>
     </div>

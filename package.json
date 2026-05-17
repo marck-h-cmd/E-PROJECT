@@ -24,7 +24,8 @@
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
     "docker:build": "docker compose build app",
-    "docker:rebuild": "docker compose build app && docker compose up -d",
+    "docker:rebuild": "docker compose build app && docker compose up -d --force-recreate app",
+    "docker:dev": "docker compose --profile dev up -d app-dev",
     "docker:logs": "docker compose logs -f app",
     "docker:seed": "docker exec unt_app node scripts/docker-seed-min.js"
   },

@@ -10,7 +10,7 @@ export function AppProviders({ children }: { children: ReactNode }) {
     <AuthProvider>
       <PeriodoProvider>
         {children}
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-right" richColors closeButton duration={4000} />
       </PeriodoProvider>
     </AuthProvider>
   );

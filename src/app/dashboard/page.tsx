@@ -6,6 +6,8 @@ import { BarChartCard } from '@/components/charts/BarChartCard';
 import { PieChartCard } from '@/components/charts/PieChartCard';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { KpiCard } from '@/components/feedback/KpiCard';
+import { KpiSkeleton } from '@/components/feedback/KpiSkeleton';
+import { CHART_PRIMARY } from '@/lib/chart-colors';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { apiGet, ApiClientError } from '@/lib/api-client';
 import { Formateadores } from '@/lib/formateadores';
@@ -130,37 +132,37 @@ export default function DashboardPage() {
     [ocupacion]
   );
 
-  if (periodoLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
-      </div>
-    );
-  }
-
-  if (!periodoId) {
-    return (
-      <div>
-        <PageHeader title="Panel principal" description="Resumen operativo del sistema de horarios UNT." />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Seleccione un período académico en la barra superior para ver indicadores y gráficos.
-        </div>
-      </div>
-    );
-  }
+  const showPeriodoHint = !periodoLoading && !periodoId;
+  const isLoadingContent = periodoLoading || (!!periodoId && loading);
 
   return (
     <div>
       <PageHeader
         title="Panel principal"
-        description={`Datos del período: ${periodoSeleccionado?.nombre ?? periodoId}`}
+        description={
+          periodoSeleccionado
+            ? `Datos del período: ${periodoSeleccionado.nombre}`
+            : 'Resumen operativo del sistema de horarios UNT.'
+        }
       />
+
+      {showPeriodoHint && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Seleccione un período académico en la barra superior para ver indicadores y gráficos
+          detallados.
+        </div>
+      )}
 
       {error && <ErrorAlert message={error} className="mb-6" />}
 
-      {loading ? (
-        <div className="flex min-h-[30vh] items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
+      {isLoadingContent ? (
+        <div className="space-y-8">
+          <KpiSkeleton />
+          <div className="grid gap-6 lg:grid-cols-2">
+            <BarChartCard title=" " data={[]} dataKey="pct" xKey="a" loading />
+            <PieChartCard title=" " data={[]} loading />
+          </div>
+          <BarChartCard title=" " data={[]} dataKey="s" xKey="f" loading />
         </div>
       ) : (
         <div className="space-y-8">
@@ -198,7 +200,8 @@ export default function DashboardPage() {
               data={barOcupacion}
               xKey="ambiente"
               dataKey="pct"
-              color="#1a365d"
+              color={CHART_PRIMARY}
+              loading={false}
             />
             <PieChartCard
               title="Avance por categoría docente"
@@ -213,7 +216,7 @@ export default function DashboardPage() {
             data={barMapaCalor}
             xKey="franja"
             dataKey="sesiones"
-            color="#1a365d"
+            color={CHART_PRIMARY}
           />
         </div>
       )}

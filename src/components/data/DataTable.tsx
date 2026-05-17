@@ -18,6 +18,7 @@ interface DataTableProps<T> {
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: ReactNode;
   keyExtractor: (row: T) => string;
   className?: string;
 }
@@ -28,13 +29,16 @@ export function DataTable<T>({
   loading,
   emptyTitle = 'Sin registros',
   emptyDescription,
+  emptyAction,
   keyExtractor,
   className,
 }: DataTableProps<T>) {
   if (loading) return <TableSkeleton columns={columns.length} />;
 
   if (data.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} />;
+    return (
+      <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
+    );
   }
 
   return (
@@ -51,10 +55,20 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {data.map((row) => (
-            <tr key={keyExtractor(row)} className="hover:bg-gray-50">
+            <tr key={keyExtractor(row)} className="group">
               {columns.map((col) => (
-                <td key={col.key} className={col.className}>
-                  {col.cell(row)}
+                <td
+                  key={col.key}
+                  className={cn(
+                    col.className,
+                    col.key === 'actions' && 'text-right'
+                  )}
+                >
+                  {col.key === 'actions' ? (
+                    <div className="table-actions">{col.cell(row)}</div>
+                  ) : (
+                    col.cell(row)
+                  )}
                 </td>
               ))}
             </tr>

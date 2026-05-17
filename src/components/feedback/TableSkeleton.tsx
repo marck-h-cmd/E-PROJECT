@@ -6,15 +6,21 @@ interface TableSkeletonProps {
   className?: string;
 }
 
-export function TableSkeleton({ columns = 5, rows = 5, className }: TableSkeletonProps) {
+export function TableSkeleton({ columns = 5, rows = 6, className }: TableSkeletonProps) {
   return (
-    <div className={cn('table-container', className)}>
-      <div className="animate-pulse space-y-3 p-4">
-        <div className="h-8 bg-gray-200 rounded w-full" />
+    <div className={cn('table-container', className)} aria-busy="true" aria-label="Cargando tabla">
+      <div className="border-b border-slate-200 bg-slate-50/80 px-6 py-3">
+        <div className="flex gap-4">
+          {Array.from({ length: columns }).map((_, j) => (
+            <div key={j} className="skeleton h-4 flex-1" />
+          ))}
+        </div>
+      </div>
+      <div className="divide-y divide-slate-100 p-2">
         {Array.from({ length: rows }).map((_, i) => (
-          <div key={i} className="flex gap-4">
+          <div key={i} className="flex gap-4 px-4 py-3 even:bg-slate-50/40">
             {Array.from({ length: columns }).map((_, j) => (
-              <div key={j} className="h-6 bg-gray-100 rounded flex-1" />
+              <div key={j} className="skeleton h-5 flex-1" />
             ))}
           </div>
         ))}
@@ -22,4 +28,3 @@ export function TableSkeleton({ columns = 5, rows = 5, className }: TableSkeleto
     </div>
   );
 }
-
