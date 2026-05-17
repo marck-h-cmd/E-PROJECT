@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "description": "Sistema de Gestión de Horarios - Escuela de Ingeniería de Sistemas UNT",
+  "prisma": {
+  "seed": "tsx prisma/seed.ts"
+},
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -20,9 +23,7 @@
     "test:integration": "vitest run tests/integration",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build",
-    "scripts:seed": "ts-node scripts/generar-datos-semilla.ts",
-    "scripts:check-connections": "ts-node scripts/verificar-conexiones.ts"
+    "docker:build": "docker-compose build"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -82,6 +83,7 @@
     "supertest": "^7.0.0",
     "tailwindcss": "^3.4.4",
     "ts-node": "^10.9.0",
+    "tsx": "^4.22.1",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
   }

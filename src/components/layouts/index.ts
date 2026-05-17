@@ -1,3 +1,9 @@
-export * from './Sidebar';
-export * from './BarraSuperior';
-export * from './LayoutDashboard';
+export { BarraSuperior } from './BarraSuperior';
+export { Breadcrumbs } from './Breadcrumbs';
+export { ItemSidebar } from './ItemSidebar';
+export { LayoutDashboard } from './LayoutDashboard';
+export { LayoutPrincipal } from './LayoutPrincipal';
+export { MenuUsuario } from './MenuUsuario';
+export { NavegacionMovil } from './NavegacionMovil';
+export { PiePagina } from './PiePagina';
+export { Sidebar } from './Sidebar';

@@ -1,2 +1,13 @@
-export * from './PanelKPIs';
-export * from './TarjetaResumenPeriodo';
+export { default as PanelKPIs } from './PanelKPIs';
+export { default as TarjetaResumenPeriodo } from './TarjetaResumenPeriodo';
+export { default as GraficoAvanceCategoria } from './GraficoAvanceCategoria';
+export { default as GraficoOcupacionAmbientes } from './GraficoOcupacionAmbientes';
+export { default as GraficoOcupacionAulas } from './GraficoOcupacionAulas';
+export { default as GraficoOcupacionLaboratorios } from './GraficoOcupacionLaboratorios';
+export { default as MapaCalorOcupacion } from './MapaCalorOcupacion';
+export { default as GraficoDistribucionDia } from './GraficoDistribucionDia';
+export { default as GraficoCargaDocente } from './GraficoCargaDocente';
+export { default as ActividadTiempoReal } from './ActividadTiempoReal';
+export { default as ListaUltimasAsignaciones } from './ListaUltimasAsignaciones';
+export { default as AlertasPendientes } from './AlertasPendientes';
+export { default as ResumenEjecutivo } from './ResumenEjecutivo';
