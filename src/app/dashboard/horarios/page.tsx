@@ -34,7 +34,7 @@ interface HorarioCell {
   horaInicio: string;
   horaFin: string;
   diaSemana: string;
-  curso: { codigo: string; nombre: string };
+  curso: { codigo: string; nombre: string; ciclo: number };
   docente: { usuario: { nombre: string; apellidos: string } };
   ambiente: { codigo: string };
   grupo?: { nombre: string } | null;
@@ -107,6 +107,33 @@ const DIA_LABEL: Record<string, string> = {
   VIERNES: 'Vie',
 };
 
+const CICLO_OPTIONS = [
+  { value: '', label: 'Todos los ciclos' },
+  { value: '1', label: 'Ciclo I' },
+  { value: '2', label: 'Ciclo II' },
+  { value: '3', label: 'Ciclo III' },
+  { value: '4', label: 'Ciclo IV' },
+  { value: '5', label: 'Ciclo V' },
+  { value: '6', label: 'Ciclo VI' },
+  { value: '7', label: 'Ciclo VII' },
+  { value: '8', label: 'Ciclo VIII' },
+  { value: '9', label: 'Ciclo IX' },
+  { value: '10', label: 'Ciclo X' },
+];
+
+const CICLO_ROMANO: Record<string, string> = {
+  '1': 'I',
+  '2': 'II',
+  '3': 'III',
+  '4': 'IV',
+  '5': 'V',
+  '6': 'VI',
+  '7': 'VII',
+  '8': 'VIII',
+  '9': 'IX',
+  '10': 'X',
+};
+
 export default function HorariosPage() {
   const { loading: authLoading } = useRequireAuth([
     Rol.SUPER_ADMIN,
@@ -126,6 +153,7 @@ export default function HorariosPage() {
   const [busyAction, setBusyAction] = useState(false);
   const [vista, setVista] = useState<'calendario' | 'tabla'>('calendario');
   const [formError, setFormError] = useState<string | null>(null);
+  const [cicloSeleccionado, setCicloSeleccionado] = useState<string>('');
   const [desfases, setDesfases] = useState<DesfaseCarga[]>([]);
   const [loadingDesfases, setLoadingDesfases] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -166,11 +194,15 @@ export default function HorariosPage() {
     setLoadingHor(true);
     setError(null);
     try {
-      const res = await apiGet<HorarioCell[]>('/api/horarios', {
+      const params: any = {
         periodoId,
         limit: 500,
         page: 1,
-      });
+      };
+      if (cicloSeleccionado) {
+        params.ciclo = cicloSeleccionado;
+      }
+      const res = await apiGet<HorarioCell[]>('/api/horarios', params);
       setHorarios(res.data ?? []);
     } catch (e) {
       setError(e instanceof ApiClientError ? e.message : 'Error al cargar horarios');
@@ -178,7 +210,7 @@ export default function HorariosPage() {
     } finally {
       setLoadingHor(false);
     }
-  }, [periodoId]);
+  }, [periodoId, cicloSeleccionado]);
 
   const fetchConflictos = useCallback(async () => {
     if (!periodoId) {
@@ -450,6 +482,23 @@ export default function HorariosPage() {
         description={`Período: ${periodoSeleccionado?.nombre}. Lun–Vie, 8:00–${HORA_LIMITE_FIN_CLASES} máx.`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <label htmlFor="ciclo-filter" className="text-sm font-medium text-slate-700">
+                Filtrar por Ciclo:
+              </label>
+              <select
+                id="ciclo-filter"
+                value={cicloSeleccionado}
+                onChange={(e) => setCicloSeleccionado(e.target.value)}
+                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+              >
+                {CICLO_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <Button
               variant="outline"
               disabled={downloadingPdf}

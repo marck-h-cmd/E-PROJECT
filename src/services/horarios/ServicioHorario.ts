@@ -24,6 +24,7 @@ export interface FiltrosHorario {
   ambienteId?: string;
   diaSemana?: DiaSemana;
   estado?: EstadoHorario;
+  ciclo?: number;
 }
 
 export interface PaginacionParams {
@@ -52,6 +53,7 @@ export class ServicioHorario {
     if (filtros.ambienteId) where.ambienteId = filtros.ambienteId;
     if (filtros.diaSemana) where.diaSemana = filtros.diaSemana;
     if (filtros.estado) where.estado = filtros.estado;
+    if (filtros.ciclo) where.curso = { ciclo: filtros.ciclo };
 
     const [horarios, total] = await Promise.all([
       prisma.horario.findMany({

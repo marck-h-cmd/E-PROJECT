@@ -4,12 +4,25 @@ import { useMemo } from 'react';
 import { cn } from '@/lib/cn';
 import { colorForCourseKey, DIA_HEADER_CLASS } from '@/lib/horario-colors';
 
+const CICLO_ROMANO: Record<number, string> = {
+  1: 'I',
+  2: 'II',
+  3: 'III',
+  4: 'IV',
+  5: 'V',
+  6: 'VI',
+  7: 'VII',
+  8: 'VIII',
+  9: 'IX',
+  10: 'X',
+};
+
 export interface HorarioCalendarItem {
   id: string;
   horaInicio: string;
   horaFin: string;
   diaSemana: string;
-  curso: { codigo: string; nombre: string };
+  curso: { codigo: string; nombre: string; ciclo: number };
   docente: { usuario: { nombre: string; apellidos: string } };
   ambiente: { codigo: string };
   grupo?: { nombre: string } | null;
@@ -118,7 +131,9 @@ export function HorarioWeeklyCalendar({
                           )}
                           title={`${x.curso.nombre} · ${x.ambiente.codigo}`}
                         >
-                          <div className={cn('font-semibold', style.title)}>{x.curso.codigo}</div>
+                          <div className={cn('font-semibold', style.title)}>
+                            [Ciclo {CICLO_ROMANO[x.curso.ciclo] || x.curso.ciclo}] {x.curso.codigo}
+                          </div>
                           <div className={cn('truncate text-[10px] font-medium', style.subtitle)}>
                             {x.ambiente.codigo} · {x.horaInicio.slice(0, 5)}–{x.horaFin.slice(0, 5)}
                           </div>
