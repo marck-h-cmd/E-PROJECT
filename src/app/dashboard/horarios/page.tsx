@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, LayoutList, Loader2, Plus } from 'lucide-react';
+import { AlertTriangle, CalendarDays, FileDown, LayoutList, Loader2, Plus } from 'lucide-react';
 import { HorarioWeeklyCalendar } from '@/components/horarios/HorarioWeeklyCalendar';
 import { FormField, FormModalFooter, FormSection, FormSelect } from '@/components/forms';
 import { formControlClass } from '@/components/forms/FormField';
@@ -16,8 +16,12 @@ import { Input } from '@/components/ui/input';
 import { DataTable, type Column } from '@/components/data/DataTable';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { apiGet, apiPost, ApiClientError } from '@/lib/api-client';
+import { apiGet, apiPost, ApiClientError, downloadFile } from '@/lib/api-client';
 import { formatApiError, normalizeTimeHHmm } from '@/lib/format-api-error';
+import {
+  HORA_LIMITE_FIN_CLASES,
+  validarFranjaHorariaPermitida,
+} from '@/lib/horario-horas';
 import { Formateadores } from '@/lib/formateadores';
 import { useAuth, useRequireAuth } from '@/contexts/AuthContext';
 import { usePeriodo } from '@/contexts/PeriodoContext';
@@ -71,7 +75,17 @@ interface GrupoOpt {
 }
 
 interface CargaAcademicaRow {
+  horasAsignadas?: number;
   docente: DocenteOpt;
+}
+
+interface DesfaseCarga {
+  docente: string;
+  curso: string;
+  horasCarga: number;
+  horasProgramadas: number;
+  diferencia: number;
+  estado: 'EXCEDE' | 'INCOMPLETO' | 'OK';
 }
 
 const DIAS: DiaSemana[] = [
@@ -82,7 +96,8 @@ const DIAS: DiaSemana[] = [
   DiaSemana.VIERNES,
 ];
 
-const HORAS = Array.from({ length: 12 }, (_, i) => i + 8);
+/** Franjas 8:00 – 20:00 (última clase puede terminar a las 21:00) */
+const HORAS = Array.from({ length: 13 }, (_, i) => i + 8);
 
 const DIA_LABEL: Record<string, string> = {
   LUNES: 'Lun',
@@ -111,6 +126,11 @@ export default function HorariosPage() {
   const [busyAction, setBusyAction] = useState(false);
   const [vista, setVista] = useState<'calendario' | 'tabla'>('calendario');
   const [formError, setFormError] = useState<string | null>(null);
+  const [desfases, setDesfases] = useState<DesfaseCarga[]>([]);
+  const [loadingDesfases, setLoadingDesfases] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [horasCargaDocente, setHorasCargaDocente] = useState<number | null>(null);
+  const [cargaRows, setCargaRows] = useState<CargaAcademicaRow[]>([]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [savingCreate, setSavingCreate] = useState(false);
@@ -183,10 +203,27 @@ export default function HorariosPage() {
     }
   }, [periodoId]);
 
+  const fetchDesfases = useCallback(async () => {
+    if (!periodoId) {
+      setDesfases([]);
+      return;
+    }
+    setLoadingDesfases(true);
+    try {
+      const res = await apiGet<DesfaseCarga[]>('/api/horarios/desfases-carga', { periodoId });
+      setDesfases(res.data ?? []);
+    } catch {
+      setDesfases([]);
+    } finally {
+      setLoadingDesfases(false);
+    }
+  }, [periodoId]);
+
   useEffect(() => {
     fetchHorarios();
     fetchConflictos();
-  }, [fetchHorarios, fetchConflictos]);
+    fetchDesfases();
+  }, [fetchHorarios, fetchConflictos, fetchDesfases]);
 
   useEffect(() => {
     if (!createOpen) return;
@@ -230,10 +267,14 @@ export default function HorariosPage() {
           }),
         ]);
         const g = gruposRes.data ?? [];
+        const filasCarga = cargaRes.data ?? [];
         setGrupos(g);
+        setCargaRows(filasCarga);
 
-        const docentesDelCurso = (cargaRes.data ?? []).map((row) => row.docente);
+        const docentesDelCurso = filasCarga.map((row) => row.docente);
         setDocentes(docentesDelCurso);
+        const primeraCarga = filasCarga[0];
+        setHorasCargaDocente(primeraCarga?.horasAsignadas ?? null);
         setForm((f) => ({
           ...f,
           grupoId: g[0]?.id ?? '',
@@ -262,8 +303,10 @@ export default function HorariosPage() {
       toast.error('Use formato de hora válido (HH:mm)');
       return;
     }
-    if (horaInicio >= horaFin) {
-      toast.error('La hora de fin debe ser posterior a la de inicio');
+    const franja = validarFranjaHorariaPermitida(horaInicio, horaFin);
+    if (!franja.valido) {
+      toast.error(franja.mensaje ?? 'Franja horaria no permitida');
+      setFormError(franja.mensaje ?? null);
       return;
     }
 
@@ -284,6 +327,7 @@ export default function HorariosPage() {
       setCreateOpen(false);
       fetchHorarios();
       fetchConflictos();
+      fetchDesfases();
     } catch (e) {
       const msg = formatApiError(e, 'No se pudo crear el horario');
       setFormError(msg);
@@ -304,10 +348,28 @@ export default function HorariosPage() {
         `Validación terminada. Con conflictos: ${res.data?.horariosConConflictos ?? '—'}`
       );
       fetchConflictos();
+      fetchDesfases();
     } catch (e) {
       toast.error(e instanceof ApiClientError ? e.message : 'Error al validar');
     } finally {
       setBusyAction(false);
+    }
+  };
+
+  const descargarPdfConfirmados = async () => {
+    if (!periodoId) return;
+    setDownloadingPdf(true);
+    try {
+      await downloadFile(
+        '/api/reportes/horarios',
+        { periodoId },
+        `horarios-confirmados-${periodoSeleccionado?.nombre ?? periodoId}.pdf`
+      );
+      toast.success('PDF de horarios confirmados descargado');
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : 'Error al generar PDF');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 
@@ -385,9 +447,18 @@ export default function HorariosPage() {
     <div className="space-y-8">
       <PageHeader
         title="Horarios"
-        description={`Período: ${periodoSeleccionado?.nombre}. Cuadrícula Lun–Vie, 8:00–19:00.`}
+        description={`Período: ${periodoSeleccionado?.nombre}. Lun–Vie, 8:00–${HORA_LIMITE_FIN_CLASES} máx.`}
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={downloadingPdf}
+              onClick={descargarPdfConfirmados}
+              className="border-unt-blue text-unt-blue hover:bg-unt-blue/10"
+            >
+              <FileDown className="h-4 w-4" />
+              {downloadingPdf ? 'Generando PDF…' : 'PDF confirmados'}
+            </Button>
             <Button
               variant="outline"
               disabled={busyAction}
@@ -415,6 +486,34 @@ export default function HorariosPage() {
           </div>
         }
       />
+
+      <div className="rounded-lg border border-blue-200 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+        <strong>Restricción horaria:</strong> no se programan clases después de las 21:00 (9:00 p.m.).
+        Las horas en horario deben coincidir con la carga académica del docente en el curso; si no, se
+        muestra una alerta y se envía notificación al docente.
+      </div>
+
+      {desfases.length > 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <AlertTriangle className="h-4 w-4" />
+            Desfases de carga horaria ({desfases.length})
+          </div>
+          {loadingDesfases ? (
+            <Loader2 className="h-5 w-5 animate-spin text-amber-700" />
+          ) : (
+            <ul className="max-h-40 space-y-1 overflow-y-auto text-xs text-amber-900">
+              {desfases.map((d, i) => (
+                <li key={i}>
+                  <strong>{d.docente}</strong> · {d.curso}: {d.horasProgramadas}h programadas /{' '}
+                  {d.horasCarga}h en carga ({d.estado === 'EXCEDE' ? 'excede' : 'incompleto'}{' '}
+                  {Math.abs(d.diferencia)}h)
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       {error && <ErrorAlert message={error} onRetry={fetchHorarios} />}
 
@@ -552,7 +651,12 @@ export default function HorariosPage() {
                   <FormSelect
                     id="hor-docente"
                     value={form.docenteId}
-                    onChange={(e) => setForm((f) => ({ ...f, docenteId: e.target.value }))}
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      const fila = cargaRows.find((r) => r.docente.id === id);
+                      setHorasCargaDocente(fila?.horasAsignadas ?? null);
+                      setForm((f) => ({ ...f, docenteId: id }));
+                    }}
                   >
                     {docentes.map((d) => (
                       <option key={d.id} value={d.id}>
@@ -560,6 +664,11 @@ export default function HorariosPage() {
                       </option>
                     ))}
                   </FormSelect>
+                )}
+                {horasCargaDocente != null && horasCargaDocente > 0 && (
+                  <p className="mt-1 text-xs text-slate-600">
+                    Carga académica asignada: <strong>{horasCargaDocente}h</strong> en este curso
+                  </p>
                 )}
               </FormField>
             </FormSection>
@@ -598,15 +707,19 @@ export default function HorariosPage() {
                   <Input
                     id="hor-inicio"
                     type="time"
+                    min="07:00"
+                    max="20:59"
                     className={formControlClass()}
                     value={form.horaInicio}
                     onChange={(e) => setForm((f) => ({ ...f, horaInicio: e.target.value }))}
                   />
                 </FormField>
-                <FormField label="Fin" htmlFor="hor-fin" required>
+                <FormField label={`Fin (máx. ${HORA_LIMITE_FIN_CLASES})`} htmlFor="hor-fin" required>
                   <Input
                     id="hor-fin"
                     type="time"
+                    min="07:00"
+                    max={HORA_LIMITE_FIN_CLASES}
                     className={formControlClass()}
                     value={form.horaFin}
                     onChange={(e) => setForm((f) => ({ ...f, horaFin: e.target.value }))}

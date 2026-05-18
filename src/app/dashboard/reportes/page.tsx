@@ -83,7 +83,7 @@ export default function ReportesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Reportes PDF"
-        description="Generación de informes por docente, aula, gestión y conflictos."
+        description="Generación de informes por docente, aula, laboratorios, gestión y conflictos."
       />
 
       {!periodoId && (
@@ -173,6 +173,35 @@ export default function ReportesPage() {
               >
                 <FileDown className="h-4 w-4" />
                 {downloading === 'aula' ? 'Generando…' : 'Descargar'}
+              </Button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h3 className="text-sm font-semibold text-unt-blue">
+                Reporte de laboratorios
+              </h3>
+            </div>
+            <div className="card-body">
+              <p className="mb-3 text-xs text-slate-500">
+                Consolidado de todos los laboratorios del período activo.
+              </p>
+              <Button
+                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
+                disabled={!!downloading}
+                onClick={() =>
+                  runDownload('lab', () =>
+                    downloadFile(
+                      '/api/reportes/laboratorio',
+                      { periodoId },
+                      `reporte-laboratorios-${periodoId}.pdf`
+                    )
+                  )
+                }
+              >
+                <FileDown className="h-4 w-4" />
+                {downloading === 'lab' ? 'Generando…' : 'Descargar'}
               </Button>
             </div>
           </div>

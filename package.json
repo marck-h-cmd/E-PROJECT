@@ -4,7 +4,7 @@
   "private": true,
   "description": "Sistema de Gestión de Horarios - Escuela de Ingeniería de Sistemas UNT",
   "prisma": {
-  "seed": "tsx prisma/seed.ts"
+  "seed": "tsx scripts/seed.ts"
 },
   "scripts": {
     "dev": "next dev -p 3000",
@@ -15,7 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "db:studio": "prisma studio",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -27,7 +27,8 @@
     "docker:rebuild": "docker compose build app && docker compose up -d --force-recreate app",
     "docker:dev": "docker compose --profile dev up -d app-dev",
     "docker:logs": "docker compose logs -f app",
-    "docker:seed": "docker exec unt_app node scripts/docker-seed-min.js"
+    "docker:seed": "docker exec unt_app node scripts/docker-seed-min.js",
+    "docker:seed:full": "docker cp scripts/seed.ts unt_app:/app/scripts/seed.ts && docker exec unt_app npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",

@@ -10,6 +10,8 @@ export const APP_CONFIG = {
 export const HORARIOS = {
   HORA_INICIO_DEFAULT: '08:00',
   HORA_FIN_DEFAULT: '20:00',
+  /** Última hora de fin de clase (9:00 p.m.) */
+  HORA_LIMITE_FIN_CLASES: '21:00',
   DURACION_FRANJA_MINUTOS: 60,
   DIAS_LABORABLES: ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'],
   DIAS_FIN_SEMANA: ['SABADO', 'DOMINGO'],

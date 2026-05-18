@@ -1,11 +1,13 @@
 import { redis } from '@/lib/redis';
 import { prisma } from '@/lib/prisma';
 import { ServicioCorreo } from './ServicioCorreo';
-import { DatosNotificacion } from './ServicioNotificacionBase';
+import { ServicioWhatsApp } from './ServicioWhatsApp';
+import { ServicioTelegram } from './ServicioTelegram';
+import { DatosNotificacion, ServicioNotificacionBase } from './ServicioNotificacionBase';
 import { CanalNotificacion, EstadoNotificacion, PrioridadNotificacion } from '@prisma/client';
 
 export class GestorNotificaciones {
-  private servicios: Map<CanalNotificacion, any> = new Map();
+  private servicios: Map<CanalNotificacion, ServicioNotificacionBase> = new Map();
   private readonly MAX_REINTENTOS = 3;
   private readonly COLAS = {
     ALTA: 'notificaciones:alta',
@@ -89,7 +91,7 @@ export class GestorNotificaciones {
         const datos = JSON.parse(notificacionStr);
         
         try {
-          const servicio = this.servicios.get(datos.canal as CanalNotificacion);
+          const servicio = this.obtenerServicio(datos.canal as CanalNotificacion);
           if (servicio) {
             const exito = await servicio.enviar(datos);
             
@@ -173,6 +175,17 @@ export class GestorNotificaciones {
     for (const clave of Object.values(this.COLAS)) {
       await redis.del(clave);
     }
+  }
+
+  private obtenerServicio(canal: CanalNotificacion): ServicioNotificacionBase | undefined {
+    if (!this.servicios.has(canal)) {
+      if (canal === 'WHATSAPP') {
+        this.servicios.set(canal, new ServicioWhatsApp());
+      } else if (canal === 'TELEGRAM') {
+        this.servicios.set(canal, new ServicioTelegram());
+      }
+    }
+    return this.servicios.get(canal);
   }
 
   private obtenerColaPorPrioridad(prioridad: PrioridadNotificacion): string {
