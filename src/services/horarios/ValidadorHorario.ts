@@ -385,6 +385,19 @@ export class ValidadorHorario {
     horaInicio: string,
     horaFin: string
   ) {
+    const HORA_MIN = '07:00';
+    const HORA_MAX = '21:00';
+
+    if (horaInicio < HORA_MIN || horaFin > HORA_MAX) {
+      conflictos.push({
+        tipo: 'FRANJA_HORARIA' as any, // Mantenemos compatible con el tipo, o podemos agregar RANGO_HORARIO_NO_PERMITIDO a la interfaz
+        mensaje: 'El horario debe estar entre las 07:00 y las 21:00',
+        severidad: 'ERROR',
+        detalle: { regla: 'RANGO_HORARIO_NO_PERMITIDO' }
+      });
+      return; // Stop further validation if it's completely out of range
+    }
+
     const resultado = validarFranjaHorariaPermitida(horaInicio, horaFin);
     if (!resultado.valido && resultado.mensaje) {
       conflictos.push({

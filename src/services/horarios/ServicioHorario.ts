@@ -4,6 +4,7 @@ import { AppError } from '@/services/auth/AuthService';
 import { DiaSemana, EstadoHorario, Prisma } from '@prisma/client';
 import { GestorNotificaciones } from '../notificaciones/GestorNotificaciones';
 import { ValidadorHorario } from './ValidadorHorario';
+import { ValidadorConflictos } from './ValidadorConflictos';
 import { validarFranjaHorariaPermitida } from '@/lib/horario-horas';
 
 export interface CrearHorarioDTO {
@@ -37,10 +38,12 @@ export interface PaginacionParams {
 export class ServicioHorario {
   private gestorNotificaciones: GestorNotificaciones;
   private validadorHorario: ValidadorHorario;
+  private validadorConflictos: ValidadorConflictos;
 
   constructor() {
     this.gestorNotificaciones = new GestorNotificaciones();
     this.validadorHorario = new ValidadorHorario();
+    this.validadorConflictos = new ValidadorConflictos();
   }
 
   async listar(filtros: FiltrosHorario, paginacion: PaginacionParams) {
@@ -160,7 +163,26 @@ export class ServicioHorario {
       datos.horaFin
     );
 
-    const errores = validacion.conflictos.filter((c) => c.severidad === 'ERROR');
+    const validacionConflictos = await this.validadorConflictos.validarTodo({
+      periodoId: datos.periodoId,
+      docenteId: datos.docenteId,
+      cursoId: datos.cursoId,
+      ambienteId: datos.ambienteId,
+      grupoId: datos.grupoId,
+      diaSemana: datos.diaSemana,
+      horaInicio: datos.horaInicio,
+      horaFin: datos.horaFin,
+      validarDocente: false,
+      validarGrupo: false,
+      validarAmbiente: true
+    });
+
+    const errorCruceAmbiente = validacionConflictos.conflictos.find(c => c.tipo === 'CRUCE_AULA' || c.tipo === 'CRUCE_LABORATORIO');
+    if (errorCruceAmbiente) {
+      throw new AppError(errorCruceAmbiente.mensaje, 409, 'CRUCE_AMBIENTE');
+    }
+
+    const errores = validacion.conflictos.filter((c) => c.severidad === 'ERROR' && c.tipo !== 'CRUCE_AMBIENTE');
     if (errores.length > 0) {
       throw new AppError(errores.map((e) => e.mensaje).join(' '), 400, 'VALIDACION_HORARIO');
     }

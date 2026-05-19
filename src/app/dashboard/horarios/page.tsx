@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, CalendarDays, FileDown, LayoutList, Loader2, Plus } from 'lucide-react';
+import { AlertTriangle, CalendarDays, FileDown, LayoutList, Loader2, Plus, TableIcon, ExternalLink } from 'lucide-react';
 import { HorarioWeeklyCalendar } from '@/components/horarios/HorarioWeeklyCalendar';
 import { FormField, FormModalFooter, FormSection, FormSelect } from '@/components/forms';
 import { formControlClass } from '@/components/forms/FormField';
@@ -28,6 +28,9 @@ import { usePeriodo } from '@/contexts/PeriodoContext';
 import { DiaSemana, Rol } from '@prisma/client';
 import { toast } from 'sonner';
 import { cn } from '@/lib/cn';
+import { useFiltrosHorario } from '@/hooks/useFiltrosHorario';
+import { exportarHorarioPDF } from '@/utils/exportarHorarioPDF';
+import { exportarHorarioExcel } from '@/utils/exportarHorarioExcel';
 
 interface HorarioCell {
   id: string;
@@ -153,10 +156,18 @@ export default function HorariosPage() {
   const [busyAction, setBusyAction] = useState(false);
   const [vista, setVista] = useState<'calendario' | 'tabla'>('calendario');
   const [formError, setFormError] = useState<string | null>(null);
-  const [cicloSeleccionado, setCicloSeleccionado] = useState<string>('');
+  
+  const { filtros, setFiltros, actualizarFiltro, limpiarFiltros } = useFiltrosHorario(periodoId);
+  useEffect(() => {
+    if (periodoId) {
+      setFiltros(prev => ({ ...prev, periodoId }));
+    }
+  }, [periodoId, setFiltros]);
+
   const [desfases, setDesfases] = useState<DesfaseCarga[]>([]);
   const [loadingDesfases, setLoadingDesfases] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
   const [horasCargaDocente, setHorasCargaDocente] = useState<number | null>(null);
   const [cargaRows, setCargaRows] = useState<CargaAcademicaRow[]>([]);
 
@@ -187,7 +198,7 @@ export default function HorariosPage() {
   });
 
   const fetchHorarios = useCallback(async () => {
-    if (!periodoId) {
+    if (!filtros.periodoId) {
       setHorarios([]);
       return;
     }
@@ -195,13 +206,10 @@ export default function HorariosPage() {
     setError(null);
     try {
       const params: any = {
-        periodoId,
         limit: 500,
         page: 1,
+        ...filtros
       };
-      if (cicloSeleccionado) {
-        params.ciclo = cicloSeleccionado;
-      }
       const res = await apiGet<HorarioCell[]>('/api/horarios', params);
       setHorarios(res.data ?? []);
     } catch (e) {
@@ -210,7 +218,7 @@ export default function HorariosPage() {
     } finally {
       setLoadingHor(false);
     }
-  }, [periodoId, cicloSeleccionado]);
+  }, [filtros]);
 
   const fetchConflictos = useCallback(async () => {
     if (!periodoId) {
@@ -304,13 +312,16 @@ export default function HorariosPage() {
         setCargaRows(filasCarga);
 
         const docentesDelCurso = filasCarga.map((row) => row.docente);
-        setDocentes(docentesDelCurso);
+        // Deduplicar docentes (pueden venir duplicados si el backend no agrupa bien)
+        const uniqueDocentes = Array.from(new Map(docentesDelCurso.map(item => [item.id, item])).values());
+        
+        setDocentes(uniqueDocentes);
         const primeraCarga = filasCarga[0];
         setHorasCargaDocente(primeraCarga?.horasAsignadas ?? null);
         setForm((f) => ({
           ...f,
           grupoId: g[0]?.id ?? '',
-          docenteId: docentesDelCurso[0]?.id ?? '',
+          docenteId: uniqueDocentes[0]?.id ?? '',
         }));
       } catch {
         setGrupos([]);
@@ -320,6 +331,17 @@ export default function HorariosPage() {
       }
     })();
   }, [createOpen, form.cursoId]);
+
+  // Variables globales para filtros
+  const [cursosAll, setCursosAll] = useState<CursoOpt[]>([]);
+  const [docentesAll, setDocentesAll] = useState<DocenteOpt[]>([]);
+  const [ambientesAll, setAmbientesAll] = useState<AmbienteOpt[]>([]);
+
+  useEffect(() => {
+    apiGet<CursoOpt[]>('/api/cursos', { limit: 500 }).then(res => setCursosAll(res.data ?? []));
+    apiGet<DocenteOpt[]>('/api/docentes', { limit: 500 }).then(res => setDocentesAll(res.data ?? []));
+    apiGet<AmbienteOpt[]>('/api/ambientes', { limit: 500 }).then(res => setAmbientesAll(res.data ?? []));
+  }, []);
 
   const handleCreate = async () => {
     if (!periodoId) return;
@@ -335,6 +357,12 @@ export default function HorariosPage() {
       toast.error('Use formato de hora válido (HH:mm)');
       return;
     }
+    
+    if (horaInicio < '07:00' || horaFin > '21:00') {
+      toast.error('El horario debe estar entre las 07:00 y las 21:00');
+      return;
+    }
+
     const franja = validarFranjaHorariaPermitida(horaInicio, horaFin);
     if (!franja.valido) {
       toast.error(franja.mensaje ?? 'Franja horaria no permitida');
@@ -389,19 +417,31 @@ export default function HorariosPage() {
   };
 
   const descargarPdfConfirmados = async () => {
-    if (!periodoId) return;
+    if (!periodoId || horarios.length === 0) return;
     setDownloadingPdf(true);
     try {
-      await downloadFile(
-        '/api/reportes/horarios',
-        { periodoId },
-        `horarios-confirmados-${periodoSeleccionado?.nombre ?? periodoId}.pdf`
-      );
-      toast.success('PDF de horarios confirmados descargado');
-    } catch (e) {
-      toast.error(e instanceof ApiClientError ? e.message : 'Error al generar PDF');
+      const periodoNombre = periodoSeleccionado?.nombre || 'General';
+      const cicloNombre = filtros.ciclo ? `Ciclo ${CICLO_ROMANO[filtros.ciclo] || filtros.ciclo}` : 'Todos los ciclos';
+      await exportarHorarioPDF(horarios, 'HORARIO ACADÉMICO', `${periodoNombre} - ${cicloNombre}`);
+      toast.success('PDF exportado');
+    } catch (e: any) {
+      toast.error('Error al generar PDF: ' + e.message);
     } finally {
       setDownloadingPdf(false);
+    }
+  };
+
+  const handleExportarExcel = async () => {
+    if (!periodoId || horarios.length === 0) return;
+    setDownloadingExcel(true);
+    try {
+      const titulo = `Horario Académico - ${periodoSeleccionado?.nombre || 'General'}`;
+      await exportarHorarioExcel(horarios, titulo);
+      toast.success('Excel exportado');
+    } catch (e: any) {
+      toast.error('Error al generar Excel: ' + e.message);
+    } finally {
+      setDownloadingExcel(false);
     }
   };
 
@@ -481,57 +521,118 @@ export default function HorariosPage() {
         title="Horarios"
         description={`Período: ${periodoSeleccionado?.nombre}. Lun–Vie, 8:00–${HORA_LIMITE_FIN_CLASES} máx.`}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <label htmlFor="ciclo-filter" className="text-sm font-medium text-slate-700">
-                Filtrar por Ciclo:
-              </label>
-              <select
-                id="ciclo-filter"
-                value={cicloSeleccionado}
-                onChange={(e) => setCicloSeleccionado(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
-              >
-                {CICLO_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button
-              variant="outline"
-              disabled={downloadingPdf}
-              onClick={descargarPdfConfirmados}
-              className="border-unt-blue text-unt-blue hover:bg-unt-blue/10"
-            >
-              <FileDown className="h-4 w-4" />
-              {downloadingPdf ? 'Generando PDF…' : 'PDF confirmados'}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={busyAction}
-              onClick={validarTodo}
-              className="border-unt-blue text-unt-blue hover:bg-unt-blue/10"
-            >
-              Validar todo
-            </Button>
-            {puedePublicar && (
+          <div className="flex flex-col gap-3 w-full sm:w-auto items-end">
+            <div className="flex flex-wrap gap-2 justify-end w-full">
               <Button
+                variant="outline"
+                disabled={downloadingPdf || horarios.length === 0}
+                onClick={descargarPdfConfirmados}
+                className="border-unt-blue text-unt-blue hover:bg-unt-blue/10"
+              >
+                <FileDown className="h-4 w-4 mr-2" />
+                {downloadingPdf ? 'Generando…' : 'Exportar PDF'}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={downloadingExcel || horarios.length === 0}
+                onClick={handleExportarExcel}
+                className="border-green-600 text-green-600 hover:bg-green-50"
+              >
+                <TableIcon className="h-4 w-4 mr-2" />
+                {downloadingExcel ? 'Generando…' : 'Exportar Excel'}
+              </Button>
+              <Button
+                variant="outline"
                 disabled={busyAction}
-                onClick={publicar}
+                onClick={validarTodo}
+                className="border-unt-blue text-unt-blue hover:bg-unt-blue/10"
+              >
+                Validar todo
+              </Button>
+              {puedePublicar && (
+                <Button
+                  disabled={busyAction}
+                  onClick={publicar}
+                  className="bg-unt-blue hover:bg-unt-blue/90 text-white"
+                >
+                  Publicar confirmados
+                </Button>
+              )}
+              <Button
+                onClick={() => setCreateOpen(true)}
                 className="bg-unt-blue hover:bg-unt-blue/90 text-white"
               >
-                Publicar confirmados
+                <Plus className="h-4 w-4 mr-2" />
+                Nuevo horario
               </Button>
-            )}
-            <Button
-              onClick={() => setCreateOpen(true)}
-              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-            >
-              <Plus className="h-4 w-4" />
-              Nuevo horario
-            </Button>
+              <Button
+                variant="secondary"
+                onClick={() => window.open('/horarios', '_blank')}
+                className="bg-slate-200 text-slate-800 hover:bg-slate-300"
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ver Vista Pública
+              </Button>
+            </div>
+            {/* Barra de Filtros */}
+            <div className="flex flex-wrap gap-2 items-center bg-slate-50 p-2 rounded-md border border-slate-200 w-full">
+              <span className="text-sm font-semibold text-slate-700">Filtros:</span>
+              <select
+                value={filtros.ciclo || ''}
+                onChange={(e) => actualizarFiltro('ciclo', e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+              >
+                {CICLO_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.cursoId || ''}
+                onChange={(e) => actualizarFiltro('cursoId', e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+              >
+                <option value="">Todos los cursos</option>
+                {cursosAll.map((c) => (
+                  <option key={c.id} value={c.id}>{c.codigo}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.docenteId || ''}
+                onChange={(e) => actualizarFiltro('docenteId', e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue max-w-[150px] truncate"
+              >
+                <option value="">Todos los docentes</option>
+                {docentesAll.map((d) => (
+                  <option key={d.id} value={d.id}>{Formateadores.nombreUsuario(d.usuario)}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.ambienteId || ''}
+                onChange={(e) => actualizarFiltro('ambienteId', e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+              >
+                <option value="">Todos los ambientes</option>
+                {ambientesAll.map((a) => (
+                  <option key={a.id} value={a.id}>{a.codigo}</option>
+                ))}
+              </select>
+              <select
+                value={filtros.diaSemana || ''}
+                onChange={(e) => actualizarFiltro('diaSemana', e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-xs focus:border-unt-blue focus:outline-none focus:ring-1 focus:ring-unt-blue"
+              >
+                <option value="">Todos los días</option>
+                {DIAS.map((d) => (
+                  <option key={d} value={d}>{DIA_LABEL[d] || d}</option>
+                ))}
+              </select>
+              <button 
+                onClick={limpiarFiltros} 
+                className="text-xs font-medium text-unt-blue hover:underline"
+              >
+                Limpiar
+              </button>
+            </div>
           </div>
         }
       />
@@ -752,36 +853,46 @@ export default function HorariosPage() {
                 </FormSelect>
               </FormField>
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Inicio" htmlFor="hor-inicio" required>
+                <FormField label="Inicio (Mín. 07:00)" htmlFor="hor-inicio" required>
                   <Input
                     id="hor-inicio"
                     type="time"
                     min="07:00"
                     max="20:59"
-                    className={formControlClass()}
+                    className={cn(formControlClass(), form.horaInicio < '07:00' && 'border-red-500')}
                     value={form.horaInicio}
                     onChange={(e) => setForm((f) => ({ ...f, horaInicio: e.target.value }))}
                   />
                 </FormField>
-                <FormField label={`Fin (máx. ${HORA_LIMITE_FIN_CLASES})`} htmlFor="hor-fin" required>
+                <FormField label="Fin (Máx. 21:00)" htmlFor="hor-fin" required>
                   <Input
                     id="hor-fin"
                     type="time"
                     min="07:00"
-                    max={HORA_LIMITE_FIN_CLASES}
-                    className={formControlClass()}
+                    max="21:00"
+                    className={cn(formControlClass(), form.horaFin > '21:00' && 'border-red-500')}
                     value={form.horaFin}
                     onChange={(e) => setForm((f) => ({ ...f, horaFin: e.target.value }))}
                   />
                 </FormField>
               </div>
+              {(form.horaInicio < '07:00' || form.horaFin > '21:00') && (
+                <p className="text-red-500 text-xs font-medium mt-1 text-center">
+                  El horario debe estar entre las 07:00 y las 21:00
+                </p>
+              )}
             </FormSection>
           </div>
           <FormModalFooter
             onCancel={() => setCreateOpen(false)}
             onSubmit={handleCreate}
             saving={savingCreate}
-            disabled={loadingDocentesCurso || docentes.length === 0}
+            disabled={
+              loadingDocentesCurso || 
+              docentes.length === 0 || 
+              form.horaInicio < '07:00' || 
+              form.horaFin > '21:00'
+            }
           />
         </DialogContent>
       </Dialog>
