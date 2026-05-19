@@ -34,21 +34,12 @@ export interface DocenteUpdateInput extends Partial<DocenteCreateInput> {
 }
 
 export class ServicioDocente {
-  private readonly CACHE_TTL = 300; // 5 minutos
+  private readonly CACHE_TTL = 300;
 
-  /**
-   * Lista docentes con filtros y paginación
-   */
   async listar(filtros: DocenteFiltros) {
     const {
-      search,
-      categoria,
-      departamento,
-      activo,
-      page = 1,
-      limit = 20,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
+      search, categoria, departamento, activo,
+      page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc',
     } = filtros;
 
     const where: Prisma.DocenteWhereInput = {};
@@ -79,22 +70,13 @@ export class ServicioDocente {
         include: {
           usuario: {
             select: {
-              id: true,
-              email: true,
-              nombre: true,
-              apellidos: true,
-              rol: true,
-              activo: true,
-              ultimoAcceso: true,
+              id: true, email: true, nombre: true,
+              apellidos: true, rol: true, activo: true, ultimoAcceso: true,
             },
           },
           preferenciasNotificacion: true,
           _count: {
-            select: {
-              horarios: true,
-              cursos: true,
-              ventanasAtendidas: true,
-            },
+            select: { horarios: true, cursos: true, ventanasAtendidas: true },
           },
         },
         orderBy: { [sortBy]: sortOrder },
@@ -106,45 +88,25 @@ export class ServicioDocente {
 
     return {
       data: docentes,
-      meta: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
   }
 
-  /**
-   * Obtiene un docente por ID
-   */
   async obtenerPorId(id: string) {
     const docente = await prisma.docente.findUnique({
       where: { id },
       include: {
         usuario: {
           select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-            rol: true,
-            activo: true,
-            ultimoAcceso: true,
-            verificado: true,
+            id: true, email: true, nombre: true, apellidos: true,
+            rol: true, activo: true, ultimoAcceso: true, verificado: true,
           },
         },
         preferenciasNotificacion: true,
         cursos: {
           include: {
             curso: {
-              select: {
-                id: true,
-                codigo: true,
-                nombre: true,
-                creditos: true,
-                ciclo: true,
-              },
+              select: { id: true, codigo: true, nombre: true, creditos: true, ciclo: true },
             },
           },
           where: { activo: true },
@@ -153,10 +115,7 @@ export class ServicioDocente {
           orderBy: [{ diaSemana: 'asc' }, { horaInicio: 'asc' }],
         },
         _count: {
-          select: {
-            horarios: true,
-            ventanasAtendidas: true,
-          },
+          select: { horarios: true, ventanasAtendidas: true },
         },
       },
     });
@@ -168,20 +127,12 @@ export class ServicioDocente {
     return docente;
   }
 
-  /**
-   * Obtiene un docente por código
-   */
   async obtenerPorCodigo(codigo: string) {
     const docente = await prisma.docente.findUnique({
       where: { codigo },
       include: {
         usuario: {
-          select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-          },
+          select: { id: true, email: true, nombre: true, apellidos: true },
         },
       },
     });
@@ -193,11 +144,7 @@ export class ServicioDocente {
     return docente;
   }
 
-  /**
-   * Crea un nuevo docente con su usuario
-   */
   async crear(datos: DocenteCreateInput): Promise<any> {
-    // Verificar si ya existe el código o email
     const existente = await prisma.docente.findFirst({
       where: {
         OR: [
@@ -208,14 +155,9 @@ export class ServicioDocente {
     });
 
     if (existente) {
-      throw new AppError(
-        'Ya existe un docente con ese código o email',
-        409,
-        'DOCENTE_DUPLICADO'
-      );
+      throw new AppError('Ya existe un docente con ese código o email', 409, 'DOCENTE_DUPLICADO');
     }
 
-    // Crear password temporal
     const passwordTemporal = this.generarPasswordTemporal();
     const passwordHash = await bcrypt.hash(passwordTemporal, 12);
 
@@ -247,34 +189,21 @@ export class ServicioDocente {
       },
       include: {
         usuario: {
-          select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-          },
+          select: { id: true, email: true, nombre: true, apellidos: true },
         },
         preferenciasNotificacion: true,
       },
     });
 
-    // Invalidar caché
     await this.invalidarCache();
 
-    return {
-      ...docente,
-      passwordTemporal, // Solo se muestra al crear
-    };
+    return { ...docente, passwordTemporal };
   }
 
-  /**
-   * Actualiza un docente existente
-   */
   async actualizar(id: string, datos: DocenteUpdateInput): Promise<any> {
-    const docente = await this.obtenerPorId(id);
+    await this.obtenerPorId(id);
 
     const updateData: any = {};
-
     if (datos.categoria) updateData.categoria = datos.categoria;
     if (datos.departamento !== undefined) updateData.departamento = datos.departamento;
     if (datos.telefono !== undefined) updateData.telefono = datos.telefono;
@@ -298,30 +227,19 @@ export class ServicioDocente {
       },
       include: {
         usuario: {
-          select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-            activo: true,
-          },
+          select: { id: true, email: true, nombre: true, apellidos: true, activo: true },
         },
         preferenciasNotificacion: true,
       },
     });
 
     await this.invalidarCache();
-
     return docenteActualizado;
   }
 
-  /**
-   * Elimina (soft delete) un docente
-   */
   async eliminar(id: string): Promise<void> {
-    const docente = await this.obtenerPorId(id);
+    await this.obtenerPorId(id);
 
-    // Verificar que no tenga horarios activos
     const horariosActivos = await prisma.horario.count({
       where: {
         docenteId: id,
@@ -339,38 +257,22 @@ export class ServicioDocente {
 
     await prisma.docente.update({
       where: { id },
-      data: {
-        usuario: {
-          update: { activo: false },
-        },
-      },
+      data: { usuario: { update: { activo: false } } },
     });
 
     await this.invalidarCache();
   }
 
-  /**
-   * Obtiene docentes por categoría
-   */
   async obtenerPorCategoria(categoria: CategoriaDocente) {
     const cacheKey = `docentes:categoria:${categoria}`;
-    
     const cached = await redis.get(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const docentes = await prisma.docente.findMany({
-      where: {
-        categoria,
-        usuario: { activo: true },
-      },
+      where: { categoria, usuario: { activo: true } },
       include: {
         usuario: {
-          select: {
-            id: true,
-            email: true,
-            nombre: true,
-            apellidos: true,
-          },
+          select: { id: true, email: true, nombre: true, apellidos: true },
         },
         cursos: {
           where: { activo: true },
@@ -383,13 +285,9 @@ export class ServicioDocente {
     });
 
     await redis.setex(cacheKey, this.CACHE_TTL, JSON.stringify(docentes));
-
     return docentes;
   }
 
-  /**
-   * Busca docentes por texto (autocompletado)
-   */
   async buscar(termino: string, limite: number = 10) {
     if (!termino || termino.length < 2) return [];
 
@@ -403,16 +301,8 @@ export class ServicioDocente {
         ],
       },
       select: {
-        id: true,
-        codigo: true,
-        categoria: true,
-        usuario: {
-          select: {
-            nombre: true,
-            apellidos: true,
-            email: true,
-          },
-        },
+        id: true, codigo: true, categoria: true,
+        usuario: { select: { nombre: true, apellidos: true, email: true } },
       },
       take: limite,
     });
@@ -426,33 +316,19 @@ export class ServicioDocente {
     }));
   }
 
-  /**
-   * Obtiene estadísticas de un docente
-   */
   async obtenerEstadisticas(docenteId: string) {
     const docente = await prisma.docente.findUnique({
       where: { id: docenteId },
-      select: {
-        id: true,
-        categoria: true,
-      },
+      select: { id: true, categoria: true },
     });
 
     if (!docente) {
       throw new AppError('Docente no encontrado', 404, 'DOCENTE_NOT_FOUND');
     }
 
-    const [
-      totalCursos,
-      totalHorarios,
-      horariosPorPeriodo,
-    ] = await Promise.all([
-      prisma.cursoDocente.count({
-        where: { docenteId, activo: true },
-      }),
-      prisma.horario.count({
-        where: { docenteId, estado: { not: 'CANCELADO' } },
-      }),
+    const [totalCursos, totalHorarios, horariosPorPeriodo] = await Promise.all([
+      prisma.cursoDocente.count({ where: { docenteId, activo: true } }),
+      prisma.horario.count({ where: { docenteId, estado: { not: 'CANCELADO' } } }),
       prisma.horario.groupBy({
         by: ['periodoId'],
         where: { docenteId },
@@ -460,16 +336,9 @@ export class ServicioDocente {
       }),
     ]);
 
-    return {
-      totalCursos,
-      totalHorarios,
-      horariosPorPeriodo,
-    };
+    return { totalCursos, totalHorarios, horariosPorPeriodo };
   }
 
-  /**
-   * Verifica la disponibilidad de un código de docente
-   */
   async verificarCodigo(codigo: string): Promise<boolean> {
     const existente = await prisma.docente.findUnique({
       where: { codigo },
@@ -478,9 +347,70 @@ export class ServicioDocente {
     return !existente;
   }
 
-  /**
-   * Invalida la caché de docentes
-   */
+  // ✅ NUEVO - dentro de la clase
+  async obtenerCursosConGrupos(docenteId: string) {
+    const docente = await prisma.docente.findUnique({
+      where: { id: docenteId },
+      select: { id: true },
+    });
+
+    if (!docente) {
+      throw new AppError('Docente no encontrado', 404, 'DOCENTE_NOT_FOUND');
+    }
+
+    const cursosDocente = await prisma.cursoDocente.findMany({
+      where: { docenteId, activo: true },
+      include: {
+        curso: {
+          include: {
+            grupos: {
+              where: { activo: true },
+              include: {
+                matriculas: {
+                  include: {
+                    estudiante: {
+                      select: {
+                        id: true,
+                        codigo: true,
+                        nombre: true,
+                        apellidos: true,
+                        email: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: { nombre: 'asc' },
+            },
+          },
+        },
+      },
+      orderBy: { curso: { nombre: 'asc' } },
+    });
+
+    return cursosDocente.map(cd => ({
+      id: cd.curso.id,
+      nombre: cd.curso.nombre,
+      codigo: cd.curso.codigo,
+      ciclo: cd.curso.ciclo,
+      horasTeoria: cd.curso.horasTeoria,
+      horasPractica: cd.curso.horasPractica,
+      horasLaboratorio: cd.curso.horasLaboratorio,
+      horasAsignadas: cd.horasAsignadas,
+      grupos: cd.curso.grupos.map(g => ({
+        id: g.id,
+        nombre: g.nombre,
+        capacidad: g.capacidad,
+        estudiantes: g.matriculas.map(m => ({
+          id: m.estudiante.id,
+          codigo: m.estudiante.codigo,
+          nombreCompleto: `${m.estudiante.nombre} ${m.estudiante.apellidos}`,
+          email: m.estudiante.email,
+        })),
+      })),
+    }));
+  }
+
   private async invalidarCache(): Promise<void> {
     const keys = await redis.keys('docentes:*');
     if (keys.length > 0) {
@@ -488,9 +418,6 @@ export class ServicioDocente {
     }
   }
 
-  /**
-   * Genera una contraseña temporal segura
-   */
   private generarPasswordTemporal(): string {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let password = '';
