@@ -46,16 +46,14 @@ function clearSession() {
 }
 
 function toUserSession(usuario: Record<string, unknown>): UserSession {
+  const docente = usuario.docente as { id?: string } | null | undefined;
   return {
     id: String(usuario.id),
     email: String(usuario.email),
     nombre: String(usuario.nombre),
     apellidos: String(usuario.apellidos),
     rol: usuario.rol as UserSession['rol'],
-    docenteId:
-      typeof usuario.docenteId === 'string'
-        ? usuario.docenteId
-        : (usuario.docente as { id?: string } | null | undefined)?.id,
+    docenteId: typeof usuario.docenteId === 'string' ? usuario.docenteId : docente?.id,
   };
 }
 
@@ -65,25 +63,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const token = localStorage.getItem('accessToken');
-      const raw = localStorage.getItem('user');
-      if (token && raw) {
-        const parsed = JSON.parse(raw) as Record<string, unknown>;
-        setUser(toUserSession(parsed));
-        document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+    const initSession = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const raw = localStorage.getItem('user');
+        if (token && raw) {
+          const parsed = JSON.parse(raw) as Record<string, unknown>;
+          let sessionUser = toUserSession(parsed);
+
+          // Si es docente y no tiene docenteId, intentar buscarlo
+          if (sessionUser.rol === 'DOCENTE' && !sessionUser.docenteId) {
+            try {
+              const res = await apiRequest<{ id: string }>(
+                `/api/docentes/buscar?usuarioId=${sessionUser.id}`,
+                { skipAuth: false }
+              );
+              if (res.data?.id) {
+                sessionUser.docenteId = res.data.id;
+                localStorage.setItem('user', JSON.stringify(sessionUser));
+              }
+            } catch (err) {
+              console.error('Error al recuperar docenteId:', err);
+            }
+          }
+
+          setUser(sessionUser);
+          document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax`;
+        }
+      } catch {
+        clearSession();
+      } finally {
+        setLoading(false);
       }
-    } catch {
-      clearSession();
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    initSession();
   }, []);
 
   const login = useCallback(
     async (email: string, password: string) => {
       const res = await apiRequest<{
-        usuario: UserSession;
+        usuario: Record<string, unknown>;
         tokens: { accessToken: string; refreshToken: string };
       }>('/api/auth/login', {
         method: 'POST',
@@ -93,9 +113,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!res.data) throw new Error('Respuesta inválida del servidor');
 
-      const sessionUser = toUserSession(
-        res.data.usuario as unknown as Record<string, unknown>
-      );
+      let sessionUser = toUserSession(res.data.usuario);
+
+      // Si es docente y no vino el docenteId en el login, buscarlo
+      if (sessionUser.rol === 'DOCENTE' && !sessionUser.docenteId) {
+        try {
+          const docRes = await apiRequest<{ id: string }>(
+            `/api/docentes/buscar?usuarioId=${sessionUser.id}`,
+            {
+              headers: { Authorization: `Bearer ${res.data.tokens.accessToken}` },
+              skipAuth: true, // ya pasamos el token manualmente
+            }
+          );
+          if (docRes.data?.id) {
+            sessionUser.docenteId = docRes.data.id;
+          }
+        } catch (err) {
+          console.error('Error al buscar docenteId post-login:', err);
+        }
+      }
 
       persistSession(
         res.data.tokens.accessToken,
@@ -103,7 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionUser
       );
       setUser(sessionUser);
-      router.replace('/dashboard');
+
+      // Redirección por rol
+      if (sessionUser.rol === 'DOCENTE') {
+        router.replace('/dashboard/docente');
+      } else {
+        router.replace('/dashboard');
+      }
       router.refresh();
     },
     [router]

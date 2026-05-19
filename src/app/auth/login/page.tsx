@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Eye,
   EyeOff,
@@ -18,13 +19,25 @@ import { DEMO_USERS, DEMO_PASSWORD_HINT } from '@/lib/demo-users';
 import type { DemoUser } from '@/lib/demo-users';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirección automática si ya está autenticado
+  useEffect(() => {
+    if (user) {
+      if (user.rol === 'DOCENTE') {
+        router.replace('/dashboard/docente');
+      } else {
+        router.replace('/dashboard');
+      }
+    }
+  }, [user, router]);
 
   const fillDemo = (user: DemoUser) => {
     setEmail(user.email);
@@ -39,6 +52,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
+      // La redirección ahora es manejada por el AuthContext.login,
+      // pero agregamos una capa extra de seguridad aquí por si acaso.
     } catch (err) {
       setError(
         err instanceof ApiClientError
