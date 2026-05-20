@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiClientError } from '@/lib/api-client';
 import { DEMO_USERS, DEMO_PASSWORD_HINT } from '@/lib/demo-users';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import type { DemoUser } from '@/lib/demo-users';
 
 export default function LoginPage() {
@@ -129,7 +130,10 @@ export default function LoginPage() {
       </div>
 
       {/* Formulario */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/80 p-4 sm:p-8">
+      <div className="relative flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/80 p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:p-8">
+        <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+          <ThemeToggle variant="login" />
+        </div>
         <div className="w-full max-w-lg animate-fadeIn">
           <div className="mb-6 text-center lg:hidden">
             <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-unt-blue shadow-lg">
@@ -140,19 +144,19 @@ export default function LoginPage() {
             </h2>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur-sm sm:p-8">
+          <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-black/30 sm:p-8">
             <div className="mb-6 hidden lg:block">
-              <h2 className="font-display text-2xl font-bold text-slate-900">
+              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50">
                 Bienvenido
               </h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Ingrese sus credenciales institucionales
               </p>
             </div>
 
             {/* Acceso rápido por rol */}
             <div className="mb-6">
-              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
                 <Sparkles className="h-3.5 w-3.5 text-unt-gold" />
                 Acceso rápido (demostración)
               </div>
@@ -165,7 +169,7 @@ export default function LoginPage() {
                     className={`rounded-xl border-2 px-3 py-2.5 text-left text-xs transition-all duration-200 ${
                       selectedDemo === user.id
                         ? `${user.accentClass} ring-2 ring-offset-1 ring-unt-blue/30 scale-[1.02]`
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white'
+                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700'
                     }`}
                   >
                     <span className="block font-semibold">{user.label}</span>
@@ -184,7 +188,7 @@ export default function LoginPage() {
             </div>
 
             {error ? (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                 {error}
               </div>
             ) : null}

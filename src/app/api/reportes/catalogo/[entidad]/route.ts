@@ -32,17 +32,30 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const periodoId = searchParams.get('periodoId') ?? undefined;
+    const registroId = searchParams.get('id') ?? undefined;
 
-    const pdfBuffer = await servicio.generar(entidad, periodoId);
+    const pdfBuffer = await servicio.generar(entidad, { periodoId, registroId });
+
+    const sufijo = registroId ? `-${registroId}` : '-todos';
+    const filename = `catalogo-${entidad}${sufijo}.pdf`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="catalogo-${entidad}.pdf"`,
+        'Content-Disposition': `attachment; filename="${filename}"`,
       },
     });
   } catch (error: unknown) {
+    const mensaje =
+      error instanceof Error && error.message.includes('no encontrado')
+        ? error.message
+        : 'Error al generar catálogo PDF';
+    const codigo =
+      error instanceof Error && error.message.includes('no encontrado')
+        ? 'NOT_FOUND'
+        : 'INTERNAL_ERROR';
+    const status = codigo === 'NOT_FOUND' ? 404 : 500;
     console.error('Error generando catálogo PDF:', error);
-    return createErrorResponse('INTERNAL_ERROR', 'Error al generar catálogo PDF', 500);
+    return createErrorResponse(codigo, mensaje, status);
   }
 }

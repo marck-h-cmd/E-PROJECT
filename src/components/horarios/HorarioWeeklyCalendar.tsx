@@ -139,13 +139,13 @@ export function HorarioWeeklyCalendar({
           ))}
         </div>
 
-        <div className="flex border rounded-lg bg-slate-50 overflow-x-auto min-w-[720px]">
+        <div className="flex min-w-[720px] overflow-x-auto rounded-lg border bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
           {/* Eje Y de horas */}
-          <div className="w-[60px] flex-shrink-0 bg-slate-100 border-r relative" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
+          <div className="relative w-[60px] flex-shrink-0 border-r bg-slate-100 dark:border-slate-700 dark:bg-slate-800" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
             {horas.map(h => (
               <div 
                 key={h} 
-                className="absolute w-full border-b text-xs text-slate-500 text-right pr-2 font-mono"
+                className="absolute w-full border-b pr-2 text-right font-mono text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400"
                 style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }}
               >
                 {h}:00
@@ -157,9 +157,9 @@ export function HorarioWeeklyCalendar({
           {dias.map((d) => {
             const list = horariosPorDia.get(d) ?? [];
             return (
-              <div key={d} className="flex-1 min-w-[120px] relative border-r last:border-r-0" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
+              <div key={d} className="relative min-w-[120px] flex-1 border-r last:border-r-0 dark:border-slate-700" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
                 {horas.map(h => (
-                   <div key={h} className="absolute w-full border-b border-slate-200" style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }} />
+                   <div key={h} className="absolute w-full border-b border-slate-200 dark:border-slate-700" style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }} />
                 ))}
                 
                 {list.map((x) => {
@@ -195,7 +195,7 @@ export function HorarioWeeklyCalendar({
                       <div className={cn('truncate font-medium mt-0.5', style.subtitle)}>
                         {x.ambiente.codigo}
                       </div>
-                      <div className="truncate opacity-80 mt-0.5">
+                      <div className="mt-0.5 truncate opacity-80 dark:text-slate-200">
                          {x.horaInicio.slice(0, 5)}–{x.horaFin.slice(0, 5)}
                       </div>
                       {isExtra && (
@@ -212,8 +212,8 @@ export function HorarioWeeklyCalendar({
         </div>
 
         {leyenda.length > 0 && (
-          <div className="border-t border-slate-100 pt-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="border-t border-slate-100 pt-3 dark:border-slate-700">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Leyenda de cursos
             </p>
             <div className="flex flex-wrap gap-3">
