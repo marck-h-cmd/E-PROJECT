@@ -1,6 +1,10 @@
 import { prisma } from '@/lib/prisma';
-import { DiaSemana, EstadoHorario, PeriodoAcademico } from '@prisma/client';
-import { redis } from '@/lib/redis';
+import { DiaSemana, EstadoHorario } from '@prisma/client';
+import {
+  calcularHorasEntre,
+  validarFranjaHorariaPermitida,
+} from '@/lib/horario-horas';
+import { Formateadores } from '@/lib/formateadores';
 
 export interface ValidacionResult {
   valido: boolean;
@@ -9,10 +13,18 @@ export interface ValidacionResult {
 }
 
 export interface ValidacionConflicto {
-  tipo: 'CRUCE_DOCENTE' | 'CRUCE_AMBIENTE' | 'CRUCE_GRUPO' | 
-        'DISPONIBILIDAD_DOCENTE' | 'HORAS_EXCEDIDAS' | 
-        'MANTENIMIENTO_AMBIENTE' | 'DIA_NO_LABORABLE' |
-        'ORDEN_ATENCION' | 'HORAS_REQUERIDAS';
+  tipo:
+    | 'CRUCE_DOCENTE'
+    | 'CRUCE_AMBIENTE'
+    | 'CRUCE_GRUPO'
+    | 'DISPONIBILIDAD_DOCENTE'
+    | 'HORAS_EXCEDIDAS'
+    | 'MANTENIMIENTO_AMBIENTE'
+    | 'DIA_NO_LABORABLE'
+    | 'ORDEN_ATENCION'
+    | 'HORAS_REQUERIDAS'
+    | 'FRANJA_HORARIA'
+    | 'CARGA_HORARIA';
   mensaje: string;
   severidad: 'ERROR' | 'WARNING' | 'INFO';
   detalle?: any;
@@ -31,6 +43,8 @@ export class ValidadorHorario {
     horarioIdExcluir?: string
   ): Promise<ValidacionResult> {
     const conflictos: ValidacionConflicto[] = [];
+
+    this.validarFranjaHoraria(conflictos, horaInicio, horaFin);
 
     // 1. Validar cruce de docente
     await this.validarCruceDocente(
@@ -66,10 +80,28 @@ export class ValidadorHorario {
 
     // 7. Validar horas requeridas del curso
     await this.validarHorasRequeridasCurso(
-      conflictos, periodoId, docenteId, cursoId, ambienteId, horaInicio, horaFin
+      conflictos,
+      periodoId,
+      docenteId,
+      cursoId,
+      ambienteId,
+      horaInicio,
+      horaFin,
+      horarioIdExcluir
     );
 
-    // 8. Validar que no sea día no laborable
+    // 8. Validar carga académica (horas asignadas al docente en el curso)
+    await this.validarCargaHorariaDocenteCurso(
+      conflictos,
+      periodoId,
+      docenteId,
+      cursoId,
+      horaInicio,
+      horaFin,
+      horarioIdExcluir
+    );
+
+    // 9. Validar que no sea día no laborable
     await this.validarDiaNoLaborable(
       conflictos, periodoId, diaSemana
     );
@@ -295,7 +327,7 @@ export class ValidadorHorario {
     const horasMaximas = config?.horasMaxDiariasDocente || 8;
 
     // Calcular horas del nuevo horario
-    const horasNuevoHorario = this.calcularHoras(horaInicio, horaFin);
+    const horasNuevoHorario = calcularHorasEntre(horaInicio, horaFin);
 
     // Obtener horas ya asignadas en el día
     const horariosExistentes = await prisma.horario.findMany({
@@ -309,7 +341,7 @@ export class ValidadorHorario {
 
     let horasAsignadas = 0;
     for (const h of horariosExistentes) {
-      horasAsignadas += this.calcularHoras(h.horaInicio, h.horaFin);
+      horasAsignadas += calcularHorasEntre(h.horaInicio, h.horaFin);
     }
 
     if (horasAsignadas + horasNuevoHorario > horasMaximas) {
@@ -348,6 +380,34 @@ export class ValidadorHorario {
     }
   }
 
+  private validarFranjaHoraria(
+    conflictos: ValidacionConflicto[],
+    horaInicio: string,
+    horaFin: string
+  ) {
+    const HORA_MIN = '07:00';
+    const HORA_MAX = '21:00';
+
+    if (horaInicio < HORA_MIN || horaFin > HORA_MAX) {
+      conflictos.push({
+        tipo: 'FRANJA_HORARIA' as any, // Mantenemos compatible con el tipo, o podemos agregar RANGO_HORARIO_NO_PERMITIDO a la interfaz
+        mensaje: 'El horario debe estar entre las 07:00 y las 21:00',
+        severidad: 'ERROR',
+        detalle: { regla: 'RANGO_HORARIO_NO_PERMITIDO' }
+      });
+      return; // Stop further validation if it's completely out of range
+    }
+
+    const resultado = validarFranjaHorariaPermitida(horaInicio, horaFin);
+    if (!resultado.valido && resultado.mensaje) {
+      conflictos.push({
+        tipo: 'FRANJA_HORARIA',
+        mensaje: resultado.mensaje,
+        severidad: 'ERROR',
+      });
+    }
+  }
+
   private async validarHorasRequeridasCurso(
     conflictos: ValidacionConflicto[],
     periodoId: string,
@@ -355,7 +415,8 @@ export class ValidadorHorario {
     cursoId: string,
     ambienteId: string,
     horaInicio: string,
-    horaFin: string
+    horaFin: string,
+    horarioIdExcluir?: string
   ) {
     const [curso, ambiente] = await Promise.all([
       prisma.curso.findUnique({
@@ -395,18 +456,19 @@ export class ValidadorHorario {
         docenteId,
         cursoId,
         estado: { not: 'CANCELADO' },
+        ...(horarioIdExcluir ? { id: { not: horarioIdExcluir } } : {}),
         ambiente: {
-          tipo: esLaboratorio ? 'LABORATORIO' : { not: 'LABORATORIO' }
-        }
+          tipo: esLaboratorio ? 'LABORATORIO' : { not: 'LABORATORIO' },
+        },
       },
     });
 
     let horasAsignadas = 0;
     for (const h of horariosAsignados) {
-      horasAsignadas += this.calcularHoras(h.horaInicio, h.horaFin);
+      horasAsignadas += calcularHorasEntre(h.horaInicio, h.horaFin);
     }
 
-    const horasNuevas = this.calcularHoras(horaInicio, horaFin);
+    const horasNuevas = calcularHorasEntre(horaInicio, horaFin);
 
     if (horasAsignadas + horasNuevas > horasRequeridas) {
       conflictos.push({
@@ -415,6 +477,151 @@ export class ValidadorHorario {
         severidad: 'ERROR',
       });
     }
+  }
+
+  private async validarCargaHorariaDocenteCurso(
+    conflictos: ValidacionConflicto[],
+    periodoId: string,
+    docenteId: string,
+    cursoId: string,
+    horaInicio: string,
+    horaFin: string,
+    horarioIdExcluir?: string
+  ) {
+    const carga = await prisma.cursoDocente.findUnique({
+      where: {
+        cursoId_docenteId: { cursoId, docenteId },
+      },
+      include: {
+        curso: {
+          select: {
+            nombre: true,
+            codigo: true,
+            horasTeoria: true,
+            horasPractica: true,
+            horasLaboratorio: true,
+          },
+        },
+      },
+    });
+
+    if (!carga) return;
+
+    const horasRequeridas =
+      carga.horasAsignadas > 0
+        ? carga.horasAsignadas
+        : carga.curso.horasTeoria +
+          carga.curso.horasPractica +
+          carga.curso.horasLaboratorio;
+
+    if (horasRequeridas <= 0) return;
+
+    const horarios = await prisma.horario.findMany({
+      where: {
+        periodoId,
+        docenteId,
+        cursoId,
+        estado: { not: 'CANCELADO' },
+        ...(horarioIdExcluir ? { id: { not: horarioIdExcluir } } : {}),
+      },
+    });
+
+    let horasProgramadas = 0;
+    for (const h of horarios) {
+      horasProgramadas += calcularHorasEntre(h.horaInicio, h.horaFin);
+    }
+
+    const horasNuevas = calcularHorasEntre(horaInicio, horaFin);
+    const totalProyectado = horasProgramadas + horasNuevas;
+    const etiqueta = `${carga.curso.codigo} — ${carga.curso.nombre}`;
+
+    if (totalProyectado > horasRequeridas) {
+      conflictos.push({
+        tipo: 'CARGA_HORARIA',
+        mensaje: `El docente superaría las ${horasRequeridas}h de carga académica en "${etiqueta}" (${horasProgramadas}h programadas + ${horasNuevas}h nuevas).`,
+        severidad: 'ERROR',
+        detalle: {
+          horasRequeridas,
+          horasProgramadas: totalProyectado,
+          cursoId,
+          docenteId,
+        },
+      });
+    } else if (totalProyectado < horasRequeridas) {
+      conflictos.push({
+        tipo: 'CARGA_HORARIA',
+        mensaje: `Carga incompleta en "${etiqueta}": ${totalProyectado}h programadas de ${horasRequeridas}h asignadas en carga académica.`,
+        severidad: 'WARNING',
+        detalle: {
+          horasRequeridas,
+          horasProgramadas: totalProyectado,
+          cursoId,
+          docenteId,
+        },
+      });
+    }
+  }
+
+  /**
+   * Lista desfases de carga horaria docente-curso para un período.
+   */
+  async obtenerDesfasesCarga(periodoId: string) {
+    const cargas = await prisma.cursoDocente.findMany({
+      where: { activo: true },
+      include: {
+        curso: { select: { id: true, codigo: true, nombre: true } },
+        docente: {
+          include: {
+            usuario: { select: { nombre: true, apellidos: true } },
+          },
+        },
+      },
+    });
+
+    const desfases = [];
+
+    for (const carga of cargas) {
+      const horasRequeridas =
+        carga.horasAsignadas > 0
+          ? carga.horasAsignadas
+          : 0;
+
+      if (horasRequeridas <= 0) continue;
+
+      const horarios = await prisma.horario.findMany({
+        where: {
+          periodoId,
+          docenteId: carga.docenteId,
+          cursoId: carga.cursoId,
+          estado: { not: 'CANCELADO' },
+        },
+      });
+
+      let horasProgramadas = 0;
+      for (const h of horarios) {
+        horasProgramadas += calcularHorasEntre(h.horaInicio, h.horaFin);
+      }
+
+      if (Math.abs(horasProgramadas - horasRequeridas) > 0.01) {
+        desfases.push({
+          docenteId: carga.docenteId,
+          cursoId: carga.cursoId,
+          docente: Formateadores.nombreUsuario(carga.docente.usuario),
+          curso: `${carga.curso.codigo} — ${carga.curso.nombre}`,
+          horasCarga: horasRequeridas,
+          horasProgramadas: Math.round(horasProgramadas * 10) / 10,
+          diferencia: Math.round((horasProgramadas - horasRequeridas) * 10) / 10,
+          estado:
+            horasProgramadas > horasRequeridas
+              ? 'EXCEDE'
+              : horasProgramadas < horasRequeridas
+                ? 'INCOMPLETO'
+                : 'OK',
+        });
+      }
+    }
+
+    return desfases;
   }
 
   private async validarDiaNoLaborable(
