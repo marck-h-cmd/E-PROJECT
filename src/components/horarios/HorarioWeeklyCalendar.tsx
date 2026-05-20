@@ -15,10 +15,11 @@ export interface HorarioCalendarItem {
   horaInicio: string;
   horaFin: string;
   diaSemana: string;
-  curso: { codigo: string; nombre: string; ciclo: number };
+  curso: { codigo: string; fontColor?: string; nombre: string; ciclo: number };
   docente: { usuario: { nombre: string; apellidos: string } };
-  ambiente: { codigo: string };
+  ambiente: { codigo: string; tipo?: string };
   grupo?: { nombre: string } | null;
+  estado?: string;
 }
 
 interface HorarioConColumna extends HorarioCalendarItem {

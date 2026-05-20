@@ -6,24 +6,26 @@ import { PanelLlamarSiguiente } from './PanelLlamarSiguiente';
 import { ColaDocentes } from './ColaDocentes';
 import { ControlVentana } from './ControlVentana';
 import { NotificacionToast } from '@/components/ui/NotificacionToast';
-import { 
-  BookOpen, 
-  Building2, 
-  Users2, 
-  Calendar as CalendarIcon, 
-  Clock, 
-  Plus, 
-  Trash2, 
-  Edit2, 
-  Save, 
-  X, 
+import { cn } from '@/lib/cn';
+import {
+  BookOpen,
+  Building2,
+  Users2,
+  Calendar as CalendarIcon,
+  Clock,
+  Plus,
+  Trash2,
+  Edit2,
+  Save,
+  X,
   AlertCircle,
   CheckCircle,
   FileSpreadsheet,
   Grid,
   LayoutList,
   AlertTriangle,
-  MapPin
+  MapPin,
+  Check,
 } from 'lucide-react';
 
 interface Docente {
@@ -74,7 +76,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [notificaciones, setNotificaciones] = React.useState<any[]>([]);
   const [tiempoAtencion, setTiempoAtencion] = React.useState(0);
   const [tiempoVentana, setTiempoVentana] = React.useState(0);
-  
+
   // Docente en atención y su carga/horarios
   const [docenteActual, setDocenteActual] = React.useState<any>(null);
   const [atencionActualId, setAtencionActualId] = React.useState<string | null>(null);
@@ -82,7 +84,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [horariosBorrador, setHorariosBorrador] = React.useState<any[]>([]);
   const [allHorariosDocente, setAllHorariosDocente] = React.useState<any[]>([]);
   const [horariosAmbiente, setHorariosAmbiente] = React.useState<any[]>([]);
-  
+
   // Opciones para combos
   const [ambientes, setAmbientes] = React.useState<any[]>([]);
   const [grupos, setGrupos] = React.useState<any[]>([]);
@@ -92,13 +94,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
   // Estado del formulario de programación
   const [formState, setFormState] = React.useState({
-    id: '', // Vacío si es nuevo
+    id: '',
     cursoId: '',
     grupoId: '',
     ambienteId: '',
     diaSemana: 'LUNES',
     horaInicio: '08:00',
-    horaFin: '10:00'
+    horaFin: '10:00',
   });
   const [formError, setFormError] = React.useState<string | null>(null);
   const [isEditing, setIsEditing] = React.useState(false);
@@ -106,10 +108,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
   const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
   const HORAS_NUM = Array.from({ length: 14 }, (_, i) => i + 7); // 7 to 20
-  
+
   const HORAS = [
     '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00',
-    '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00'
+    '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00',
   ];
 
   const DIA_LABEL: Record<string, string> = {
@@ -128,7 +130,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       if (!resVentana.ok) throw new Error('Error al cargar la ventana');
       const dataVentana = await resVentana.json();
       setVentana(dataVentana.data);
-      
+
       // Mapear estado
       const est = dataVentana.data.estado;
       if (est === 'PROGRAMADA') setEstadoVentana('inactiva');
@@ -141,14 +143,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       if (resCola.ok) {
         const dataCola = await resCola.json();
         setColaDocentes(dataCola.data.cola || []);
-        
+
         // Buscar si hay alguien en atención
         const enAtencion = dataCola.data.cola.find((a: any) => a.estado === 'EN_ATENCION');
         if (enAtencion) {
           setDocenteActual(enAtencion.docente);
           setAtencionActualId(enAtencion.id);
-          
-          // Calcular tiempo transcurrido desde horaInicio si existe
+
           if (enAtencion.horaInicio) {
             const diff = Math.floor((new Date().getTime() - new Date(enAtencion.horaInicio).getTime()) / 1000);
             setTiempoAtencion(diff > 0 ? diff : 0);
@@ -173,7 +174,6 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         const dataAmbientes = await resAmbientes.json();
         setAmbientes(dataAmbientes.data || []);
       }
-
     } catch (err) {
       console.error(err);
       NotificacionToast.error('No se pudieron cargar los datos de la ventana');
@@ -193,22 +193,20 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
     const cargarCargaYHorarios = async () => {
       try {
-        // Cargar cursos asignados (carga académica)
         const resCursos = await fetch(`/api/carga-academica?docenteId=${docenteActual.id}`);
         if (resCursos.ok) {
           const dataCursos = await resCursos.json();
           setCursosCarga(dataCursos.data || []);
         }
 
-        // Cargar todos los horarios del docente en el periodo
-        const resHorarios = await fetch(`/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana?.periodoId}&limit=100`);
+        const resHorarios = await fetch(
+          `/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana?.periodoId}&limit=100`
+        );
         if (resHorarios.ok) {
           const dataHorarios = await resHorarios.json();
           const items = dataHorarios.data || [];
           setAllHorariosDocente(items);
-          // Filtrar por estado BORRADOR
-          const borradors = items.filter((h: any) => h.estado === 'BORRADOR');
-          setHorariosBorrador(borradors);
+          setHorariosBorrador(items.filter((h: any) => h.estado === 'BORRADOR'));
         }
       } catch (err) {
         console.error(err);
@@ -218,7 +216,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     cargarCargaYHorarios();
   }, [docenteActual, ventana?.periodoId]);
 
-  // Cargar horarios del ambiente seleccionado para control en vivo de cruces
+  // Cargar horarios del ambiente seleccionado
   React.useEffect(() => {
     if (!formState.ambienteId || !ventana?.periodoId) {
       setHorariosAmbiente([]);
@@ -227,7 +225,9 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
     const cargarHorariosAmbiente = async () => {
       try {
-        const res = await fetch(`/api/horarios?ambienteId=${formState.ambienteId}&periodoId=${ventana.periodoId}&limit=100`);
+        const res = await fetch(
+          `/api/horarios?ambienteId=${formState.ambienteId}&periodoId=${ventana.periodoId}&limit=100`
+        );
         if (res.ok) {
           const json = await res.json();
           setHorariosAmbiente(json.data || []);
@@ -240,7 +240,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     cargarHorariosAmbiente();
   }, [formState.ambienteId, ventana?.periodoId]);
 
-  // Cargar grupos cuando cambia el curso seleccionado en el formulario
+  // Cargar grupos cuando cambia el curso
   React.useEffect(() => {
     if (!formState.cursoId) {
       setGrupos([]);
@@ -269,23 +269,23 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   // Temporizadores
   React.useEffect(() => {
     if (!docenteActual || estadoVentana !== 'activa') return;
-    const intervalo = setInterval(() => setTiempoAtencion(prev => prev + 1), 1000);
+    const intervalo = setInterval(() => setTiempoAtencion((prev) => prev + 1), 1000);
     return () => clearInterval(intervalo);
   }, [docenteActual, estadoVentana]);
 
   React.useEffect(() => {
     if (estadoVentana !== 'activa') return;
-    const intervalo = setInterval(() => setTiempoVentana(prev => prev + 1), 1000);
+    const intervalo = setInterval(() => setTiempoVentana((prev) => prev + 1), 1000);
     return () => clearInterval(intervalo);
   }, [estadoVentana]);
 
-  // Acciones de ventana
+  // ── Acciones de ventana ──────────────────────────────────────────────────
   const handleIniciarVentana = async () => {
     try {
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'abrir' })
+        body: JSON.stringify({ accion: 'abrir' }),
       });
       if (res.ok) {
         setEstadoVentana('activa');
@@ -315,7 +315,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/estado`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ accion: 'cerrar' })
+        body: JSON.stringify({ accion: 'cerrar' }),
       });
       if (res.ok) {
         setEstadoVentana('finalizada');
@@ -329,11 +329,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Llamar al siguiente docente
   const handleLlamarDocente = async () => {
     try {
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/llamar-siguiente`, {
-        method: 'POST'
+        method: 'POST',
       });
       const data = await res.json();
       if (res.ok) {
@@ -352,14 +351,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Marcar docente ausente
   const handleCancelarAtencion = async () => {
     if (!atencionActualId) return;
     try {
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/marcar-ausente`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ atencionId: atencionActualId })
+        body: JSON.stringify({ atencionId: atencionActualId }),
       });
       if (res.ok) {
         NotificacionToast.advertencia('Atención marcada como AUSENTE');
@@ -375,14 +373,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Finalizar atención de docente
   const handleFinalizarAtencion = async () => {
     if (!atencionActualId) return;
     try {
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/finalizar-atencion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ atencionId: atencionActualId })
+        body: JSON.stringify({ atencionId: atencionActualId }),
       });
       if (res.ok) {
         NotificacionToast.exito('Atención de docente finalizada correctamente');
@@ -398,7 +395,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Guardar (Crear o Editar) bloque horario
+  // ── CRUD de bloques horarios ──────────────────────────────────────────────
   const handleGuardarBloque = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
@@ -420,51 +417,37 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         ambienteId,
         diaSemana,
         horaInicio,
-        horaFin
+        horaFin,
       };
-
       if (grupoId) payload.grupoId = grupoId;
 
-      let res;
-      if (isEditing && id) {
-        res = await fetch(`/api/horarios/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } else {
-        res = await fetch('/api/horarios', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      }
+      const res = isEditing && id
+        ? await fetch(`/api/horarios/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/horarios', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
 
       const data = await res.json();
 
       if (res.ok) {
         NotificacionToast.exito(isEditing ? 'Bloque horario actualizado' : 'Bloque horario registrado exitosamente');
-        
-        // Reset form
-        setFormState({
-          id: '',
-          cursoId: '',
-          grupoId: '',
-          ambienteId: '',
-          diaSemana: 'LUNES',
-          horaInicio: '08:00',
-          horaFin: '10:00'
-        });
+        setFormState({ id: '', cursoId: '', grupoId: '', ambienteId: '', diaSemana: 'LUNES', horaInicio: '08:00', horaFin: '10:00' });
         setIsEditing(false);
-        
-        // Recargar horarios del docente
-        const resHorarios = await fetch(`/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana.periodoId}&limit=100`);
+
+        const resHorarios = await fetch(
+          `/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana.periodoId}&limit=100`
+        );
         if (resHorarios.ok) {
           const dataHorarios = await resHorarios.json();
           const items = dataHorarios.data || [];
           setAllHorariosDocente(items);
-          const borradors = items.filter((h: any) => h.estado === 'BORRADOR');
-          setHorariosBorrador(borradors);
+          setHorariosBorrador(items.filter((h: any) => h.estado === 'BORRADOR'));
         }
       } else {
         setFormError(data.message || 'Error al validar o registrar horario');
@@ -476,7 +459,6 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Cargar bloque para edición
   const handleEditarBloque = (bloque: any) => {
     setFormState({
       id: bloque.id,
@@ -485,33 +467,22 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       ambienteId: bloque.ambienteId,
       diaSemana: bloque.diaSemana,
       horaInicio: bloque.horaInicio,
-      horaFin: bloque.horaFin
+      horaFin: bloque.horaFin,
     });
     setIsEditing(true);
     setFormError(null);
   };
 
-  // Eliminar bloque horario
   const handleEliminarBloque = async (id: string) => {
     if (!confirm('¿Está seguro de eliminar este bloque horario del borrador?')) return;
     try {
-      const res = await fetch(`/api/horarios/${id}`, {
-        method: 'DELETE'
-      });
+      const res = await fetch(`/api/horarios/${id}`, { method: 'DELETE' });
       if (res.ok) {
         NotificacionToast.exito('Bloque horario eliminado');
-        setHorariosBorrador(prev => prev.filter(h => h.id !== id));
-        setAllHorariosDocente(prev => prev.filter(h => h.id !== id));
+        setHorariosBorrador((prev) => prev.filter((h) => h.id !== id));
+        setAllHorariosDocente((prev) => prev.filter((h) => h.id !== id));
         if (formState.id === id) {
-          setFormState({
-            id: '',
-            cursoId: '',
-            grupoId: '',
-            ambienteId: '',
-            diaSemana: 'LUNES',
-            horaInicio: '08:00',
-            horaFin: '10:00'
-          });
+          setFormState({ id: '', cursoId: '', grupoId: '', ambienteId: '', diaSemana: 'LUNES', horaInicio: '08:00', horaFin: '10:00' });
           setIsEditing(false);
         }
       } else {
@@ -522,22 +493,43 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // Confirmar Selección de Horarios
+  const handleConfirmarBloque = async (id: string) => {
+    if (!confirm('¿Está seguro de confirmar este bloque horario?')) return;
+    try {
+      const res = await fetch(`/api/horarios/${id}/confirmar`, { method: 'POST' });
+      if (res.ok) {
+        NotificacionToast.exito('Bloque horario confirmado');
+        if (docenteActual && ventana) {
+          const resHorarios = await fetch(
+            `/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana.periodoId}&limit=100`
+          );
+          if (resHorarios.ok) {
+            const dataHorarios = await resHorarios.json();
+            const items = dataHorarios.data || [];
+            setAllHorariosDocente(items);
+            setHorariosBorrador(items.filter((h: any) => h.estado === 'BORRADOR'));
+          }
+        }
+      } else {
+        const err = await res.json();
+        throw new Error(err.message || 'No se pudo confirmar el bloque horario');
+      }
+    } catch (err: any) {
+      NotificacionToast.error(err.message);
+    }
+  };
+
   const handleConfirmarSeleccion = async () => {
     if (!docenteActual || !ventana) return;
     try {
       const res = await fetch(`/api/ventanas-atencion/${ventanaId}/confirmar-horarios`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          docenteId: docenteActual.id,
-          periodoId: ventana.periodoId
-        })
+        body: JSON.stringify({ docenteId: docenteActual.id, periodoId: ventana.periodoId }),
       });
       const data = await res.json();
       if (res.ok) {
         NotificacionToast.exito('Horarios confirmados y notificaciones enviadas correctamente');
-        // Finalizar la atención en el backend
         await handleFinalizarAtencion();
       } else {
         throw new Error(data.message || 'Error al confirmar selección');
@@ -547,12 +539,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     }
   };
 
-  // -------------------------------------------------------------
-  // Validador Dinámico / En Vivo
-  // -------------------------------------------------------------
+  // ── Validador Dinámico En Vivo ────────────────────────────────────────────
   const validacionEnVivo = React.useMemo(() => {
     const { id, cursoId, ambienteId, diaSemana, horaInicio, horaFin } = formState;
-    
+
     if (!cursoId || !ambienteId || !diaSemana || !horaInicio || !horaFin) {
       return {
         listo: false,
@@ -571,13 +561,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     const endHour = parseInt(horaFin.split(':')[0], 10);
     const duracion = endHour - startHour;
 
-    // 1. Validar rango
+    // 1. Rango
     const rangoOk = duracion > 0 && startHour >= 7 && endHour <= 21;
-    const mensajeRango = rangoOk 
-      ? `Horario válido (${duracion} horas)` 
+    const mensajeRango = rangoOk
+      ? `Horario válido (${duracion} horas)`
       : 'La hora de fin debe ser posterior a la de inicio (rango permitido de 7am a 9pm)';
 
-    // 2. Validar cruce de Docente
+    // 2. Cruce de Docente
     const cruceDoc = allHorariosDocente.find((h: any) => {
       if (id && h.id === id) return false;
       if (h.diaSemana !== diaSemana) return false;
@@ -587,11 +577,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       return Math.max(hInicio, startHour) < Math.min(hFin, endHour);
     });
     const docenteOk = !cruceDoc;
-    const mensajeDocente = docenteOk 
+    const mensajeDocente = docenteOk
       ? 'Docente libre en este horario'
       : `El docente ya tiene asignado ${cruceDoc.curso.codigo} (${cruceDoc.horaInicio} - ${cruceDoc.horaFin})`;
 
-    // 3. Validar cruce de Ambiente
+    // 3. Cruce de Ambiente
     const cruceAmb = horariosAmbiente.find((h: any) => {
       if (id && h.id === id) return false;
       if (h.diaSemana !== diaSemana) return false;
@@ -605,10 +595,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       ? 'Ambiente libre en este horario'
       : `El ambiente ya está ocupado por ${cruceAmb.curso.codigo} (${cruceAmb.horaInicio} - ${cruceAmb.horaFin})`;
 
-    // 4. Validar límite de horas del curso
-    const cursoCarga = cursosCarga.find(item => item.curso.id === cursoId);
+    // 4. Límite de horas del curso
+    const cursoCarga = cursosCarga.find((item) => item.curso.id === cursoId);
     const horasAsignadas = cursoCarga?.horasAsignadas || 0;
-    
+
     const horasProgramadas = allHorariosDocente
       .filter((h: any) => h.cursoId === cursoId && h.estado !== 'CANCELADO' && (!id || h.id !== id))
       .reduce((sum: number, h: any) => {
@@ -636,7 +626,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     };
   }, [formState, allHorariosDocente, horariosAmbiente, cursosCarga]);
 
-  // Horas por día reales para el footer de la grilla
+  // ── Helpers de la grilla ──────────────────────────────────────────────────
   const getHorasDia = (dia: string) => {
     return allHorariosDocente
       .filter((h: any) => h.diaSemana === dia && h.estado !== 'CANCELADO')
@@ -647,7 +637,6 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       }, 0);
   };
 
-  // Horas totales semanales asignadas en borrador
   const totalHorasSemana = React.useMemo(() => {
     return allHorariosDocente
       .filter((h: any) => h.estado !== 'CANCELADO')
@@ -658,7 +647,6 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       }, 0);
   }, [allHorariosDocente]);
 
-  // Cursos únicos para mostrar en la leyenda
   const cursosUnicos = React.useMemo(() => {
     const map = new Map<string, { codigo: string; nombre: string }>();
     allHorariosDocente.forEach((h: any) => {
@@ -677,30 +665,34 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     );
   }
 
-  // Mapeos para los subcomponentes
+  // ── Mapeos para subcomponentes ────────────────────────────────────────────
   const siguienteDocente = colaDocentes.find((a: any) => a.estado === 'ESPERANDO');
-  
-  const docenteActualAdaptado = docenteActual ? {
-    id: docenteActual.id,
-    nombre: `${docenteActual.usuario.nombre} ${docenteActual.usuario.apellidos}`,
-    email: docenteActual.usuario.email,
-    categoria: docenteActual.categoria,
-    horaInicio: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }), 
-    tiempoTranscurrido: tiempoAtencion,
-  } : null;
 
-  const siguienteDocenteAdaptado = siguienteDocente ? {
-    id: siguienteDocente.docente.id,
-    nombre: `${siguienteDocente.docente.usuario.nombre} ${siguienteDocente.docente.usuario.apellidos}`,
-    email: siguienteDocente.docente.usuario.email,
-    categoria: siguienteDocente.docente.categoria,
-    horaLlegada: 'En cola', 
-    posicionCola: siguienteDocente.posicion,
-  } : null;
+  const docenteActualAdaptado = docenteActual
+    ? {
+        id: docenteActual.id,
+        nombre: `${docenteActual.usuario.nombre} ${docenteActual.usuario.apellidos}`,
+        email: docenteActual.usuario.email,
+        categoria: docenteActual.categoria,
+        horaInicio: new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }),
+        tiempoTranscurrido: tiempoAtencion,
+      }
+    : null;
+
+  const siguienteDocenteAdaptado = siguienteDocente
+    ? {
+        id: siguienteDocente.docente.id,
+        nombre: `${siguienteDocente.docente.usuario.nombre} ${siguienteDocente.docente.usuario.apellidos}`,
+        email: siguienteDocente.docente.usuario.email,
+        categoria: siguienteDocente.docente.categoria,
+        horaLlegada: 'En cola',
+        posicionCola: siguienteDocente.posicion,
+      }
+    : null;
 
   const docentesColaMapeado = colaDocentes.map((a: any) => {
-    const justificacion = notificaciones.find((n: any) => 
-      n.metadata?.atencionId === a.id && n.metadata?.ventanaId === ventanaId
+    const justificacion = notificaciones.find(
+      (n: any) => n.metadata?.atencionId === a.id && n.metadata?.ventanaId === ventanaId
     );
     return {
       id: a.docente.id,
@@ -708,7 +700,9 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       nombre: `${a.docente.usuario.nombre} ${a.docente.usuario.apellidos}`,
       email: a.docente.usuario.email,
       categoria: a.docente.categoria,
-      horaLlegada: a.horaLlegada ? new Date(a.horaLlegada).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : 'En espera',
+      horaLlegada: a.horaLlegada
+        ? new Date(a.horaLlegada).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })
+        : 'En espera',
       prioridad: 'normal' as const,
       estado: a.estado,
       observaciones: justificacion?.metadata || null,
@@ -717,9 +711,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     };
   });
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className={`space-y-6 ${className}`}>
-      {/* Botón Volver y Info de Ventana */}
+      {/* Cabecera */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm">
         <div>
           <div className="flex items-center gap-2">
@@ -729,7 +724,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
             </span>
           </div>
           <p className="text-sm text-gray-500 mt-1">
-            Periodo Académico: <span className="font-semibold text-gray-700">{ventana?.periodo?.nombre}</span>
+            Periodo Académico:{' '}
+            <span className="font-semibold text-gray-700">{ventana?.periodo?.nombre}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -744,53 +740,45 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         </div>
       </div>
 
-      {/* KPI Stats de Cola */}
+      {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-            <Users2 className="h-5 w-5" />
-          </div>
+          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Users2 className="h-5 w-5" /></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Total en Cola</p>
             <p className="text-lg font-bold text-gray-900">{colaDocentes.length}</p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
-            <Clock className="h-5 w-5" />
-          </div>
+          <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg"><Clock className="h-5 w-5" /></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">En Espera</p>
             <p className="text-lg font-bold text-gray-900">
-              {colaDocentes.filter(a => a.estado === 'ESPERANDO').length}
+              {colaDocentes.filter((a) => a.estado === 'ESPERANDO').length}
             </p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-green-50 text-green-600 rounded-lg">
-            <CheckCircle className="h-5 w-5" />
-          </div>
+          <div className="p-2 bg-green-50 text-green-600 rounded-lg"><CheckCircle className="h-5 w-5" /></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Atendidos</p>
             <p className="text-lg font-bold text-gray-900">
-              {colaDocentes.filter(a => a.estado === 'ATENDIDO').length}
+              {colaDocentes.filter((a) => a.estado === 'ATENDIDO').length}
             </p>
           </div>
         </div>
         <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-red-50 text-red-600 rounded-lg">
-            <AlertCircle className="h-5 w-5" />
-          </div>
+          <div className="p-2 bg-red-50 text-red-600 rounded-lg"><AlertCircle className="h-5 w-5" /></div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Ausentes</p>
             <p className="text-lg font-bold text-gray-900">
-              {colaDocentes.filter(a => a.estado === 'AUSENTE').length}
+              {colaDocentes.filter((a) => a.estado === 'AUSENTE').length}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Grid de 3 columnas de control y cola */}
+      {/* Grid de control y cola */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ControlVentana
           estado={estadoVentana}
@@ -800,11 +788,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
           onReanudar={handleReanudarVentana}
           onFinalizar={handleFinalizarVentana}
         />
-
         <div className="space-y-6">
           <PanelDocenteActual
             docente={docenteActualAdaptado}
-            onFinalizar={handleConfirmarSeleccion} 
+            onFinalizar={handleConfirmarSeleccion}
             onCancelar={handleCancelarAtencion}
           />
           {estadoVentana === 'activa' && !docenteActual && (
@@ -814,17 +801,17 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
             />
           )}
         </div>
-
-        <ColaDocentes 
-          docentes={docentesColaMapeado} 
+        <ColaDocentes
+          docentes={docentesColaMapeado}
           ventanaId={ventanaId}
           onJustificacionConfirmada={() => cargarDatosVentana()}
         />
       </div>
 
-      {/* WORKSPACE: Selección de Horarios para el Docente en Atención */}
+      {/* ── WORKSPACE ──────────────────────────────────────────────────────── */}
       {docenteActual && (
         <div className="bg-white rounded-2xl border shadow-sm overflow-hidden mt-8">
+          {/* Header Workspace */}
           <div className="border-b bg-gray-50/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
@@ -836,7 +823,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              {/* Toggle de Vista */}
+              {/* Toggle vista */}
               <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
                 <button
                   type="button"
@@ -876,7 +863,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-6">
-            {/* Formulario de Asignación (Cols 4) */}
+            {/* ── Formulario (4 cols) ─────────────────────────────────────── */}
             <div className="lg:col-span-4 bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
               <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
@@ -884,7 +871,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
               </h3>
 
               <form onSubmit={handleGuardarBloque} className="space-y-4">
-                {/* Seleccionar Curso */}
+                {/* Curso */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Asignatura / Curso *
@@ -892,31 +879,37 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   <select
                     value={formState.cursoId}
                     onChange={(e) => setFormState({ ...formState, cursoId: e.target.value, grupoId: '' })}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     <option value="">Seleccionar curso...</option>
                     {cursosCarga.map((item) => {
-                      // Calcular horas programadas
                       const horasProgramadas = allHorariosDocente
-                        .filter((h: any) => h.cursoId === item.curso.id && h.estado !== 'CANCELADO' && (!formState.id || h.id !== formState.id))
+                        .filter(
+                          (h: any) =>
+                            h.cursoId === item.curso.id &&
+                            h.estado !== 'CANCELADO' &&
+                            (!formState.id || h.id !== formState.id)
+                        )
                         .reduce((sum: number, h: any) => {
-                          const hInicio = parseInt(h.horaInicio.split(':')[0], 10);
-                          const hFin = parseInt(h.horaFin.split(':')[0], 10);
-                          return sum + (hFin - hInicio);
+                          return (
+                            sum +
+                            parseInt(h.horaFin.split(':')[0], 10) -
+                            parseInt(h.horaInicio.split(':')[0], 10)
+                          );
                         }, 0);
                       const disponible = item.horasAsignadas - horasProgramadas;
-
                       return (
                         <option key={item.curso.id} value={item.curso.id}>
-                          {item.curso.codigo} - {item.curso.nombre} (Disponibles: {disponible}h de {item.horasAsignadas}h)
+                          {item.curso.codigo} - {item.curso.nombre} (Disponibles: {disponible}h de{' '}
+                          {item.horasAsignadas}h)
                         </option>
                       );
                     })}
                   </select>
                 </div>
 
-                {/* Seleccionar Grupo */}
+                {/* Grupo */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Grupo / Sección
@@ -924,7 +917,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   <select
                     value={formState.grupoId}
                     onChange={(e) => setFormState({ ...formState, grupoId: e.target.value })}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent disabled:opacity-50"
                     disabled={!formState.cursoId}
                   >
                     <option value="">Seleccionar grupo (opcional)...</option>
@@ -936,7 +929,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   </select>
                 </div>
 
-                {/* Seleccionar Ambiente */}
+                {/* Ambiente */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Ambiente / Aula / Laboratorio *
@@ -944,7 +937,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   <select
                     value={formState.ambienteId}
                     onChange={(e) => setFormState({ ...formState, ambienteId: e.target.value })}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     <option value="">Seleccionar ambiente...</option>
@@ -956,7 +949,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   </select>
                 </div>
 
-                {/* Seleccionar Día */}
+                {/* Día */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">
                     Día de la Semana *
@@ -964,7 +957,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   <select
                     value={formState.diaSemana}
                     onChange={(e) => setFormState({ ...formState, diaSemana: e.target.value })}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     {DIAS.map((dia) => (
@@ -975,7 +968,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   </select>
                 </div>
 
-                {/* Horas Inicio y Fin */}
+                {/* Horas */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-700 mb-1">
@@ -984,7 +977,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     <select
                       value={formState.horaInicio}
                       onChange={(e) => setFormState({ ...formState, horaInicio: e.target.value })}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                       required
                     >
                       {HORAS.slice(0, -1).map((hora) => (
@@ -1001,7 +994,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     <select
                       value={formState.horaFin}
                       onChange={(e) => setFormState({ ...formState, horaFin: e.target.value })}
-                      className="flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                       required
                     >
                       {HORAS.slice(1).map((hora) => (
@@ -1013,16 +1006,15 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   </div>
                 </div>
 
-                {/* VALIDADOR DINÁMICO EN VIVO */}
+                {/* Validador en vivo */}
                 {formState.cursoId && formState.ambienteId && (
                   <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                       <AlertCircle className="h-3.5 w-3.5 text-slate-500" />
                       Estado de Validación en Vivo:
                     </h4>
-                    
                     <div className="space-y-2 text-xs">
-                      {/* Rango de Horas */}
+                      {/* Rango */}
                       <div className="flex items-start gap-2">
                         {validacionEnVivo.rangoOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
@@ -1036,8 +1028,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeRango}</p>
                         </div>
                       </div>
-
-                      {/* Disponibilidad Docente */}
+                      {/* Docente */}
                       <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
                         {validacionEnVivo.docenteOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
@@ -1051,8 +1042,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeDocente}</p>
                         </div>
                       </div>
-
-                      {/* Disponibilidad Ambiente */}
+                      {/* Ambiente */}
                       <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
                         {validacionEnVivo.ambienteOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
@@ -1066,8 +1056,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeAmbiente}</p>
                         </div>
                       </div>
-
-                      {/* Horas del Curso */}
+                      {/* Horas */}
                       <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
                         {validacionEnVivo.horasOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
@@ -1098,15 +1087,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                       type="button"
                       onClick={() => {
                         setIsEditing(false);
-                        setFormState({
-                          id: '',
-                          cursoId: '',
-                          grupoId: '',
-                          ambienteId: '',
-                          diaSemana: 'LUNES',
-                          horaInicio: '08:00',
-                          horaFin: '10:00'
-                        });
+                        setFormState({ id: '', cursoId: '', grupoId: '', ambienteId: '', diaSemana: 'LUNES', horaInicio: '08:00', horaFin: '10:00' });
                         setFormError(null);
                       }}
                       className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-700 transition-colors"
@@ -1116,11 +1097,19 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   )}
                   <button
                     type="submit"
-                    disabled={isSubmitting || (formState.cursoId !== '' && formState.ambienteId !== '' && (!validacionEnVivo.docenteOk || !validacionEnVivo.ambienteOk || !validacionEnVivo.horasOk || !validacionEnVivo.rangoOk))}
+                    disabled={
+                      isSubmitting ||
+                      (formState.cursoId !== '' &&
+                        formState.ambienteId !== '' &&
+                        (!validacionEnVivo.docenteOk ||
+                          !validacionEnVivo.ambienteOk ||
+                          !validacionEnVivo.horasOk ||
+                          !validacionEnVivo.rangoOk))
+                    }
                     className="flex-1 flex items-center justify-center gap-2 bg-[#1a365d] hover:bg-[#254d84] text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
-                      <span className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin"></span>
+                      <span className="h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
                     ) : isEditing ? (
                       <Save className="h-4 w-4" />
                     ) : (
@@ -1132,23 +1121,29 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
               </form>
             </div>
 
-            {/* Calendario / Lista de Horarios Programados en Borrador (Cols 8) */}
+            {/* ── Vista principal (8 cols) ─────────────────────────────────── */}
             <div className="lg:col-span-8 space-y-6">
-              
-              {/* LEYENDA */}
+              {/* Leyenda */}
               {cursosUnicos.length > 0 && (
                 <div className="flex flex-wrap gap-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 items-center">
                   <div className="flex items-center gap-1.5 mr-2 shrink-0">
-                     <BookOpen className="w-4 h-4 text-slate-400" />
-                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Asignaturas:</span>
+                    <BookOpen className="w-4 h-4 text-slate-400" />
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                      Asignaturas:
+                    </span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {cursosUnicos.map(c => {
+                    {cursosUnicos.map((c) => {
                       const col = getColorForCurso(c.codigo);
                       return (
-                        <div key={c.codigo} className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-100 shadow-sm">
-                          <span className={`w-2 h-2 rounded-full ${col.badge}`}></span>
-                          <span><strong className="text-slate-900">{c.codigo}</strong>: {c.nombre}</span>
+                        <div
+                          key={c.codigo}
+                          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-100 shadow-sm"
+                        >
+                          <span className={`w-2 h-2 rounded-full ${col.badge}`} />
+                          <span>
+                            <strong className="text-slate-900">{c.codigo}</strong>: {c.nombre}
+                          </span>
                         </div>
                       );
                     })}
@@ -1156,8 +1151,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                 </div>
               )}
 
+              {/* ── Vista TARJETAS ── */}
               {vistaWorkspace === 'tarjetas' ? (
-                /* ================= VISTA TARJETAS ================= */
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
@@ -1173,7 +1168,9 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     <div className="border border-dashed rounded-xl p-12 text-center text-gray-500">
                       <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-30 text-primary-600" />
                       <p className="font-semibold text-sm">No hay bloques de horario en borrador</p>
-                      <p className="text-xs text-gray-400 mt-1">Usa el formulario de la izquierda para registrar el primer bloque.</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Usa el formulario de la izquierda para registrar el primer bloque.
+                      </p>
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
@@ -1200,12 +1197,16 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                 </div>
                                 <div className="flex items-center gap-1 col-span-2">
                                   <Building2 className="h-3.5 w-3.5 text-gray-400" />
-                                  <span className="truncate">Ambiente: {bloque.ambiente.codigo} - {bloque.ambiente.nombre}</span>
+                                  <span className="truncate">
+                                    Ambiente: {bloque.ambiente.codigo} - {bloque.ambiente.nombre}
+                                  </span>
                                 </div>
                                 <div className="flex items-center gap-1 font-semibold text-[#1a365d]">
                                   <Clock className="h-3.5 w-3.5" />
                                   <span>
-                                    {bloque.diaSemana.charAt(0) + bloque.diaSemana.slice(1).toLowerCase()} {bloque.horaInicio} - {bloque.horaFin}
+                                    {bloque.diaSemana.charAt(0) +
+                                      bloque.diaSemana.slice(1).toLowerCase()}{' '}
+                                    {bloque.horaInicio} - {bloque.horaFin}
                                   </span>
                                 </div>
                               </div>
@@ -1233,7 +1234,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   )}
                 </div>
               ) : (
-                /* ================= VISTA CALENDARIO GRID ================= */
+                /* ── Vista CALENDARIO GRID ── */
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
@@ -1250,51 +1251,76 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                       <table className="w-full text-sm text-left border-collapse min-w-[800px] table-fixed">
                         <thead className="bg-[#1a365d] text-white">
                           <tr>
-                            <th className="py-3 px-3 text-center font-semibold w-20 border-b border-slate-700">HORA</th>
-                            {DIAS.map(d => (
-                              <th key={d} className="py-3 px-2 text-center font-bold tracking-wider border-b border-slate-700">
+                            <th className="py-3 px-3 text-center font-semibold w-20 border-b border-slate-700">
+                              HORA
+                            </th>
+                            {DIAS.map((d) => (
+                              <th
+                                key={d}
+                                className="py-3 px-2 text-center font-bold tracking-wider border-b border-slate-700"
+                              >
                                 {DIA_LABEL[d]}
                               </th>
                             ))}
-                            <th className="py-3 px-3 text-center font-semibold w-20 border-b border-slate-700">HORA</th>
+                            <th className="py-3 px-3 text-center font-semibold w-20 border-b border-slate-700">
+                              HORA
+                            </th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {HORAS_NUM.map((horaNum, rowIndex) => {
-                            // Verificar si esta hora está cubierta por un rowSpan de arriba
-                            const isCoveredByRowspan = allHorariosDocente.some(h => {
+                            /**
+                             * feat/alexis logic:
+                             * Determinar si esta fila completa está cubierta por un rowSpan
+                             * de una celda de hora que empezó en una fila anterior.
+                             * Usamos el PRIMER horario encontrado en cualquier día como referencia
+                             * para las celdas de HORA (izquierda y derecha), ya que esas columnas
+                             * son independientes de los días.
+                             *
+                             * Para las celdas de hora lateral, calculamos el rowSpan
+                             * basándonos en el bloque de mayor duración que empieza a esta hora
+                             * en cualquier día — así la celda de hora "ocupa" el mismo espacio visual.
+                             */
+
+                            // ¿Algún bloque (de cualquier día) que empezó antes cubre esta fila?
+                            const isCoveredByRowspan = allHorariosDocente.some((h: any) => {
                               if (h.estado === 'CANCELADO') return false;
                               const inicio = parseInt(h.horaInicio.split(':')[0], 10);
                               const fin = parseInt(h.horaFin.split(':')[0], 10);
-                              // Esta hora está en MEDIO de una clase (no es el inicio)
                               return inicio < horaNum && fin > horaNum;
                             });
 
-                            // Calcular rowSpan de la celda HORA basado en clase que empieza aquí
-                            const classStartingHere = allHorariosDocente.find(h => {
-                              if (h.estado === 'CANCELADO') return false;
-                              return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
-                            });
+                            // Duración máxima de clases que empiezan EXACTAMENTE a esta hora (en cualquier día)
+                            const maxDurationStartingHere = allHorariosDocente
+                              .filter((h: any) => {
+                                if (h.estado === 'CANCELADO') return false;
+                                return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
+                              })
+                              .reduce((max: number, h: any) => {
+                                const dur =
+                                  parseInt(h.horaFin.split(':')[0], 10) -
+                                  parseInt(h.horaInicio.split(':')[0], 10);
+                                return Math.max(max, dur);
+                              }, 1);
 
-                            const horaRowSpan = classStartingHere
-                              ? parseInt(classStartingHere.horaFin.split(':')[0], 10) - horaNum
-                              : 1;
+                            // rowSpan de las celdas laterales de HORA
+                            const horaRowSpan = isCoveredByRowspan ? 0 : maxDurationStartingHere;
 
                             return (
-                              <tr 
-                                key={horaNum} 
-                                className={rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/30"}
+                              <tr
+                                key={horaNum}
+                                className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}
                               >
-                                {/* HORA Izquierda - solo si no está cubierta por rowSpan */}
+                                {/* HORA Izquierda */}
                                 {!isCoveredByRowspan && (
-                                  <td 
-                                    rowSpan={horaRowSpan} 
+                                  <td
+                                    rowSpan={horaRowSpan}
                                     className="py-2.5 px-2 text-center border-r border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
                                   >
                                     {`${horaNum.toString().padStart(2, '0')}:00`}
                                     {horaRowSpan > 1 && (
                                       <>
-                                        <br/>
+                                        <br />
                                         <span className="text-[10px] opacity-70">
                                           {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
                                         </span>
@@ -1303,10 +1329,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                   </td>
                                 )}
 
-                                {/* Días Semanales */}
-                                {DIAS.map(dia => {
-                                  // Verificar si está cubierto
-                                  const isCovered = allHorariosDocente.some(h => {
+                                {/* Celdas por día */}
+                                {DIAS.map((dia) => {
+                                  // ¿Esta celda está cubierta por un rowSpan de una fila anterior?
+                                  const isCoveredDia = allHorariosDocente.some((h: any) => {
                                     if (h.diaSemana !== dia) return false;
                                     if (h.estado === 'CANCELADO') return false;
                                     const inicio = parseInt(h.horaInicio.split(':')[0], 10);
@@ -1314,58 +1340,120 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                     return inicio < horaNum && fin > horaNum;
                                   });
 
-                                  if (isCovered) return null;
+                                  // Celdas cubiertas por rowSpan no se renderizan
+                                  if (isCoveredDia) return null;
 
-                                  // Clases que inician a esta hora
-                                  const startingClasses = allHorariosDocente.filter(h => {
+                                  // Clases que INICIAN a esta hora en este día
+                                  const startingClasses = allHorariosDocente.filter((h: any) => {
                                     if (h.diaSemana !== dia) return false;
                                     if (h.estado === 'CANCELADO') return false;
-                                    const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                                    return inicio === horaNum;
+                                    return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
                                   });
 
                                   if (startingClasses.length > 0) {
-                                    const maxDuration = Math.max(...startingClasses.map(h => {
-                                      const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                                      const fin = parseInt(h.horaFin.split(':')[0], 10);
-                                      return fin - inicio;
-                                    }), 1);
+                                    // Usamos la duración máxima para el rowSpan de la celda
+                                    const cellRowSpan = Math.max(
+                                      ...startingClasses.map((h: any) => {
+                                        return (
+                                          parseInt(h.horaFin.split(':')[0], 10) -
+                                          parseInt(h.horaInicio.split(':')[0], 10)
+                                        );
+                                      }),
+                                      1
+                                    );
 
                                     return (
-                                      <td 
-                                        key={`${dia}-${horaNum}`} 
-                                        rowSpan={maxDuration}
+                                      <td
+                                        key={`${dia}-${horaNum}`}
+                                        rowSpan={cellRowSpan}
                                         className="p-0 border-r border-b border-slate-200 align-top relative"
                                       >
-                                        <div className="flex flex-col h-full w-full">
-                                          {startingClasses.map(h => {
+                                        {/* Contenedor flex para múltiples clases en el mismo slot */}
+                                        <div className="flex flex-col h-full w-full divide-y divide-black/5">
+                                          {startingClasses.map((h: any) => {
                                             const col = getColorForCurso(h.curso.codigo);
-                                            const esLab = h.ambiente.codigo.toUpperCase().includes('LAB') || h.ambiente.tipo === 'LABORATORIO';
+                                            const esLab =
+                                              h.ambiente.codigo.toUpperCase().includes('LAB') ||
+                                              h.ambiente.tipo === 'LABORATORIO';
                                             const isBorrador = h.estado === 'BORRADOR';
+                                            const dur =
+                                              parseInt(h.horaFin.split(':')[0], 10) -
+                                              parseInt(h.horaInicio.split(':')[0], 10);
+                                            const isCompact = dur <= 1;
 
                                             return (
-                                              <div 
+                                              <div
                                                 key={h.id}
-                                                className={`relative flex flex-col p-2.5 h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 ${col.bg} ${col.border} ${col.text}`}
+                                                className={cn(
+                                                  'group relative flex flex-col w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 overflow-hidden',
+                                                  isCompact ? 'p-1.5' : 'p-2.5',
+                                                  col.bg,
+                                                  col.border,
+                                                  col.text
+                                                )}
                                               >
-                                                <div className="flex justify-between items-start gap-1 mb-1.5">
-                                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white shadow-sm shrink-0 ${col.badge}`}>
+                                                {/* Fila superior: tipo + horario */}
+                                                <div
+                                                  className={cn(
+                                                    'flex justify-between items-start gap-1',
+                                                    isCompact ? 'mb-0.5' : 'mb-1.5'
+                                                  )}
+                                                >
+                                                  <span
+                                                    className={cn(
+                                                      'font-bold rounded text-white shadow-sm shrink-0',
+                                                      isCompact
+                                                        ? 'text-[8px] px-1 py-0'
+                                                        : 'text-[9px] px-1.5 py-0.5',
+                                                      col.badge
+                                                    )}
+                                                  >
                                                     {esLab ? 'LAB' : 'TEORÍA'}
                                                   </span>
-                                                  <span className="text-[9px] font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded">
+                                                  <span
+                                                    className={cn(
+                                                      'font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0',
+                                                      isCompact ? 'text-[7.5px]' : 'text-[9px]'
+                                                    )}
+                                                  >
                                                     {h.horaInicio} - {h.horaFin}
                                                   </span>
                                                 </div>
 
-                                                <div className="font-bold text-xs leading-none mb-0.5">{h.curso.codigo}</div>
-                                                <div className="text-[10px] leading-tight line-clamp-1 opacity-95 mb-1.5" title={h.curso.nombre}>
-                                                  {h.curso.nombre}
+                                                {/* Código y nombre del curso */}
+                                                <div
+                                                  className={cn(
+                                                    'font-bold leading-tight',
+                                                    isCompact ? 'text-[10px]' : 'text-xs mb-0.5'
+                                                  )}
+                                                >
+                                                  {h.curso.codigo}
                                                 </div>
+                                                {!isCompact && (
+                                                  <div
+                                                    className="text-[10px] leading-tight opacity-95 line-clamp-2 mb-1.5"
+                                                    title={h.curso.nombre}
+                                                  >
+                                                    {h.curso.nombre}
+                                                  </div>
+                                                )}
 
-                                                <div className="mt-auto flex flex-col gap-0.5 text-[9px] opacity-85 font-medium pt-1.5 border-t border-black/5">
+                                                {/* Footer: grupo + ambiente */}
+                                                <div
+                                                  className={cn(
+                                                    'mt-auto flex flex-col gap-0.5 font-medium pt-1.5 border-t border-black/5',
+                                                    isCompact
+                                                      ? 'text-[8px]'
+                                                      : 'text-[9px] opacity-85'
+                                                  )}
+                                                >
                                                   <div className="flex items-center gap-1">
                                                     <Users2 className="w-3 h-3 text-slate-400 shrink-0" />
-                                                    <span>{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
+                                                    <span>
+                                                      {h.grupo?.nombre
+                                                        ? `Gr. ${h.grupo.nombre}`
+                                                        : 'Sin Gr.'}
+                                                    </span>
                                                   </div>
                                                   <div className="flex items-center gap-1">
                                                     <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
@@ -1373,9 +1461,19 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                                   </div>
                                                 </div>
 
-                                                {/* Controles de Edición en el Bloque (Sólo si está en Borrador) */}
+                                                {/* Controles (solo borrador) — visibles al hover */}
                                                 {isBorrador && (
-                                                  <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                  <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleConfirmarBloque(h.id);
+                                                      }}
+                                                      title="Confirmar"
+                                                      className="p-0.5 hover:bg-green-100 text-green-600 rounded transition-colors"
+                                                    >
+                                                      <Check className="w-3 h-3" />
+                                                    </button>
                                                     <button
                                                       onClick={(e) => {
                                                         e.stopPropagation();
@@ -1406,24 +1504,25 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                     );
                                   }
 
+                                  // Celda vacía
                                   return (
-                                    <td 
-                                      key={`${dia}-${horaNum}`} 
+                                    <td
+                                      key={`${dia}-${horaNum}`}
                                       className="p-0 border-r border-b border-slate-200 align-top transition-colors bg-white hover:bg-slate-50/50 min-h-[50px]"
                                     />
                                   );
                                 })}
 
-                                {/* HORA Derecha - solo si no está cubierta por rowSpan */}
+                                {/* HORA Derecha */}
                                 {!isCoveredByRowspan && (
-                                  <td 
-                                    rowSpan={horaRowSpan} 
+                                  <td
+                                    rowSpan={horaRowSpan}
                                     className="py-2.5 px-2 text-center border-l border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
                                   >
                                     {`${horaNum.toString().padStart(2, '0')}:00`}
                                     {horaRowSpan > 1 && (
                                       <>
-                                        <br/>
+                                        <br />
                                         <span className="text-[10px] opacity-70">
                                           {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
                                         </span>
@@ -1435,10 +1534,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                             );
                           })}
 
-                          {/* FILA DE TOTALES POR DÍA */}
+                          {/* Fila de totales */}
                           <tr className="bg-slate-800 text-white font-bold text-xs uppercase">
                             <td className="py-3 px-2 text-center border-r border-slate-700">TOTAL</td>
-                            {DIAS.map(dia => (
+                            {DIAS.map((dia) => (
                               <td key={dia} className="py-3 px-2 text-center border-r border-slate-700">
                                 {getHorasDia(dia)}h
                               </td>
