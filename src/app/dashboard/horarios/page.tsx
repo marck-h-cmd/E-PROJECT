@@ -416,6 +416,27 @@ export default function HorariosPage() {
     }
   };
 
+  const handleConfirmHorario = async (id: string, h: HorarioCell) => {
+    if (!confirm('¿Está seguro de confirmar este horario?')) return;
+    try {
+      await apiPost(`/api/horarios/${id}/confirmar`, {});
+      toast.success('Horario confirmado correctamente');
+      
+      const docenteUsuarioId = h.docente.usuario?.id || '';
+      await notificarCambioHorario(
+        docenteUsuarioId,
+        'Horario Confirmado',
+        `Se ha confirmado tu horario para el curso ${h.curso.nombre} el día ${DIA_LABEL[h.diaSemana]} de ${h.horaInicio} a ${h.horaFin} en el ambiente ${h.ambiente.codigo}.`
+      );
+      
+      fetchHorarios();
+      fetchConflictos();
+      fetchDesfases();
+    } catch (e) {
+      toast.error(e instanceof ApiClientError ? e.message : 'Error al confirmar horario');
+    }
+  };
+
   const handleCreate = async () => {
     if (!periodoId) return;
 
@@ -968,94 +989,176 @@ export default function HorariosPage() {
                                           style={{ flexGrow: item.duration, flexBasis: 0 }}
                                           className="flex flex-col w-full group relative overflow-hidden"
                                         >
-                                          <div
-                                            className={cn(
-                                              "relative flex flex-col h-full w-full border-l-4 transition-all hover:shadow-inner cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden",
-                                              isSuperCompact ? "p-1.5" : isCompact ? "p-2" : "p-3",
-                                              col.bg, col.border, col.text
-                                            )}
-                                          >
-                                            <div className={cn("flex justify-between items-start gap-1", isSuperCompact ? "mb-1" : "mb-2")}>
-                                              <span className={cn(
-                                                "font-bold rounded text-white shadow-sm shrink-0",
-                                                isSuperCompact ? "text-[8px] px-1 py-0" : "text-[10px] px-1.5 py-0.5",
-                                                col.badge
-                                              )}>
-                                                {esLab ? 'LAB' : 'TEORÍA'}
-                                              </span>
-                                              
-                                              <div className="flex items-center gap-1">
+                                          {item.duration <= 1 ? (
+                                            <div
+                                              className={cn(
+                                                "relative flex flex-col justify-between h-full w-full border-l-4 transition-all hover:shadow-inner cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden p-1.5",
+                                                col.bg, col.border, col.text
+                                              )}
+                                            >
+                                              {/* Fila 1: Código de curso y Tipo */}
+                                              <div className="flex items-center justify-between gap-1 w-full overflow-hidden leading-none mb-0.5">
+                                                <span className="font-bold text-[10px] truncate leading-none">
+                                                  {h.curso.codigo}
+                                                </span>
+                                                <div className="flex items-center gap-1 shrink-0">
+                                                  <span className={cn(
+                                                    "font-bold rounded text-white shadow-sm text-[7.5px] px-1 py-0 leading-none",
+                                                    col.badge
+                                                  )}>
+                                                    {esLab ? 'LAB' : 'TEO'}
+                                                  </span>
+                                                  
+                                                  {isBorrador && (
+                                                    <div className="flex items-center gap-0.5 bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleConfirmHorario(h.id, h);
+                                                        }}
+                                                        title="Confirmar"
+                                                        className="p-0.5 hover:bg-green-100 text-green-600 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                      </button>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleEditOpen(h);
+                                                        }}
+                                                        title="Editar"
+                                                        className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                      </button>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleDelete(h);
+                                                        }}
+                                                        title="Eliminar"
+                                                        className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              {/* Fila 2: Grupo y Ambiente (sin iconos, combinados) */}
+                                              <div className="text-[9px] font-bold opacity-90 truncate leading-none mt-auto pt-1 border-t border-black/5">
+                                                {h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'} • {h.ambiente.codigo}
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <div
+                                              className={cn(
+                                                "relative flex flex-col h-full w-full border-l-4 transition-all hover:shadow-inner cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden",
+                                                isSuperCompact ? "p-1.5" : isCompact ? "p-2" : "p-3",
+                                                col.bg, col.border, col.text
+                                              )}
+                                            >
+                                              <div className={cn("flex justify-between items-start gap-1", isSuperCompact ? "mb-1" : "mb-2")}>
                                                 <span className={cn(
-                                                  "font-mono opacity-80 font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0",
-                                                  isSuperCompact ? "text-[7.5px]" : "text-[10px]"
+                                                  "font-bold rounded text-white shadow-sm shrink-0",
+                                                  isSuperCompact ? "text-[8px] px-1 py-0" : "text-[10px] px-1.5 py-0.5",
+                                                  col.badge
                                                 )}>
-                                                  {h.horaInicio} - {h.horaFin}
+                                                  {esLab ? 'LAB' : 'TEORÍA'}
                                                 </span>
                                                 
-                                                {isBorrador && (
-                                                  <div className="flex items-center gap-0.5 bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEditOpen(h);
-                                                      }}
-                                                      title="Editar"
-                                                      className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
-                                                    >
-                                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                      </svg>
-                                                    </button>
-                                                    <button
-                                                      onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleDelete(h);
-                                                      }}
-                                                      title="Eliminar"
-                                                      className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
-                                                    >
-                                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                      </svg>
-                                                    </button>
-                                                  </div>
-                                                )}
+                                                <div className="flex items-center gap-1">
+                                                  <span className={cn(
+                                                    "font-mono opacity-80 font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0",
+                                                    isSuperCompact ? "text-[7.5px]" : "text-[10px]"
+                                                  )}>
+                                                    {h.horaInicio} - {h.horaFin}
+                                                  </span>
+                                                  
+                                                  {isBorrador && (
+                                                    <div className="flex items-center gap-0.5 bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleConfirmHorario(h.id, h);
+                                                        }}
+                                                        title="Confirmar"
+                                                        className="p-0.5 hover:bg-green-100 text-green-600 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                      </button>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleEditOpen(h);
+                                                        }}
+                                                        title="Editar"
+                                                        className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                        </svg>
+                                                      </button>
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation();
+                                                          handleDelete(h);
+                                                        }}
+                                                        title="Eliminar"
+                                                        className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                      >
+                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                        </svg>
+                                                      </button>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+                                              
+                                              <div className={cn(
+                                                "font-bold leading-tight",
+                                                isSuperCompact ? "text-[10px] mb-0" : isCompact ? "text-xs mb-0.5" : "text-sm mb-0.5"
+                                              )}>
+                                                {h.curso.codigo}
+                                              </div>
+                                              
+                                              <div 
+                                                className={cn(
+                                                  "leading-snug opacity-90",
+                                                  isSuperCompact ? "hidden" : isCompact ? "text-[9px] line-clamp-1 mb-1" : "text-[11px] line-clamp-2 mb-2"
+                                                )} 
+                                                title={h.curso.nombre}
+                                              >
+                                                {h.curso.nombre}
+                                              </div>
+                                              
+                                              <div className={cn(
+                                                "mt-auto flex opacity-85 font-medium pt-1 border-t border-black/5 gap-1 w-full overflow-hidden",
+                                                isCompact 
+                                                  ? "flex-col items-stretch text-[8px]" 
+                                                  : "flex-row justify-between items-center text-[10px]"
+                                              )}>
+                                                <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                  {!isCompact && <Users className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                  <span className="truncate text-center w-full">{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
+                                                </div>
+                                                <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                  {!isCompact && <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                  <span className="truncate text-center w-full">{h.ambiente.codigo}</span>
+                                                </div>
                                               </div>
                                             </div>
-                                            
-                                            <div className={cn(
-                                              "font-bold leading-tight",
-                                              isSuperCompact ? "text-[10px] mb-0" : isCompact ? "text-xs mb-0.5" : "text-sm mb-0.5"
-                                            )}>
-                                              {h.curso.codigo}
-                                            </div>
-                                            
-                                            <div 
-                                              className={cn(
-                                                "leading-snug opacity-90",
-                                                isSuperCompact ? "hidden" : isCompact ? "text-[9px] line-clamp-1 mb-1" : "text-[11px] line-clamp-2 mb-2"
-                                              )} 
-                                              title={h.curso.nombre}
-                                            >
-                                              {h.curso.nombre}
-                                            </div>
-                                            
-                                            <div className={cn(
-                                              "mt-auto flex opacity-85 font-medium pt-1 border-t border-black/5 gap-1 w-full overflow-hidden",
-                                              isCompact 
-                                                ? "flex-col items-stretch text-[8px]" 
-                                                : "flex-row justify-between items-center text-[10px]"
-                                            )}>
-                                              <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
-                                                {!isCompact && <Users className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
-                                                <span className="truncate text-center w-full">{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
-                                              </div>
-                                              <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
-                                                {!isCompact && <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
-                                                <span className="truncate text-center w-full">{h.ambiente.codigo}</span>
-                                              </div>
-                                            </div>
-                                          </div>
+                                          )}
                                         </div>
                                       );
                                     } else {

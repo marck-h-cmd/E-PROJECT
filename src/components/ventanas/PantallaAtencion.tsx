@@ -24,7 +24,8 @@ import {
   Grid,
   LayoutList,
   AlertTriangle,
-  MapPin
+  MapPin,
+  Check
 } from 'lucide-react';
 
 interface Docente {
@@ -509,6 +510,35 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         }
       } else {
         throw new Error('No se pudo eliminar el bloque horario');
+      }
+    } catch (err: any) {
+      NotificacionToast.error(err.message);
+    }
+  };
+
+  // Confirmar un único bloque horario
+  const handleConfirmarBloque = async (id: string) => {
+    if (!confirm('¿Está seguro de confirmar este bloque horario?')) return;
+    try {
+      const res = await fetch(`/api/horarios/${id}/confirmar`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        NotificacionToast.exito('Bloque horario confirmado');
+        // Recargar horarios del docente
+        if (docenteActual && ventana) {
+          const resHorarios = await fetch(`/api/horarios?docenteId=${docenteActual.id}&periodoId=${ventana.periodoId}&limit=100`);
+          if (resHorarios.ok) {
+            const dataHorarios = await resHorarios.json();
+            const items = dataHorarios.data || [];
+            setAllHorariosDocente(items);
+            const borradors = items.filter((h: any) => h.estado === 'BORRADOR');
+            setHorariosBorrador(borradors);
+          }
+        }
+      } else {
+        const err = await res.json();
+        throw new Error(err.message || 'No se pudo confirmar el bloque horario');
       }
     } catch (err: any) {
       NotificacionToast.error(err.message);
@@ -1364,87 +1394,161 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                                     style={{ flexGrow: item.duration, flexBasis: 0 }}
                                                     className="flex flex-col w-full group relative overflow-hidden"
                                                   >
-                                                    <div
-                                                      className={cn(
-                                                        "relative flex flex-col h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden",
-                                                        isSuperCompact ? "p-1.5" : isCompact ? "p-2" : "p-2.5",
-                                                        col.bg, col.border, col.text
-                                                      )}
-                                                    >
-                                                      <div className={cn("flex justify-between items-start gap-1", isSuperCompact ? "mb-1" : "mb-1.5")}>
-                                                        <span className={cn(
-                                                          "font-bold rounded text-white shadow-sm shrink-0",
-                                                          isSuperCompact ? "text-[8px] px-1 py-0" : "text-[9px] px-1.5 py-0.5",
-                                                          col.badge
-                                                        )}>
-                                                          {esLab ? 'LAB' : 'TEORÍA'}
-                                                        </span>
-                                                        <span className={cn(
-                                                          "font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0",
-                                                          isSuperCompact ? "text-[7.5px]" : "text-[9px]"
-                                                        )}>
-                                                          {h.horaInicio} - {h.horaFin}
-                                                        </span>
-                                                      </div>
-
-                                                      <div className={cn(
-                                                        "font-bold leading-tight",
-                                                        isSuperCompact ? "text-[10px] mb-0" : isCompact ? "text-xs mb-0.5" : "text-xs mb-0.5"
-                                                      )}>
-                                                        {h.curso.codigo}
-                                                      </div>
-                                                      <div 
+                                                    {item.duration <= 1 ? (
+                                                      <div
                                                         className={cn(
-                                                          "leading-tight opacity-95",
-                                                          isSuperCompact ? "hidden" : isCompact ? "text-[9px] line-clamp-1 mb-1" : "text-[10px] line-clamp-2 mb-1.5"
-                                                        )} 
-                                                        title={h.curso.nombre}
+                                                          "relative flex flex-col justify-between h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden p-1.5",
+                                                          col.bg, col.border, col.text
+                                                        )}
                                                       >
-                                                        {h.curso.nombre}
-                                                      </div>
+                                                        {/* Fila 1: Código de curso y Tipo */}
+                                                        <div className="flex items-center justify-between gap-1 w-full overflow-hidden leading-none mb-0.5">
+                                                          <span className="font-bold text-[10px] truncate leading-none">
+                                                            {h.curso.codigo}
+                                                          </span>
+                                                          <div className="flex items-center gap-1 shrink-0">
+                                                            <span className={cn(
+                                                              "font-bold rounded text-white shadow-sm text-[7.5px] px-1 py-0 leading-none",
+                                                              col.badge
+                                                            )}>
+                                                              {esLab ? 'LAB' : 'TEO'}
+                                                            </span>
+                                                            
+                                                            {h.estado === 'BORRADOR' && (
+                                                              <div className="flex items-center gap-0.5 bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleConfirmarBloque(h.id);
+                                                                  }}
+                                                                  title="Confirmar"
+                                                                  className="p-0.5 hover:bg-green-100 text-green-600 rounded transition-colors"
+                                                                >
+                                                                  <Check className="w-2.5 h-2.5" />
+                                                                </button>
+                                                                <button
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEditarBloque(h);
+                                                                  }}
+                                                                  title="Editar"
+                                                                  className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                                >
+                                                                  <Edit2 className="w-2.5 h-2.5" />
+                                                                </button>
+                                                                <button
+                                                                  onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    handleEliminarBloque(h.id);
+                                                                  }}
+                                                                  title="Eliminar"
+                                                                  className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                                >
+                                                                  <Trash2 className="w-2.5 h-2.5" />
+                                                                </button>
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        </div>
 
-                                                      <div className={cn(
-                                                        "mt-auto flex opacity-85 font-medium pt-1.5 border-t border-black/5 gap-1 w-full overflow-hidden",
-                                                        isCompact 
-                                                          ? "flex-col items-stretch text-[8px]" 
-                                                          : "flex-row justify-between items-center text-[10px]"
-                                                      )}>
-                                                        <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
-                                                          {!isCompact && <Users2 className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
-                                                          <span className="truncate text-center w-full">{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
-                                                          {!isCompact && <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
-                                                          <span className="truncate text-center w-full">{h.ambiente.codigo}</span>
+                                                        {/* Fila 2: Grupo y Ambiente (sin iconos, combinados) */}
+                                                        <div className="text-[9px] font-bold opacity-90 truncate leading-none mt-auto pt-1 border-t border-black/5">
+                                                          {h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'} • {h.ambiente.codigo}
                                                         </div>
                                                       </div>
-
-                                                      {/* Controles de Edición en el Bloque (Sólo si está en Borrador) */}
-                                                      {h.estado === 'BORRADOR' && (
-                                                        <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
-                                                          <button
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              handleEditarBloque(h);
-                                                            }}
-                                                            title="Editar"
-                                                            className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
-                                                          >
-                                                            <Edit2 className="w-3 h-3" />
-                                                          </button>
-                                                          <button
-                                                            onClick={(e) => {
-                                                              e.stopPropagation();
-                                                              handleEliminarBloque(h.id);
-                                                            }}
-                                                            title="Eliminar"
-                                                            className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
-                                                          >
-                                                            <Trash2 className="w-3 h-3" />
-                                                          </button>
+                                                    ) : (
+                                                      <div
+                                                        className={cn(
+                                                          "relative flex flex-col h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden",
+                                                          isSuperCompact ? "p-1.5" : isCompact ? "p-2" : "p-2.5",
+                                                          col.bg, col.border, col.text
+                                                        )}
+                                                      >
+                                                        <div className={cn("flex justify-between items-start gap-1", isSuperCompact ? "mb-1" : "mb-1.5")}>
+                                                          <span className={cn(
+                                                            "font-bold rounded text-white shadow-sm shrink-0",
+                                                            isSuperCompact ? "text-[8px] px-1 py-0" : "text-[9px] px-1.5 py-0.5",
+                                                            col.badge
+                                                          )}>
+                                                            {esLab ? 'LAB' : 'TEORÍA'}
+                                                          </span>
+                                                          <span className={cn(
+                                                            "font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0",
+                                                            isSuperCompact ? "text-[7.5px]" : "text-[9px]"
+                                                          )}>
+                                                            {h.horaInicio} - {h.horaFin}
+                                                          </span>
                                                         </div>
-                                                      )}
-                                                    </div>
+                                                        
+                                                        <div className={cn(
+                                                          "font-bold leading-tight",
+                                                          isSuperCompact ? "text-[10px] mb-0" : isCompact ? "text-xs mb-0.5" : "text-xs mb-0.5"
+                                                        )}>
+                                                          {h.curso.codigo}
+                                                        </div>
+                                                        <div 
+                                                          className={cn(
+                                                            "leading-tight opacity-95",
+                                                            isSuperCompact ? "hidden" : isCompact ? "text-[9px] line-clamp-1 mb-1" : "text-[10px] line-clamp-2 mb-1.5"
+                                                          )} 
+                                                          title={h.curso.nombre}
+                                                        >
+                                                          {h.curso.nombre}
+                                                        </div>
+                                                        
+                                                        <div className={cn(
+                                                          "mt-auto flex opacity-85 font-medium pt-1.5 border-t border-black/5 gap-1 w-full overflow-hidden",
+                                                          isCompact 
+                                                            ? "flex-col items-stretch text-[8px]" 
+                                                            : "flex-row justify-between items-center text-[10px]"
+                                                        )}>
+                                                          <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                            {!isCompact && <Users2 className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                            <span className="truncate text-center w-full">{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
+                                                          </div>
+                                                          <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                            {!isCompact && <Building2 className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                            <span className="truncate text-center w-full">{h.ambiente.codigo}</span>
+                                                          </div>
+                                                        </div>
+                                                        
+                                                        {/* Controles de Edición en el Bloque (Sólo si está en Borrador) */}
+                                                        {h.estado === 'BORRADOR' && (
+                                                          <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                            <button
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleConfirmarBloque(h.id);
+                                                              }}
+                                                              title="Confirmar"
+                                                              className="p-0.5 hover:bg-green-100 text-green-600 rounded transition-colors"
+                                                            >
+                                                              <Check className="w-3 h-3" />
+                                                            </button>
+                                                            <button
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEditarBloque(h);
+                                                              }}
+                                                              title="Editar"
+                                                              className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                            >
+                                                              <Edit2 className="w-3 h-3" />
+                                                            </button>
+                                                            <button
+                                                              onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleEliminarBloque(h.id);
+                                                              }}
+                                                              title="Eliminar"
+                                                              className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                            >
+                                                              <Trash2 className="w-3 h-3" />
+                                                            </button>
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 );
                                               } else {
