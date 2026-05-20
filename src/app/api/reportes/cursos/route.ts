@@ -1,38 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ReporteAulaService } from '@/services/reportes/ReporteAulaService';
+import { ReporteCursoService } from '@/services/reportes/ReporteCursoService';
 import { createErrorResponse } from '@/lib/respuestas';
 
-const reporteAulaService = new ReporteAulaService();
+const reporteCursoService = new ReporteCursoService();
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const periodoId = searchParams.get('periodoId');
-    const ambienteId = searchParams.get('ambienteId');
+    const cursoId = searchParams.get('cursoId');
     const todos =
       searchParams.get('todos') === 'true' ||
-      ambienteId === 'todos' ||
-      ambienteId === '__todos__';
+      cursoId === 'todos' ||
+      cursoId === '__todos__';
 
     if (!periodoId) {
       return createErrorResponse('VALIDATION_ERROR', 'Se requiere periodoId', 400);
     }
 
-    if (!todos && !ambienteId) {
+    if (!todos && !cursoId) {
       return createErrorResponse(
         'VALIDATION_ERROR',
-        'Indique ambienteId o todos=true',
+        'Indique cursoId o todos=true',
         400
       );
     }
 
     const pdfBuffer = todos
-      ? await reporteAulaService.generarTodos(periodoId)
-      : await reporteAulaService.generar(ambienteId!, periodoId);
+      ? await reporteCursoService.generarTodos(periodoId)
+      : await reporteCursoService.generar(cursoId!, periodoId);
 
     const filename = todos
-      ? `reporte-ambientes-todos-${periodoId}.pdf`
-      : `reporte-aula-${ambienteId}.pdf`;
+      ? `reporte-cursos-todos-${periodoId}.pdf`
+      : `reporte-curso-${cursoId}.pdf`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: unknown) {
-    console.error('Error generando reporte de aula:', error);
-    return createErrorResponse('INTERNAL_ERROR', 'Error al generar reporte de aula', 500);
+    console.error('Error generando reporte de cursos:', error);
+    return createErrorResponse('INTERNAL_ERROR', 'Error al generar reporte de cursos', 500);
   }
 }

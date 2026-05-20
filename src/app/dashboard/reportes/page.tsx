@@ -1,62 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { FileDown, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { FileDown, Loader2, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { apiGet, ApiClientError, downloadFile } from '@/lib/api-client';
+import { ApiClientError, downloadFile } from '@/lib/api-client';
 import { useRequireAuth } from '@/contexts/AuthContext';
 import { usePeriodo } from '@/contexts/PeriodoContext';
 import { Rol } from '@prisma/client';
 import { toast } from 'sonner';
 
-interface Opt {
-  id: string;
-  codigo?: string;
-  nombre: string;
-  usuario?: { nombre: string; apellidos: string };
-}
-
 export default function ReportesPage() {
   const { loading: authLoading } = useRequireAuth([Rol.SUPER_ADMIN, Rol.ADMINISTRADOR]);
   const { periodoSeleccionado, loading: periodoLoading } = usePeriodo();
   const periodoId = periodoSeleccionado?.id ?? '';
-
-  const [docentes, setDocentes] = useState<Opt[]>([]);
-  const [ambientes, setAmbientes] = useState<Opt[]>([]);
-  const [selDocente, setSelDocente] = useState('');
-  const [selAmbiente, setSelAmbiente] = useState('');
-  const [loadingOpts, setLoadingOpts] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      setLoadingOpts(true);
-      setErr(null);
-      try {
-        const [d, a] = await Promise.all([
-          apiGet<Opt[]>('/api/docentes', { limit: 200, page: 1 }),
-          apiGet<Opt[]>('/api/ambientes', { limit: 200, page: 1 }),
-        ]);
-        const dList = d.data ?? [];
-        const aList = a.data ?? [];
-        setDocentes(dList);
-        setAmbientes(aList);
-        setSelDocente(dList[0]?.id ?? '');
-        setSelAmbiente(aList[0]?.id ?? '');
-      } catch (e) {
-        setErr(e instanceof ApiClientError ? e.message : 'Error al cargar selectores');
-      } finally {
-        setLoadingOpts(false);
-      }
-    })();
-  }, []);
-
-  const runDownload = async (key: string, fn: () => Promise<void>) => {
-    if (!periodoId) {
+  const runDownload = async (
+    key: string,
+    fn: () => Promise<void>,
+    options?: { requierePeriodo?: boolean }
+  ) => {
+    if (options?.requierePeriodo !== false && !periodoId) {
       toast.error('Seleccione un período');
       return;
     }
@@ -71,6 +36,20 @@ export default function ReportesPage() {
     }
   };
 
+  const CATALOGOS: { key: string; entidad: string; label: string; desc: string }[] = [
+    { key: 'cat-doc', entidad: 'docentes', label: 'Docentes', desc: 'Listado completo de docentes' },
+    { key: 'cat-cur', entidad: 'cursos', label: 'Cursos', desc: 'Plan de estudios y horas' },
+    { key: 'cat-amb', entidad: 'ambientes', label: 'Ambientes', desc: 'Aulas y laboratorios' },
+    { key: 'cat-per', entidad: 'periodos', label: 'Períodos', desc: 'Períodos académicos' },
+    { key: 'cat-gru', entidad: 'grupos', label: 'Grupos', desc: 'Grupos por curso' },
+    {
+      key: 'cat-car',
+      entidad: 'carga-academica',
+      label: 'Carga académica',
+      desc: 'Asignaciones curso–docente',
+    },
+  ];
+
   if (authLoading || periodoLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -83,178 +62,116 @@ export default function ReportesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Reportes PDF"
-        description="Generación de informes por docente, aula, laboratorios, gestión y conflictos."
+        description="Informes de gestión del período y catálogos administrativos (CRUD)."
       />
 
       {!periodoId && (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Seleccione un período académico activo para habilitar las descargas.
+          Seleccione un período académico activo para los reportes de gestión y conflictos.
+          Los catálogos se pueden descargar sin período.
         </div>
       )}
 
-      {err && <ErrorAlert message={err} />}
-
-      {loadingOpts ? (
-        <Loader2 className="h-6 w-6 animate-spin text-unt-blue" />
-      ) : (
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-sm font-semibold text-unt-blue">Reporte por docente</h3>
-            </div>
-            <div className="card-body space-y-3">
-              <div>
-                <Label>Docente</Label>
-                <select
-                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                  value={selDocente}
-                  onChange={(e) => setSelDocente(e.target.value)}
-                >
-                  {docentes.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {(d.codigo ? d.codigo + ' — ' : '') +
-                        (d.usuario
-                          ? `${d.usuario.apellidos}, ${d.usuario.nombre}`
-                          : d.nombre)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button
-                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                disabled={!selDocente || !!downloading}
-                onClick={() =>
-                  runDownload('doc', () =>
-                    downloadFile(
-                      '/api/reportes/docente',
-                      { docenteId: selDocente, periodoId },
-                      `reporte-docente-${selDocente}.pdf`
-                    )
-                  )
-                }
-              >
-                <FileDown className="h-4 w-4" />
-                {downloading === 'doc' ? 'Generando…' : 'Descargar'}
-              </Button>
-            </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-sm font-semibold text-unt-blue">Reporte de gestión</h3>
           </div>
-
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-sm font-semibold text-unt-blue">Reporte por aula / ambiente</h3>
-            </div>
-            <div className="card-body space-y-3">
-              <div>
-                <Label>Ambiente</Label>
-                <select
-                  className="mt-1 flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
-                  value={selAmbiente}
-                  onChange={(e) => setSelAmbiente(e.target.value)}
-                >
-                  {ambientes.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.codigo ? `${a.codigo} — ${a.nombre}` : a.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Button
-                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                disabled={!selAmbiente || !!downloading}
-                onClick={() =>
-                  runDownload('aula', () =>
-                    downloadFile(
-                      '/api/reportes/aula',
-                      { ambienteId: selAmbiente, periodoId },
-                      `reporte-aula-${selAmbiente}.pdf`
-                    )
+          <div className="card-body">
+            <p className="mb-3 text-xs text-slate-500">
+              Resumen del período: docentes, cursos, avance por categoría y ocupación de ambientes.
+            </p>
+            <Button
+              className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
+              disabled={!!downloading || !periodoId}
+              onClick={() =>
+                runDownload('ges', () =>
+                  downloadFile(
+                    '/api/reportes/gestion',
+                    { periodoId },
+                    `reporte-gestion-${periodoId}.pdf`
                   )
-                }
-              >
-                <FileDown className="h-4 w-4" />
-                {downloading === 'aula' ? 'Generando…' : 'Descargar'}
-              </Button>
-            </div>
+                )
+              }
+            >
+              <FileDown className="h-4 w-4" />
+              {downloading === 'ges' ? 'Generando…' : 'Descargar'}
+            </Button>
           </div>
+        </div>
 
+        <div className="card">
+          <div className="card-header">
+            <h3 className="text-sm font-semibold text-unt-blue">Reporte de conflictos</h3>
+          </div>
+          <div className="card-body">
+            <p className="mb-3 text-xs text-slate-500">
+              Validaciones que no cumplen en el período activo.
+            </p>
+            <Button
+              className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
+              disabled={!!downloading || !periodoId}
+              onClick={() =>
+                runDownload('conf', () =>
+                  downloadFile(
+                    '/api/reportes/conflictos',
+                    { periodoId },
+                    `reporte-conflictos-${periodoId}.pdf`
+                  )
+                )
+              }
+            >
+              <FileDown className="h-4 w-4" />
+              {downloading === 'conf' ? 'Generando…' : 'Descargar'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="md:col-span-2">
           <div className="card">
-            <div className="card-header">
+            <div className="card-header flex items-center gap-2">
+              <Library className="h-4 w-4 text-unt-blue" />
               <h3 className="text-sm font-semibold text-unt-blue">
-                Reporte de laboratorios
+                Catálogos administrativos
               </h3>
             </div>
             <div className="card-body">
-              <p className="mb-3 text-xs text-slate-500">
-                Consolidado de todos los laboratorios del período activo.
+              <p className="mb-4 text-xs text-slate-500">
+                Exportación PDF de los datos maestros del sistema. El período activo se incluye en
+                el encabezado cuando está seleccionado.
               </p>
-              <Button
-                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                disabled={!!downloading}
-                onClick={() =>
-                  runDownload('lab', () =>
-                    downloadFile(
-                      '/api/reportes/laboratorio',
-                      { periodoId },
-                      `reporte-laboratorios-${periodoId}.pdf`
-                    )
-                  )
-                }
-              >
-                <FileDown className="h-4 w-4" />
-                {downloading === 'lab' ? 'Generando…' : 'Descargar'}
-              </Button>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-sm font-semibold text-unt-blue">Reporte de gestión</h3>
-            </div>
-            <div className="card-body">
-              <Button
-                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                disabled={!!downloading}
-                onClick={() =>
-                  runDownload('ges', () =>
-                    downloadFile(
-                      '/api/reportes/gestion',
-                      { periodoId },
-                      `reporte-gestion-${periodoId}.pdf`
-                    )
-                  )
-                }
-              >
-                <FileDown className="h-4 w-4" />
-                {downloading === 'ges' ? 'Generando…' : 'Descargar'}
-              </Button>
-            </div>
-          </div>
-
-          <div className="card">
-            <div className="card-header">
-              <h3 className="text-sm font-semibold text-unt-blue">Reporte de conflictos</h3>
-            </div>
-            <div className="card-body">
-              <Button
-                className="w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                disabled={!!downloading}
-                onClick={() =>
-                  runDownload('conf', () =>
-                    downloadFile(
-                      '/api/reportes/conflictos',
-                      { periodoId },
-                      `reporte-conflictos-${periodoId}.pdf`
-                    )
-                  )
-                }
-              >
-                <FileDown className="h-4 w-4" />
-                {downloading === 'conf' ? 'Generando…' : 'Descargar'}
-              </Button>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {CATALOGOS.map((c) => (
+                  <Button
+                    key={c.key}
+                    variant="outline"
+                    className="h-auto flex-col items-start gap-1 py-3 text-left"
+                    disabled={!!downloading}
+                    onClick={() =>
+                      runDownload(
+                        c.key,
+                        () =>
+                          downloadFile(
+                            `/api/reportes/catalogo/${c.entidad}`,
+                            periodoId ? { periodoId } : undefined,
+                            `catalogo-${c.entidad}.pdf`
+                          ),
+                        { requierePeriodo: false }
+                      )
+                    }
+                  >
+                    <span className="font-semibold text-unt-blue">{c.label}</span>
+                    <span className="text-xs font-normal text-slate-500">{c.desc}</span>
+                    <span className="mt-1 text-xs text-slate-400">
+                      {downloading === c.key ? 'Generando…' : 'Descargar PDF'}
+                    </span>
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
