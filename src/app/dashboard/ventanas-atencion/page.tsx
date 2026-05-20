@@ -67,9 +67,12 @@ export default function VentanasAtencionPage() {
   const [historialOpen, setHistorialOpen] = useState(false);
   const [historialLoading, setHistorialLoading] = useState(false);
   const [selectedHistorialWindow, setSelectedHistorialWindow] = useState<any>(null);
+  const [justificacionOpen, setJustificacionOpen] = useState(false);
+  const [selectedJustificacion, setSelectedJustificacion] = useState<any>(null);
 
   const [saving, setSaving] = useState(false);
   const [selectedVentanaId, setSelectedVentanaId] = useState<string | null>(null);
+  const [notificaciones, setNotificaciones] = useState<any[]>([]);
 
   // Formulario creación única
   const [form, setForm] = useState<{
@@ -330,6 +333,12 @@ export default function VentanasAtencionPage() {
         setSelectedHistorialWindow(dataJson.data);
       } else {
         throw new Error('No se pudieron obtener los detalles');
+      }
+
+      const resNotifs = await fetch('/api/notificaciones?tipo=SISTEMA&limit=50');
+      if (resNotifs.ok) {
+        const dataNotifs = await resNotifs.json();
+        setNotificaciones(dataNotifs.data || []);
       }
     } catch (e: any) {
       toast.error(e.message);
@@ -898,57 +907,76 @@ export default function VentanasAtencionPage() {
                       <th className="px-4 py-2.5">Código / Nombre</th>
                       <th className="px-4 py-2.5">Estado</th>
                       <th className="px-4 py-2.5">Inicio / Fin</th>
+                      <th className="px-4 py-2.5">Justificación</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {selectedHistorialWindow.atenciones.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="text-center py-8 text-gray-500">
+                        <td colSpan={5} className="text-center py-8 text-gray-500">
                           Ningún docente registrado en cola para esta ventana.
                         </td>
                       </tr>
                     ) : (
-                      selectedHistorialWindow.atenciones.map((a: any) => (
-                        <tr key={a.id} className="hover:bg-gray-50/50">
-                          <td className="px-4 py-2.5 font-bold text-gray-900">{a.posicion}</td>
-                          <td className="px-4 py-2.5">
-                            <div className="font-semibold text-gray-900">
-                              {a.docente.usuario.nombre} {a.docente.usuario.apellidos}
-                            </div>
-                            <div className="text-xs text-gray-500">{a.docente.codigo}</div>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded ${
-                                a.estado === 'ATENDIDO'
-                                  ? 'bg-green-50 text-green-700 border border-green-200'
-                                  : a.estado === 'EN_ATENCION'
-                                  ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                  : a.estado === 'AUSENTE'
-                                  ? 'bg-red-50 text-red-700 border border-red-200'
-                                  : 'bg-gray-50 text-gray-600 border border-gray-200'
-                              }`}
-                            >
-                              {a.estado}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5 text-xs text-gray-500">
-                            {a.horaInicio
-                              ? new Date(a.horaInicio).toLocaleTimeString('es-PE', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })
-                              : '—'}{' '}
-                            /{' '}
-                            {a.horaFin
-                              ? new Date(a.horaFin).toLocaleTimeString('es-PE', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })
-                              : '—'}
-                          </td>
-                        </tr>
-                      ))
+                      selectedHistorialWindow.atenciones.map((a: any) => {
+                        const justificacion = notificaciones.find((n: any) => 
+                          n.metadata?.atencionId === a.id && n.metadata?.ventanaId === selectedHistorialWindow.id
+                        );
+                        return (
+                          <tr key={a.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-2.5 font-bold text-gray-900">{a.posicion}</td>
+                            <td className="px-4 py-2.5">
+                              <div className="font-semibold text-gray-900">
+                                {a.docente.usuario.nombre} {a.docente.usuario.apellidos}
+                              </div>
+                              <div className="text-xs text-gray-500">{a.docente.codigo}</div>
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span
+                                className={`text-xs font-semibold px-2 py-0.5 rounded ${
+                                  a.estado === 'ATENDIDO'
+                                    ? 'bg-green-50 text-green-700 border border-green-200'
+                                    : a.estado === 'EN_ATENCION'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    : a.estado === 'AUSENTE'
+                                    ? 'bg-red-50 text-red-700 border border-red-200'
+                                    : 'bg-gray-50 text-gray-600 border border-gray-200'
+                                }`}
+                              >
+                                {a.estado}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 text-xs text-gray-500">
+                              {a.horaInicio
+                                ? new Date(a.horaInicio).toLocaleTimeString('es-PE', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—'}{' '}
+                              /{' '}
+                              {a.horaFin
+                                ? new Date(a.horaFin).toLocaleTimeString('es-PE', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })
+                                : '—'}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              {a.estado === 'AUSENTE' && justificacion && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedJustificacion(justificacion);
+                                    setJustificacionOpen(true);
+                                  }}
+                                  className="text-xs text-red-600 underline hover:text-red-800"
+                                >
+                                  Ver justificación
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -958,6 +986,50 @@ export default function VentanasAtencionPage() {
 
           <DialogFooter>
             <Button onClick={() => setHistorialOpen(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG: Ver Justificación */}
+      <Dialog open={justificacionOpen} onOpenChange={setJustificacionOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Justificación de ausencia</DialogTitle>
+          </DialogHeader>
+          {selectedJustificacion && (
+            <div className="space-y-4 py-2">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Docente</p>
+                <p className="text-sm font-medium text-gray-900">{selectedJustificacion.metadata.docenteNombre}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Tipo de ausencia</p>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                  {selectedJustificacion.metadata.tipo}
+                </span>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Motivo</p>
+                <div className="p-3 bg-gray-100 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-800">{selectedJustificacion.metadata.motivo}</p>
+                </div>
+              </div>
+              {selectedJustificacion.metadata.documento && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Documento de respaldo</p>
+                  <p className="text-sm text-gray-800">{selectedJustificacion.metadata.documento}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Fecha de envío</p>
+                <p className="text-sm text-gray-800">
+                  {new Date(selectedJustificacion.metadata.fecha).toLocaleString('es-PE')}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setJustificacionOpen(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

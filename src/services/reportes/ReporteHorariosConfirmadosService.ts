@@ -3,6 +3,7 @@ import { GeneradorPDF } from './GeneradorPDF';
 import { UtilidadesFecha } from '@/lib/utilidadesFecha';
 import { Formateadores } from '@/lib/formateadores';
 import { calcularHorasEntre } from '@/lib/horario-horas';
+import { generarKpiGrid, generarTablaHTML } from './reporte-estilos';
 
 export class ReporteHorariosConfirmadosService {
   private generadorPDF = new GeneradorPDF();
@@ -24,9 +25,7 @@ export class ReporteHorariosConfirmadosService {
       include: {
         curso: { select: { codigo: true, nombre: true } },
         docente: {
-          include: {
-            usuario: { select: { nombre: true, apellidos: true } },
-          },
+          include: { usuario: { select: { nombre: true, apellidos: true } } },
         },
         ambiente: { select: { codigo: true, nombre: true, tipo: true } },
         grupo: { select: { nombre: true } },
@@ -48,46 +47,39 @@ export class ReporteHorariosConfirmadosService {
         Formateadores.tipoAmbiente(h.ambiente.tipo),
         h.grupo?.nombre ?? '—',
         h.estado,
-        `${horas.toFixed(1)}h`,
+        `${horas.toFixed(1)} h`,
       ];
     });
 
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head><meta charset="utf-8"><title>Horarios confirmados</title></head>
-      <body>
-        ${this.generadorPDF.generarEncabezado(
-          'Horarios confirmados y publicados',
-          periodo.nombre
-        )}
-        <p style="margin-bottom:16px;color:#4a5568;">
-          Total de sesiones: <strong>${horarios.length}</strong> ·
-          Horas programadas: <strong>${totalHoras.toFixed(1)}</strong>
-        </p>
-        ${
-          filas.length === 0
-            ? '<p>No hay horarios confirmados en este período.</p>'
-            : this.generadorPDF.generarTabla(
-                [
-                  'Día',
-                  'Horario',
-                  'Código',
-                  'Curso',
-                  'Docente',
-                  'Ambiente',
-                  'Tipo',
-                  'Grupo',
-                  'Estado',
-                  'Horas',
-                ],
-                filas
-              )
-        }
-        ${this.generadorPDF.generarPiePagina()}
-      </body>
-      </html>
-    `;
+    const contenido =
+      generarKpiGrid([
+        { label: 'Sesiones', value: horarios.length },
+        { label: 'Horas programadas', value: totalHoras.toFixed(1) },
+        { label: 'Período', value: periodo.nombre },
+      ]) +
+      (filas.length === 0
+        ? '<p class="texto-vacio">No hay horarios confirmados o publicados en este período.</p>'
+        : generarTablaHTML(
+            [
+              'Día',
+              'Horario',
+              'Código',
+              'Curso',
+              'Docente',
+              'Ambiente',
+              'Tipo',
+              'Grupo',
+              'Estado',
+              'Horas',
+            ],
+            filas
+          ));
+
+    const html = this.generadorPDF.generarDocumento(
+      'Horarios confirmados y publicados',
+      contenido,
+      { periodo: periodo.nombre }
+    );
 
     return this.generadorPDF.generarPDF(html, {
       titulo: 'Horarios confirmados',

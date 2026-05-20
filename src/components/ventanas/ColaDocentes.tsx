@@ -8,21 +8,30 @@ import { Users, Clock } from 'lucide-react';
 
 interface Docente {
   id: string;
+  atencionId: string;
   nombre: string;
   email: string;
   categoria: string;
   horaLlegada: string;
   prioridad?: 'normal' | 'alta' | 'urgente';
+  estado?: string;
+  observaciones?: any;
+  justificacionConfirmada?: boolean;
+  fechaIngreso?: string | null;
 }
 
 interface ColaDocentesProps {
   docentes: Docente[];
+  ventanaId: string;
+  onJustificacionConfirmada?: (atencionId: string) => void;
   onSeleccionarDocente?: (docente: Docente) => void;
   className?: string;
 }
 
 export function ColaDocentes({
   docentes,
+  ventanaId,
+  onJustificacionConfirmada,
   onSeleccionarDocente,
   className,
 }: ColaDocentesProps) {
@@ -34,7 +43,7 @@ export function ColaDocentes({
           Cola de Espera
         </Card.Title>
         <Card.Description>
-          {docentes.length} docente{docentes.length !== 1 ? 's' : ''} en espera
+          {docentes.length} docente{docentes.length !== 1 ? 's' : ''} en cola
         </Card.Description>
       </Card.Header>
       <Card.Content>
@@ -50,6 +59,8 @@ export function ColaDocentes({
                 key={docente.id}
                 docente={docente}
                 posicion={index + 1}
+                ventanaId={ventanaId}
+                onJustificacionConfirmada={onJustificacionConfirmada}
                 onClick={() => onSeleccionarDocente?.(docente)}
               />
             ))}
@@ -61,7 +72,7 @@ export function ColaDocentes({
           <Clock className="h-4 w-4" />
           <span>
             Tiempo estimado de espera:{' '}
-            <strong>{docentes.length * 15} min</strong>
+            <strong>{docentes.filter(d => d.estado === 'ESPERANDO').length * 15} min</strong>
           </span>
         </Card.Footer>
       )}
