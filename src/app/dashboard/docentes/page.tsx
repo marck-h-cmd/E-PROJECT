@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -183,7 +184,11 @@ export default function DocentesPage() {
   }, [search, setPage]);
 
   const columns: Column<DocenteRow>[] = [
-    { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
+    {
+      key: 'codigo',
+      header: 'Código',
+      cell: (r) => <span className="font-mono text-sm">{r.codigo}</span>,
+    },
     {
       key: 'nombre',
       header: 'Usuario',
@@ -201,7 +206,11 @@ export default function DocentesPage() {
       header: 'Categoría',
       cell: (r) => Formateadores.categoriaDocente(r.categoria),
     },
-    { key: 'depto', header: 'Departamento', cell: (r) => r.departamento || '—' },
+    {
+      key: 'depto',
+      header: 'Departamento',
+      cell: (r) => r.departamento || '—',
+    },
     {
       key: 'activo',
       header: 'Activo',
@@ -243,13 +252,15 @@ export default function DocentesPage() {
         title="Docentes"
         description="Gestión del personal académico."
         actions={
-          <Button
-            onClick={openCreate}
-            className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo docente
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={openCreate}
+              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo docente
+            </Button>
+          </div>
         }
       />
 
@@ -275,7 +286,11 @@ export default function DocentesPage() {
         emptyTitle="No hay docentes"
         emptyDescription="Ajuste la búsqueda o registre un nuevo docente."
         emptyAction={
-          <Button type="button" onClick={openCreate} className="bg-unt-blue text-white hover:bg-primary-700">
+          <Button
+            type="button"
+            onClick={openCreate}
+            className="bg-unt-blue text-white hover:bg-primary-700"
+          >
             <Plus className="h-4 w-4" />
             Registrar docente
           </Button>

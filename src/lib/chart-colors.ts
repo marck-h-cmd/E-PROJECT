@@ -1,5 +1,5 @@
 /** Paleta UNT para gráficos (máx. 4 series por gráfico) */
-export const CHART_COLORS = ['#1a365d', '#c9a84c', '#627d98', '#c41e3a'] as const;
+export const CHART_COLORS = ['#0f2d55', '#b8923a', '#64748b', '#b41432'] as const;
 
 export const CHART_PRIMARY = CHART_COLORS[0];
 export const CHART_ACCENT = CHART_COLORS[1];
