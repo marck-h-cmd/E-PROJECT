@@ -14,6 +14,7 @@ const updateDocenteSchema = z.object({
   telefono: z.string().optional(),
   whatsapp: z.string().optional(),
   activo: z.boolean().optional(),
+  fechaIngreso: z.string().optional().transform(val => val ? new Date(val) : undefined),
 });
 
 export async function GET(

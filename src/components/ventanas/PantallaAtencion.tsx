@@ -71,6 +71,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [ventana, setVentana] = React.useState<any>(null);
   const [estadoVentana, setEstadoVentana] = React.useState<'inactiva' | 'activa' | 'pausada' | 'finalizada'>('inactiva');
   const [colaDocentes, setColaDocentes] = React.useState<any[]>([]);
+  const [notificaciones, setNotificaciones] = React.useState<any[]>([]);
   const [tiempoAtencion, setTiempoAtencion] = React.useState(0);
   const [tiempoVentana, setTiempoVentana] = React.useState(0);
   
@@ -159,7 +160,14 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         }
       }
 
-      // 3. Obtener ambientes activos
+      // 3. Obtener notificaciones de ausencias justificadas
+      const resNotifs = await fetch('/api/notificaciones?tipo=SISTEMA&limit=50');
+      if (resNotifs.ok) {
+        const dataNotifs = await resNotifs.json();
+        setNotificaciones(dataNotifs.data || []);
+      }
+
+      // 4. Obtener ambientes activos
       const resAmbientes = await fetch('/api/ambientes?limit=100&activo=true');
       if (resAmbientes.ok) {
         const dataAmbientes = await resAmbientes.json();
@@ -690,16 +698,24 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     posicionCola: siguienteDocente.posicion,
   } : null;
 
-  const docentesColaMapeado = colaDocentes
-    .filter((a: any) => a.estado === 'ESPERANDO')
-    .map((a: any) => ({
+  const docentesColaMapeado = colaDocentes.map((a: any) => {
+    const justificacion = notificaciones.find((n: any) => 
+      n.metadata?.atencionId === a.id && n.metadata?.ventanaId === ventanaId
+    );
+    return {
       id: a.docente.id,
+      atencionId: a.id,
       nombre: `${a.docente.usuario.nombre} ${a.docente.usuario.apellidos}`,
       email: a.docente.usuario.email,
       categoria: a.docente.categoria,
-      horaLlegada: 'En espera',
-      prioridad: 'normal' as const
-    }));
+      horaLlegada: a.horaLlegada ? new Date(a.horaLlegada).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' }) : 'En espera',
+      prioridad: 'normal' as const,
+      estado: a.estado,
+      observaciones: justificacion?.metadata || null,
+      justificacionConfirmada: justificacion?.estado === 'LEIDA',
+      fechaIngreso: a.docente.fechaIngreso,
+    };
+  });
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -799,7 +815,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
           )}
         </div>
 
-        <ColaDocentes docentes={docentesColaMapeado} />
+        <ColaDocentes 
+          docentes={docentesColaMapeado} 
+          ventanaId={ventanaId}
+          onJustificacionConfirmada={() => cargarDatosVentana()}
+        />
       </div>
 
       {/* WORKSPACE: Selección de Horarios para el Docente en Atención */}
@@ -1240,137 +1260,180 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {HORAS_NUM.map((horaNum, rowIndex) => (
-                            <tr 
-                              key={horaNum} 
-                              className={rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/30"}
-                            >
-                              {/* HORA Izquierda */}
-                              <td className="py-2.5 px-2 text-center border-r border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap">
-                                {`${horaNum.toString().padStart(2, '0')}:00`}
-                                <br />
-                                <span className="text-[10px] opacity-70">{`${(horaNum + 1).toString().padStart(2, '0')}:00`}</span>
-                              </td>
+                          {HORAS_NUM.map((horaNum, rowIndex) => {
+                            // Verificar si esta hora está cubierta por un rowSpan de arriba
+                            const isCoveredByRowspan = allHorariosDocente.some(h => {
+                              if (h.estado === 'CANCELADO') return false;
+                              const inicio = parseInt(h.horaInicio.split(':')[0], 10);
+                              const fin = parseInt(h.horaFin.split(':')[0], 10);
+                              // Esta hora está en MEDIO de una clase (no es el inicio)
+                              return inicio < horaNum && fin > horaNum;
+                            });
 
-                              {/* Días Semanales */}
-                              {DIAS.map(dia => {
-                                // Verificar si está cubierto
-                                const isCovered = allHorariosDocente.some(h => {
-                                  if (h.diaSemana !== dia) return false;
-                                  if (h.estado === 'CANCELADO') return false;
-                                  const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                                  const fin = parseInt(h.horaFin.split(':')[0], 10);
-                                  return inicio < horaNum && fin > horaNum;
-                                });
+                            // Calcular rowSpan de la celda HORA basado en clase que empieza aquí
+                            const classStartingHere = allHorariosDocente.find(h => {
+                              if (h.estado === 'CANCELADO') return false;
+                              return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
+                            });
 
-                                if (isCovered) return null;
+                            const horaRowSpan = classStartingHere
+                              ? parseInt(classStartingHere.horaFin.split(':')[0], 10) - horaNum
+                              : 1;
 
-                                // Clases que inician a esta hora
-                                const startingClasses = allHorariosDocente.filter(h => {
-                                  if (h.diaSemana !== dia) return false;
-                                  if (h.estado === 'CANCELADO') return false;
-                                  const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                                  return inicio === horaNum;
-                                });
+                            return (
+                              <tr 
+                                key={horaNum} 
+                                className={rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/30"}
+                              >
+                                {/* HORA Izquierda - solo si no está cubierta por rowSpan */}
+                                {!isCoveredByRowspan && (
+                                  <td 
+                                    rowSpan={horaRowSpan} 
+                                    className="py-2.5 px-2 text-center border-r border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
+                                  >
+                                    {`${horaNum.toString().padStart(2, '0')}:00`}
+                                    {horaRowSpan > 1 && (
+                                      <>
+                                        <br/>
+                                        <span className="text-[10px] opacity-70">
+                                          {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
+                                        </span>
+                                      </>
+                                    )}
+                                  </td>
+                                )}
 
-                                if (startingClasses.length > 0) {
-                                  const maxDuration = Math.max(...startingClasses.map(h => {
+                                {/* Días Semanales */}
+                                {DIAS.map(dia => {
+                                  // Verificar si está cubierto
+                                  const isCovered = allHorariosDocente.some(h => {
+                                    if (h.diaSemana !== dia) return false;
+                                    if (h.estado === 'CANCELADO') return false;
                                     const inicio = parseInt(h.horaInicio.split(':')[0], 10);
                                     const fin = parseInt(h.horaFin.split(':')[0], 10);
-                                    return fin - inicio;
-                                  }), 1);
+                                    return inicio < horaNum && fin > horaNum;
+                                  });
+
+                                  if (isCovered) return null;
+
+                                  // Clases que inician a esta hora
+                                  const startingClasses = allHorariosDocente.filter(h => {
+                                    if (h.diaSemana !== dia) return false;
+                                    if (h.estado === 'CANCELADO') return false;
+                                    const inicio = parseInt(h.horaInicio.split(':')[0], 10);
+                                    return inicio === horaNum;
+                                  });
+
+                                  if (startingClasses.length > 0) {
+                                    const maxDuration = Math.max(...startingClasses.map(h => {
+                                      const inicio = parseInt(h.horaInicio.split(':')[0], 10);
+                                      const fin = parseInt(h.horaFin.split(':')[0], 10);
+                                      return fin - inicio;
+                                    }), 1);
+
+                                    return (
+                                      <td 
+                                        key={`${dia}-${horaNum}`} 
+                                        rowSpan={maxDuration}
+                                        className="p-0 border-r border-b border-slate-200 align-top relative"
+                                      >
+                                        <div className="flex flex-col h-full w-full">
+                                          {startingClasses.map(h => {
+                                            const col = getColorForCurso(h.curso.codigo);
+                                            const esLab = h.ambiente.codigo.toUpperCase().includes('LAB') || h.ambiente.tipo === 'LABORATORIO';
+                                            const isBorrador = h.estado === 'BORRADOR';
+
+                                            return (
+                                              <div 
+                                                key={h.id}
+                                                className={`relative flex flex-col p-2.5 h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 ${col.bg} ${col.border} ${col.text}`}
+                                              >
+                                                <div className="flex justify-between items-start gap-1 mb-1.5">
+                                                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white shadow-sm shrink-0 ${col.badge}`}>
+                                                    {esLab ? 'LAB' : 'TEORÍA'}
+                                                  </span>
+                                                  <span className="text-[9px] font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded">
+                                                    {h.horaInicio} - {h.horaFin}
+                                                  </span>
+                                                </div>
+
+                                                <div className="font-bold text-xs leading-none mb-0.5">{h.curso.codigo}</div>
+                                                <div className="text-[10px] leading-tight line-clamp-1 opacity-95 mb-1.5" title={h.curso.nombre}>
+                                                  {h.curso.nombre}
+                                                </div>
+
+                                                <div className="mt-auto flex flex-col gap-0.5 text-[9px] opacity-85 font-medium pt-1.5 border-t border-black/5">
+                                                  <div className="flex items-center gap-1">
+                                                    <Users2 className="w-3 h-3 text-slate-400 shrink-0" />
+                                                    <span>{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-1">
+                                                    <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
+                                                    <span className="truncate">{h.ambiente.codigo}</span>
+                                                  </div>
+                                                </div>
+
+                                                {/* Controles de Edición en el Bloque (Sólo si está en Borrador) */}
+                                                {isBorrador && (
+                                                  <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditarBloque(h);
+                                                      }}
+                                                      title="Editar"
+                                                      className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                    >
+                                                      <Edit2 className="w-3 h-3" />
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEliminarBloque(h.id);
+                                                      }}
+                                                      title="Eliminar"
+                                                      className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                    >
+                                                      <Trash2 className="w-3 h-3" />
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      </td>
+                                    );
+                                  }
 
                                   return (
                                     <td 
                                       key={`${dia}-${horaNum}`} 
-                                      rowSpan={maxDuration}
-                                      className="p-0 border-r border-b border-slate-200 align-top relative"
-                                    >
-                                      <div className="flex flex-col h-full w-full">
-                                        {startingClasses.map(h => {
-                                          const col = getColorForCurso(h.curso.codigo);
-                                          const esLab = h.ambiente.codigo.toUpperCase().includes('LAB') || h.ambiente.tipo === 'LABORATORIO';
-                                          const isBorrador = h.estado === 'BORRADOR';
-
-                                          return (
-                                            <div 
-                                              key={h.id}
-                                              className={`relative flex flex-col p-2.5 h-full w-full border-l-4 transition-all hover:scale-[1.01] hover:shadow-md cursor-pointer flex-1 ${col.bg} ${col.border} ${col.text}`}
-                                            >
-                                              <div className="flex justify-between items-start gap-1 mb-1.5">
-                                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded text-white shadow-sm shrink-0 ${col.badge}`}>
-                                                  {esLab ? 'LAB' : 'TEORÍA'}
-                                                </span>
-                                                <span className="text-[9px] font-mono font-semibold whitespace-nowrap bg-white/40 px-1 rounded">
-                                                  {h.horaInicio} - {h.horaFin}
-                                                </span>
-                                              </div>
-
-                                              <div className="font-bold text-xs leading-none mb-0.5">{h.curso.codigo}</div>
-                                              <div className="text-[10px] leading-tight line-clamp-1 opacity-95 mb-1.5" title={h.curso.nombre}>
-                                                {h.curso.nombre}
-                                              </div>
-
-                                              <div className="mt-auto flex flex-col gap-0.5 text-[9px] opacity-85 font-medium pt-1.5 border-t border-black/5">
-                                                <div className="flex items-center gap-1">
-                                                  <Users2 className="w-3 h-3 text-slate-400 shrink-0" />
-                                                  <span>{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                  <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                                                  <span className="truncate">{h.ambiente.codigo}</span>
-                                                </div>
-                                              </div>
-
-                                              {/* Controles de Edición en el Bloque (Sólo si está en Borrador) */}
-                                              {isBorrador && (
-                                                <div className="absolute top-1.5 right-1.5 flex items-center bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleEditarBloque(h);
-                                                    }}
-                                                    title="Editar"
-                                                    className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
-                                                  >
-                                                    <Edit2 className="w-3 h-3" />
-                                                  </button>
-                                                  <button
-                                                    onClick={(e) => {
-                                                      e.stopPropagation();
-                                                      handleEliminarBloque(h.id);
-                                                    }}
-                                                    title="Eliminar"
-                                                    className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
-                                                  >
-                                                    <Trash2 className="w-3 h-3" />
-                                                  </button>
-                                                </div>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </td>
+                                      className="p-0 border-r border-b border-slate-200 align-top transition-colors bg-white hover:bg-slate-50/50 min-h-[50px]"
+                                    />
                                   );
-                                }
+                                })}
 
-                                return (
+                                {/* HORA Derecha - solo si no está cubierta por rowSpan */}
+                                {!isCoveredByRowspan && (
                                   <td 
-                                    key={`${dia}-${horaNum}`} 
-                                    className="p-0 border-r border-b border-slate-200 align-top transition-colors bg-white hover:bg-slate-50/50 min-h-[50px]"
-                                  />
-                                );
-                              })}
-
-                              {/* HORA Derecha */}
-                              <td className="py-2.5 px-2 text-center border-l border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap">
-                                {`${horaNum.toString().padStart(2, '0')}:00`}
-                                <br />
-                                <span className="text-[10px] opacity-70">{`${(horaNum + 1).toString().padStart(2, '0')}:00`}</span>
-                              </td>
-                            </tr>
-                          ))}
+                                    rowSpan={horaRowSpan} 
+                                    className="py-2.5 px-2 text-center border-l border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
+                                  >
+                                    {`${horaNum.toString().padStart(2, '0')}:00`}
+                                    {horaRowSpan > 1 && (
+                                      <>
+                                        <br/>
+                                        <span className="text-[10px] opacity-70">
+                                          {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
+                                        </span>
+                                      </>
+                                    )}
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          })}
 
                           {/* FILA DE TOTALES POR DÍA */}
                           <tr className="bg-slate-800 text-white font-bold text-xs uppercase">

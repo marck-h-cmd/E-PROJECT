@@ -168,6 +168,7 @@ model Docente {
   telegramId      String?
   verificadoWhatsapp  Boolean @default(false)
   verificadoTelegram  Boolean @default(false)
+  fechaIngreso    DateTime?
   
   // Relaciones
   usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)

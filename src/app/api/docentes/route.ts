@@ -15,6 +15,7 @@ const docenteSchema = z.object({
   departamento: z.string().optional(),
   telefono: z.string().optional(),
   whatsapp: z.string().optional(),
+  fechaIngreso: z.string().optional().transform(val => val ? new Date(val) : undefined),
 });
 
 export async function GET(request: NextRequest) {

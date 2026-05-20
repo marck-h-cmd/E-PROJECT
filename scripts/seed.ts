@@ -85,36 +85,36 @@ async function main() {
 
   // Crear docentes
   const docentesData = [
-    { email: 'juan.perez@unitru.edu.pe', nombre: 'Juan', apellidos: 'Pérez García', codigo: 'DOC001', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'maria.lopez@unitru.edu.pe', nombre: 'María', apellidos: 'López Torres', codigo: 'DOC002', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Matemáticas' },
-    { email: 'carlos.rodriguez@unitru.edu.pe', nombre: 'Carlos', apellidos: 'Rodríguez Sánchez', codigo: 'DOC003', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Estadística' },
-    { email: 'ana.martinez@unitru.edu.pe', nombre: 'Ana', apellidos: 'Martínez Díaz', codigo: 'DOC004', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Física' },
-    { email: 'pedro.garcia@unitru.edu.pe', nombre: 'Pedro', apellidos: 'García Fernández', codigo: 'DOC005', categoria: CategoriaDocente.INVITADO, departamento: 'Dpto. de Lengua y Literatura' },
-    { email: 'laura.fernandez@unitru.edu.pe', nombre: 'Laura', apellidos: 'Fernández Rojas', codigo: 'DOC006', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ciencias Sicológicas' },
-    { email: 'ricardo.sanchez@unitru.edu.pe', nombre: 'Ricardo', apellidos: 'Sánchez Mendoza', codigo: 'DOC007', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ciencias Sociales' },
-    { email: 'patricia.ramirez@unitru.edu.pe', nombre: 'Patricia', apellidos: 'Ramírez Castro', codigo: 'DOC008', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Filosofía y Arte' },
-    { email: 'jorge.morales@unitru.edu.pe', nombre: 'Jorge', apellidos: 'Morales Vega', codigo: 'DOC009', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Administración' },
-    { email: 'carmen.reyes@unitru.edu.pe', nombre: 'Carmen', apellidos: 'Reyes Ortiz', codigo: 'DOC010', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Economía' },
-    { email: 'miguel.ortega@unitru.edu.pe', nombre: 'Miguel', apellidos: 'Ortega Silva', codigo: 'DOC011', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ing. Industrial' },
-    { email: 'isabel.castro@unitru.edu.pe', nombre: 'Isabel', apellidos: 'Castro Herrera', codigo: 'DOC012', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Ing. Ambiental' },
-    { email: 'fernando.molina@unitru.edu.pe', nombre: 'Fernando', apellidos: 'Molina Ruiz', codigo: 'DOC013', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Derecho' },
-    { email: 'veronica.diaz@unitru.edu.pe', nombre: 'Verónica', apellidos: 'Díaz Flores', codigo: 'DOC014', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Comunicación Social' },
-    { email: 'roberto.jimenez@unitru.edu.pe', nombre: 'Roberto', apellidos: 'Jiménez Ríos', codigo: 'DOC015', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Educación' },
-    { email: 'gloria.gutierrez@unitru.edu.pe', nombre: 'Gloria', apellidos: 'Gutiérrez Paredes', codigo: 'DOC016', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Contabilidad y Finanzas' },
-    { email: 'andres.navarro@unitru.edu.pe', nombre: 'Andrés', apellidos: 'Navarro Romero', codigo: 'DOC017', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'silvia.aguilar@unitru.edu.pe', nombre: 'Silvia', apellidos: 'Aguilar Méndez', codigo: 'DOC018', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Matemáticas' },
-    { email: 'daniel.soto@unitru.edu.pe', nombre: 'Daniel', apellidos: 'Soto Vargas', codigo: 'DOC019', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Estadística' },
-    { email: 'elena.paredes@unitru.edu.pe', nombre: 'Elena', apellidos: 'Paredes León', codigo: 'DOC020', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Física' },
-    { email: 'pablo.cruz@unitru.edu.pe', nombre: 'Pablo', apellidos: 'Cruz Huamán', codigo: 'DOC021', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ciencias Sicológicas' },
-    { email: 'monica.chavez@unitru.edu.pe', nombre: 'Mónica', apellidos: 'Chávez Rivas', codigo: 'DOC022', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ciencias Sociales' },
-    { email: 'raul.medina@unitru.edu.pe', nombre: 'Raúl', apellidos: 'Medina Franco', codigo: 'DOC023', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Filosofía y Arte' },
-    { email: 'lorena.vasquez@unitru.edu.pe', nombre: 'Lorena', apellidos: 'Vásquez Campos', codigo: 'DOC024', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Administración' },
-    { email: 'enrique.salazar@unitru.edu.pe', nombre: 'Enrique', apellidos: 'Salazar Luna', codigo: 'DOC025', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'paola.velasquez@unitru.edu.pe', nombre: 'Paola', apellidos: 'Velásquez Tello', codigo: 'DOC026', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'oscar.moreno@unitru.edu.pe', nombre: 'Oscar', apellidos: 'Moreno Delgado', codigo: 'DOC027', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'teresa.cabrera@unitru.edu.pe', nombre: 'Teresa', apellidos: 'Cabrera Fuentes', codigo: 'DOC028', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'manuel.romero@unitru.edu.pe', nombre: 'Manuel', apellidos: 'Romero Quispe', codigo: 'DOC029', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas' },
-    { email: 'sofia.maldonado@unitru.edu.pe', nombre: 'Sofía', apellidos: 'Maldonado Pineda', codigo: 'DOC030', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas' },
+    { email: 'juan.perez@unitru.edu.pe', nombre: 'Juan', apellidos: 'Pérez García', codigo: 'DOC001', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('1995-03-15') },
+    { email: 'maria.lopez@unitru.edu.pe', nombre: 'María', apellidos: 'López Torres', codigo: 'DOC002', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Matemáticas', fechaIngreso: new Date('2005-08-01') },
+    { email: 'carlos.rodriguez@unitru.edu.pe', nombre: 'Carlos', apellidos: 'Rodríguez Sánchez', codigo: 'DOC003', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Estadística', fechaIngreso: new Date('2010-03-01') },
+    { email: 'ana.martinez@unitru.edu.pe', nombre: 'Ana', apellidos: 'Martínez Díaz', codigo: 'DOC004', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Física', fechaIngreso: new Date('2018-04-01') },
+    { email: 'pedro.garcia@unitru.edu.pe', nombre: 'Pedro', apellidos: 'García Fernández', codigo: 'DOC005', categoria: CategoriaDocente.INVITADO, departamento: 'Dpto. de Lengua y Literatura', fechaIngreso: new Date('2020-03-01') },
+    { email: 'laura.fernandez@unitru.edu.pe', nombre: 'Laura', apellidos: 'Fernández Rojas', codigo: 'DOC006', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ciencias Sicológicas', fechaIngreso: new Date('1998-03-15') },
+    { email: 'ricardo.sanchez@unitru.edu.pe', nombre: 'Ricardo', apellidos: 'Sánchez Mendoza', codigo: 'DOC007', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ciencias Sociales', fechaIngreso: new Date('2003-08-01') },
+    { email: 'patricia.ramirez@unitru.edu.pe', nombre: 'Patricia', apellidos: 'Ramírez Castro', codigo: 'DOC008', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Filosofía y Arte', fechaIngreso: new Date('2012-03-01') },
+    { email: 'jorge.morales@unitru.edu.pe', nombre: 'Jorge', apellidos: 'Morales Vega', codigo: 'DOC009', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Administración', fechaIngreso: new Date('2019-04-01') },
+    { email: 'carmen.reyes@unitru.edu.pe', nombre: 'Carmen', apellidos: 'Reyes Ortiz', codigo: 'DOC010', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Economía', fechaIngreso: new Date('1997-03-15') },
+    { email: 'miguel.ortega@unitru.edu.pe', nombre: 'Miguel', apellidos: 'Ortega Silva', codigo: 'DOC011', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ing. Industrial', fechaIngreso: new Date('2006-08-01') },
+    { email: 'isabel.castro@unitru.edu.pe', nombre: 'Isabel', apellidos: 'Castro Herrera', codigo: 'DOC012', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Ing. Ambiental', fechaIngreso: new Date('2013-03-01') },
+    { email: 'fernando.molina@unitru.edu.pe', nombre: 'Fernando', apellidos: 'Molina Ruiz', codigo: 'DOC013', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Derecho', fechaIngreso: new Date('2017-04-01') },
+    { email: 'veronica.diaz@unitru.edu.pe', nombre: 'Verónica', apellidos: 'Díaz Flores', codigo: 'DOC014', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Comunicación Social', fechaIngreso: new Date('1996-03-15') },
+    { email: 'roberto.jimenez@unitru.edu.pe', nombre: 'Roberto', apellidos: 'Jiménez Ríos', codigo: 'DOC015', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Educación', fechaIngreso: new Date('2007-08-01') },
+    { email: 'gloria.gutierrez@unitru.edu.pe', nombre: 'Gloria', apellidos: 'Gutiérrez Paredes', codigo: 'DOC016', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Contabilidad y Finanzas', fechaIngreso: new Date('2014-03-01') },
+    { email: 'andres.navarro@unitru.edu.pe', nombre: 'Andrés', apellidos: 'Navarro Romero', codigo: 'DOC017', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2016-04-01') },
+    { email: 'silvia.aguilar@unitru.edu.pe', nombre: 'Silvia', apellidos: 'Aguilar Méndez', codigo: 'DOC018', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Matemáticas', fechaIngreso: new Date('1999-03-15') },
+    { email: 'daniel.soto@unitru.edu.pe', nombre: 'Daniel', apellidos: 'Soto Vargas', codigo: 'DOC019', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Estadística', fechaIngreso: new Date('2008-08-01') },
+    { email: 'elena.paredes@unitru.edu.pe', nombre: 'Elena', apellidos: 'Paredes León', codigo: 'DOC020', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Física', fechaIngreso: new Date('2015-03-01') },
+    { email: 'pablo.cruz@unitru.edu.pe', nombre: 'Pablo', apellidos: 'Cruz Huamán', codigo: 'DOC021', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ciencias Sicológicas', fechaIngreso: new Date('2019-08-01') },
+    { email: 'monica.chavez@unitru.edu.pe', nombre: 'Mónica', apellidos: 'Chávez Rivas', codigo: 'DOC022', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ciencias Sociales', fechaIngreso: new Date('2000-03-15') },
+    { email: 'raul.medina@unitru.edu.pe', nombre: 'Raúl', apellidos: 'Medina Franco', codigo: 'DOC023', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Filosofía y Arte', fechaIngreso: new Date('2009-08-01') },
+    { email: 'lorena.vasquez@unitru.edu.pe', nombre: 'Lorena', apellidos: 'Vásquez Campos', codigo: 'DOC024', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Administración', fechaIngreso: new Date('2016-03-01') },
+    { email: 'enrique.salazar@unitru.edu.pe', nombre: 'Enrique', apellidos: 'Salazar Luna', codigo: 'DOC025', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2020-08-01') },
+    { email: 'paola.velasquez@unitru.edu.pe', nombre: 'Paola', apellidos: 'Velásquez Tello', codigo: 'DOC026', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2001-03-15') },
+    { email: 'oscar.moreno@unitru.edu.pe', nombre: 'Oscar', apellidos: 'Moreno Delgado', codigo: 'DOC027', categoria: CategoriaDocente.ASOCIADO, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2010-08-01') },
+    { email: 'teresa.cabrera@unitru.edu.pe', nombre: 'Teresa', apellidos: 'Cabrera Fuentes', codigo: 'DOC028', categoria: CategoriaDocente.AUXILIAR, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2017-03-01') },
+    { email: 'manuel.romero@unitru.edu.pe', nombre: 'Manuel', apellidos: 'Romero Quispe', codigo: 'DOC029', categoria: CategoriaDocente.CONTRATADO, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2021-04-01') },
+    { email: 'sofia.maldonado@unitru.edu.pe', nombre: 'Sofía', apellidos: 'Maldonado Pineda', codigo: 'DOC030', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Dpto. de Ing. Sistemas', fechaIngreso: new Date('2002-03-15') },
   ];
 
   const docentes = [];
@@ -137,6 +137,7 @@ async function main() {
         categoria: docenteData.categoria,
         departamento: docenteData.departamento,
         telefono: '999123456',
+        fechaIngreso: docenteData.fechaIngreso,
         preferenciasNotificacion: {
           create: {
             correoActivo: true,
@@ -278,21 +279,23 @@ async function main() {
     const horasAsignadas = horasReales;
 
    asignaciones.push({
-  cursoIndex: i,
-  docenteIndex: docente1Index,
-  horasAsignadas: numDocentes === 2 
-    ? Math.ceil(horasReales / 2) 
-    : horasReales
-});
+      cursoIndex: i,
+      docenteIndex: docente1Index,
+      horasAsignadas: numDocentes === 2 
+        ? Math.ceil(horasReales / 2) 
+        : horasReales
+    });
 
-if (numDocentes === 2) {
-  asignaciones.push({
-    cursoIndex: i,
-    docenteIndex: docente1Index,
-    horasAsignadas: Math.floor(horasReales / 2)  // ← el resto
-  });
-}
-}
+    if (numDocentes === 2) {
+      // Usar un docente diferente para la segunda mitad de la carga
+      const docente2Index = (i + 1) % docentes.length;
+      asignaciones.push({
+        cursoIndex: i,
+        docenteIndex: docente2Index,
+        horasAsignadas: Math.floor(horasReales / 2)
+      });
+    }
+  }
 
   for (const asignacion of asignaciones) {
     await prisma.cursoDocente.create({
