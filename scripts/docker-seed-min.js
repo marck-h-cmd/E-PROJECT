@@ -3,36 +3,73 @@ const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-async function main() {
+async function upsertUsuario(email, data) {
   const passwordHash = await bcrypt.hash('unt123456', 12);
-
-  await prisma.usuario.upsert({
-    where: { email: 'admin@unitru.edu.pe' },
-    update: { password: passwordHash, activo: true },
+  return prisma.usuario.upsert({
+    where: { email },
+    update: { password: passwordHash, activo: true, ...data },
     create: {
-      email: 'admin@unitru.edu.pe',
+      email,
       password: passwordHash,
-      nombre: 'Administrador',
-      apellidos: 'Sistema',
-      rol: 'ADMINISTRADOR',
       verificado: true,
       activo: true,
+      ...data,
     },
+  });
+}
+
+async function main() {
+  await upsertUsuario('admin@unitru.edu.pe', {
+    nombre: 'Administrador',
+    apellidos: 'Sistema',
+    rol: 'ADMINISTRADOR',
   });
 
-  await prisma.usuario.upsert({
-    where: { email: 'operador@unitru.edu.pe' },
-    update: { password: passwordHash, activo: true },
-    create: {
-      email: 'operador@unitru.edu.pe',
-      password: passwordHash,
-      nombre: 'Operador',
-      apellidos: 'Sistema',
-      rol: 'OPERADOR',
-      verificado: true,
-      activo: true,
-    },
+  await upsertUsuario('operador@unitru.edu.pe', {
+    nombre: 'Operador',
+    apellidos: 'Sistema',
+    rol: 'OPERADOR',
   });
+
+  await upsertUsuario('superadmin@unitru.edu.pe', {
+    nombre: 'Super',
+    apellidos: 'Admin',
+    rol: 'SUPER_ADMIN',
+  });
+
+  await upsertUsuario('monitor@unitru.edu.pe', {
+    nombre: 'Monitor',
+    apellidos: 'Sistema',
+    rol: 'MONITOR',
+  });
+
+  const docenteUser = await upsertUsuario('juan.perez@unitru.edu.pe', {
+    nombre: 'Juan',
+    apellidos: 'Pérez García',
+    rol: 'DOCENTE',
+  });
+
+  const docenteExistente = await prisma.docente.findUnique({
+    where: { usuarioId: docenteUser.id },
+  });
+  if (!docenteExistente) {
+    await prisma.docente.create({
+      data: {
+        usuarioId: docenteUser.id,
+        codigo: 'DOC001',
+        categoria: 'PRINCIPAL',
+        departamento: 'Dpto. de Ing. Sistemas',
+        telefono: '999123456',
+        preferenciasNotificacion: {
+          create: {
+            correoActivo: true,
+            whatsappActivo: false,
+            telegramActivo: false,
+          },
+        },
+      },
+    });
+  }
 
   let periodo = await prisma.periodoAcademico.findFirst({ where: { nombre: '2026-I' } });
   if (!periodo) {
@@ -62,7 +99,9 @@ async function main() {
     });
   }
 
-  console.log('Seed mínimo completado: admin, operador, período 2026-I');
+  console.log(
+    'Seed mínimo: superadmin, admin, operador, monitor, docente (juan.perez), período 2026-I'
+  );
 }
 
 main()

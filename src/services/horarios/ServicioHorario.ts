@@ -3,6 +3,8 @@ import { redis } from '@/lib/redis';
 import { AppError } from '@/services/auth/AuthService';
 import { DiaSemana, EstadoHorario, Prisma } from '@prisma/client';
 import { GestorNotificaciones } from '../notificaciones/GestorNotificaciones';
+import { ValidadorHorario } from './ValidadorHorario';
+import { validarFranjaHorariaPermitida } from '@/lib/horario-horas';
 
 export interface CrearHorarioDTO {
   periodoId: string;
@@ -33,9 +35,11 @@ export interface PaginacionParams {
 
 export class ServicioHorario {
   private gestorNotificaciones: GestorNotificaciones;
+  private validadorHorario: ValidadorHorario;
 
   constructor() {
     this.gestorNotificaciones = new GestorNotificaciones();
+    this.validadorHorario = new ValidadorHorario();
   }
 
   async listar(filtros: FiltrosHorario, paginacion: PaginacionParams) {
@@ -138,6 +142,27 @@ export class ServicioHorario {
       throw new AppError('El docente no tiene asignado este curso', 400, 'DOCENTE_NO_ASIGNADO');
     }
 
+    const franja = validarFranjaHorariaPermitida(datos.horaInicio, datos.horaFin);
+    if (!franja.valido) {
+      throw new AppError(franja.mensaje!, 400, 'FRANJA_HORARIA_INVALIDA');
+    }
+
+    const validacion = await this.validadorHorario.validarHorario(
+      datos.periodoId,
+      datos.docenteId,
+      datos.cursoId,
+      datos.ambienteId,
+      datos.grupoId,
+      datos.diaSemana,
+      datos.horaInicio,
+      datos.horaFin
+    );
+
+    const errores = validacion.conflictos.filter((c) => c.severidad === 'ERROR');
+    if (errores.length > 0) {
+      throw new AppError(errores.map((e) => e.mensaje).join(' '), 400, 'VALIDACION_HORARIO');
+    }
+
     // Validar que el ambiente exista y esté activo
     const ambiente = await prisma.ambiente.findUnique({
       where: { id: datos.ambienteId },
@@ -155,6 +180,11 @@ export class ServicioHorario {
         throw new AppError('Grupo no encontrado o no pertenece al curso', 404, 'GRUPO_NOT_FOUND');
       }
     }
+
+    const docente = await prisma.docente.findUnique({
+      where: { id: datos.docenteId },
+      select: { usuarioId: true },
+    });
 
     // Crear el horario
     const horario = await prisma.horario.create({
@@ -176,6 +206,25 @@ export class ServicioHorario {
         periodo: true,
       },
     });
+
+    const alertasCarga = validacion.conflictos.filter(
+      (c) => c.tipo === 'CARGA_HORARIA' || c.tipo === 'HORAS_REQUERIDAS'
+    );
+    if (docente && alertasCarga.length > 0) {
+      try {
+        await this.gestorNotificaciones.enviarNotificacion({
+          usuarioId: docente.usuarioId,
+          tipo: 'ALERTA_CARGA_HORARIA',
+          titulo: 'Desfase de horas en programación',
+          mensaje: alertasCarga.map((a) => a.mensaje).join(' '),
+          prioridad: alertasCarga.some((a) => a.severidad === 'ERROR') ? 'ALTA' : 'MEDIA',
+          canal: 'CORREO',
+          metadata: { horarioId: horario.id, cursoId: datos.cursoId },
+        });
+      } catch (error) {
+        console.error('Error enviando alerta de carga horaria:', error);
+      }
+    }
 
     return horario;
   }

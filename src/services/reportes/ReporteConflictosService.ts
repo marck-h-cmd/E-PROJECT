@@ -116,6 +116,8 @@ export class ReporteConflictosService {
       'DIA_NO_LABORABLE': 'Día No Laborable',
       'ORDEN_ATENCION': 'Orden de Atención',
       'HORAS_REQUERIDAS': 'Horas Requeridas',
+      'FRANJA_HORARIA': 'Franja horaria',
+      'CARGA_HORARIA': 'Carga horaria docente-curso',
       'VALIDACION_COMPLETA': 'Validación Completa',
     };
     return mapa[tipo] || tipo;
