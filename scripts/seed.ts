@@ -70,6 +70,17 @@ async function main() {
     }
   });
 
+  await prisma.usuario.create({
+    data: {
+      email: 'monitor@unitru.edu.pe',
+      password: passwordHash,
+      nombre: 'Monitor',
+      apellidos: 'Sistema',
+      rol: Rol.MONITOR,
+      verificado: true,
+    }
+  });
+
   console.log('✅ Usuarios creados');
 
   // Crear docentes
@@ -262,23 +273,26 @@ async function main() {
   for (let i = 0; i < cursos.length; i++) {
     const numDocentes = (i % 3 === 0) ? 2 : 1;
     const docente1Index = i % docentes.length;
-    const horasAsignadas = cursos[i].creditos * 2;
+    const curso = cursos[i];
+    const horasReales = curso.horasTeoria + curso.horasPractica + curso.horasLaboratorio;
+    const horasAsignadas = horasReales;
 
-    asignaciones.push({
-      cursoIndex: i,
-      docenteIndex: docente1Index,
-      horasAsignadas: numDocentes === 2 ? Math.ceil(horasAsignadas / 2) : horasAsignadas
-    });
+   asignaciones.push({
+  cursoIndex: i,
+  docenteIndex: docente1Index,
+  horasAsignadas: numDocentes === 2 
+    ? Math.ceil(horasReales / 2) 
+    : horasReales
+});
 
-    if (numDocentes === 2) {
-      const docente2Index = (i + 1) % docentes.length;
-      asignaciones.push({
-        cursoIndex: i,
-        docenteIndex: docente2Index,
-        horasAsignadas: Math.floor(horasAsignadas / 2)
-      });
-    }
-  }
+if (numDocentes === 2) {
+  asignaciones.push({
+    cursoIndex: i,
+    docenteIndex: docente1Index,
+    horasAsignadas: Math.floor(horasReales / 2)  // ← el resto
+  });
+}
+}
 
   for (const asignacion of asignaciones) {
     await prisma.cursoDocente.create({
