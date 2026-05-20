@@ -179,9 +179,9 @@ export default function LoginPage() {
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-center text-[11px] text-slate-400">
+              <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
                 Contraseña de prueba:{' '}
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-600">
+                <code className="rounded bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 font-mono text-slate-600 dark:text-slate-300">
                   {DEMO_PASSWORD_HINT}
                 </code>
               </p>
@@ -228,7 +228,7 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-unt-blue"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-unt-blue"
                     aria-label={
                       showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
                     }

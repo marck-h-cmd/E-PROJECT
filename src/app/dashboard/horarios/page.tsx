@@ -563,7 +563,7 @@ export default function HorariosPage() {
 
   const columnsConflictos: Column<ConflictoDetalle>[] = [
     { key: 't', header: 'Tipo', cell: (r) => r.tipoRegla },
-    { key: 'm', header: 'Detalle', cell: (r) => <span className="text-sm text-gray-700">{r.mensaje || r.horario?.curso?.codigo || '—'}</span> },
+    { key: 'm', header: 'Detalle', cell: (r) => <span className="text-sm text-gray-700 dark:text-slate-300">{r.mensaje || r.horario?.curso?.codigo || '—'}</span> },
   ];
 
   const horariosFiltrados = useMemo(() => {
@@ -691,11 +691,11 @@ export default function HorariosPage() {
       {error && <ErrorAlert message={error} onRetry={fetchHorarios} />}
 
       {/* FILTROS FUNCIONALES */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
         <div className="flex flex-col lg:flex-row justify-between gap-4">
           
           <div className="flex flex-wrap items-center gap-4 flex-1">
-            <div className="flex bg-slate-100 p-1 rounded-lg">
+            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
               {['General', 'Por Docente', 'Por Aula'].map(v => (
                 <button
                   key={v}
@@ -705,7 +705,7 @@ export default function HorariosPage() {
                   }}
                   className={cn(
                     "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
-                    vistaTipo === v ? "bg-white shadow-sm text-[#1a365d]" : "text-slate-600 hover:text-slate-900"
+                    vistaTipo === v ? "bg-white dark:bg-slate-800 shadow-sm text-[#1a365d] dark:text-unt-gold-light" : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white"
                   )}
                 >
                   {v}
@@ -716,7 +716,7 @@ export default function HorariosPage() {
             <select
               value={filtros.ciclo || ''}
               onChange={(e) => actualizarFiltro('ciclo', e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d] min-w-[140px]"
+              className="rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d] min-w-[140px]"
             >
               {CICLO_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -742,7 +742,7 @@ export default function HorariosPage() {
                   }
                 }}
                 list="docentes-list"
-                className="w-full rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d]"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 dark:placeholder:text-slate-400 pl-9 pr-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d]"
               />
               <datalist id="docentes-list">
                 {docentesAll.map(d => (
@@ -755,7 +755,7 @@ export default function HorariosPage() {
               <select
                 value={filtros.ambienteId || ''}
                 onChange={(e) => actualizarFiltro('ambienteId', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d]"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:border-[#1a365d] focus:outline-none focus:ring-1 focus:ring-[#1a365d]"
               >
                 <option value="">Tipo ambiente...</option>
                 {ambientesAll.map((a) => (
@@ -773,9 +773,9 @@ export default function HorariosPage() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-slate-500 mr-2">Día:</span>
+            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Día:</span>
             {DIAS.map(d => (
               <button
                 key={d}
@@ -784,7 +784,7 @@ export default function HorariosPage() {
                   "px-3 py-1 text-sm font-medium rounded-full transition-colors border",
                   diaResaltado === d 
                     ? "bg-[#1a365d] text-white border-[#1a365d]" 
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    : "bg-white dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
                 )}
               >
                 {DIA_LABEL[d].slice(0, 3)}
@@ -793,7 +793,7 @@ export default function HorariosPage() {
           </div>
           
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-slate-500 mr-2">Estado:</span>
+            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Estado:</span>
             {['Todos', 'CONFIRMADO', 'PUBLICADO', 'BORRADOR'].map(est => (
               <button
                 key={est}
@@ -801,8 +801,8 @@ export default function HorariosPage() {
                 className={cn(
                   "px-3 py-1 text-xs font-semibold rounded-full transition-colors border",
                   estadoFiltro === est
-                    ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                    : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                    ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700"
+                    : "bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
                 )}
               >
                 {est}
@@ -814,7 +814,7 @@ export default function HorariosPage() {
 
       {/* LEYENDA */}
       {cursosUnicos.length > 0 && (
-        <div className="flex flex-wrap gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm items-center">
+        <div className="flex flex-wrap gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm items-center">
           <div className="flex items-center gap-2 mr-2">
              <BookOpen className="w-4 h-4 text-slate-400" />
              <span className="text-sm font-semibold text-slate-600">Asignaturas:</span>
@@ -832,7 +832,7 @@ export default function HorariosPage() {
       )}
 
       {/* GRILLA CON ROWSPAN */}
-      <div className="shadow-lg rounded-xl overflow-hidden border border-slate-200 bg-white">
+      <div className="shadow-lg rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div className="overflow-x-auto">
           {loadingHor ? (
             <div className="flex min-h-[400px] items-center justify-center">
@@ -867,7 +867,7 @@ export default function HorariosPage() {
                     )}
                   >
                     {/* HORA Izquierda */}
-                    <td className="py-2 px-2 text-center border-r border-slate-200 bg-slate-100 text-slate-500 font-mono text-sm whitespace-nowrap">
+                    <td className="py-2 px-2 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-sm whitespace-nowrap">
                       {`${horaNum.toString().padStart(2, '0')}:00`}
                       <br />
                       <span className="text-xs opacity-70">{`${(horaNum + 1).toString().padStart(2, '0')}:00`}</span>
@@ -1182,7 +1182,7 @@ export default function HorariosPage() {
                     })}
 
                     {/* HORA Derecha */}
-                    <td className="py-2 px-2 text-center bg-slate-100 text-slate-500 font-mono text-sm whitespace-nowrap">
+                    <td className="py-2 px-2 text-center bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-sm whitespace-nowrap">
                       {`${horaNum.toString().padStart(2, '0')}:00`}
                       <br />
                       <span className="text-xs opacity-70">{`${(horaNum + 1).toString().padStart(2, '0')}:00`}</span>
@@ -1223,7 +1223,7 @@ export default function HorariosPage() {
             emptyTitle="Sin conflictos"
           />
         ) : (
-          <p className="text-sm text-gray-500">No hay registros de conflicto con cumple = false.</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400">No hay registros de conflicto con cumple = false.</p>
         )}
       </div>
 

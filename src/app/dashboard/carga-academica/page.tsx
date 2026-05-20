@@ -134,8 +134,8 @@ export default function CargaAcademicaPage() {
       header: 'Curso',
       cell: (r) => (
         <div>
-          <div className="font-mono text-sm">{r.curso.codigo}</div>
-          <div className="text-sm text-gray-700">{r.curso.nombre}</div>
+          <div className="font-mono text-sm dark:text-slate-200">{r.curso.codigo}</div>
+          <div className="text-sm text-gray-700 dark:text-slate-300">{r.curso.nombre}</div>
         </div>
       ),
     },

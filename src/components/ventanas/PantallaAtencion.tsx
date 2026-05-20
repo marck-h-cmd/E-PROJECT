@@ -715,24 +715,24 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Cabecera */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-xl border shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-gray-900">{ventana?.nombre}</h1>
-            <span className="bg-primary-50 text-primary-700 text-xs font-semibold px-2 py-1 rounded">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{ventana?.nombre}</h1>
+            <span className="bg-primary-50 dark:bg-slate-700 text-primary-700 dark:text-unt-gold-light text-xs font-semibold px-2 py-1 rounded">
               Categoría: {ventana?.categoria}
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
             Periodo Académico:{' '}
-            <span className="font-semibold text-gray-700">{ventana?.periodo?.nombre}</span>
+            <span className="font-semibold text-gray-700 dark:text-slate-300">{ventana?.periodo?.nombre}</span>
           </p>
         </div>
         <div className="flex items-center gap-2">
           {onVolver && (
             <button
               onClick={onVolver}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-600 transition-colors"
+              className="px-4 py-2 border dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 text-sm font-medium text-gray-600 dark:text-slate-300 transition-colors"
             >
               Volver a la Lista
             </button>
@@ -742,36 +742,36 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Users2 className="h-5 w-5" /></div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex items-center gap-3">
+          <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Users2 className="h-5 w-5" /></div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Total en Cola</p>
-            <p className="text-lg font-bold text-gray-900">{colaDocentes.length}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Total en Cola</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{colaDocentes.length}</p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg"><Clock className="h-5 w-5" /></div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex items-center gap-3">
+          <div className="p-2 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 rounded-lg"><Clock className="h-5 w-5" /></div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">En Espera</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">En Espera</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
               {colaDocentes.filter((a) => a.estado === 'ESPERANDO').length}
             </p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-green-50 text-green-600 rounded-lg"><CheckCircle className="h-5 w-5" /></div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex items-center gap-3">
+          <div className="p-2 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-lg"><CheckCircle className="h-5 w-5" /></div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Atendidos</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Atendidos</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
               {colaDocentes.filter((a) => a.estado === 'ATENDIDO').length}
             </p>
           </div>
         </div>
-        <div className="bg-white p-4 rounded-xl border shadow-sm flex items-center gap-3">
-          <div className="p-2 bg-red-50 text-red-600 rounded-lg"><AlertCircle className="h-5 w-5" /></div>
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 shadow-sm flex items-center gap-3">
+          <div className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg"><AlertCircle className="h-5 w-5" /></div>
           <div>
-            <p className="text-xs text-gray-500 font-medium">Ausentes</p>
-            <p className="text-lg font-bold text-gray-900">
+            <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Ausentes</p>
+            <p className="text-lg font-bold text-gray-900 dark:text-slate-100">
               {colaDocentes.filter((a) => a.estado === 'AUSENTE').length}
             </p>
           </div>
@@ -810,28 +810,28 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
       {/* ── WORKSPACE ──────────────────────────────────────────────────────── */}
       {docenteActual && (
-        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden mt-8">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border dark:border-slate-700 shadow-sm overflow-hidden mt-8">
           {/* Header Workspace */}
-          <div className="border-b bg-gray-50/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="border-b dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800/50 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900 dark:text-slate-100 flex items-center gap-2">
                 <FileSpreadsheet className="h-5 w-5 text-primary-600" />
                 Workspace de Programación: {docenteActual.usuario.nombre} {docenteActual.usuario.apellidos}
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
                 Asignación de asignaturas, grupos y ambientes en borrador para confirmación.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
               {/* Toggle vista */}
-              <div className="flex bg-slate-100 p-1 rounded-lg border border-slate-200">
+              <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg border border-slate-200 dark:border-slate-600">
                 <button
                   type="button"
                   onClick={() => setVistaWorkspace('calendario')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                     vistaWorkspace === 'calendario'
-                      ? 'bg-white shadow text-[#1a365d]'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-800 shadow text-[#1a365d] dark:text-unt-gold-light'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <Grid className="h-3.5 w-3.5" />
@@ -842,8 +842,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                   onClick={() => setVistaWorkspace('tarjetas')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
                     vistaWorkspace === 'tarjetas'
-                      ? 'bg-white shadow text-[#1a365d]'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-800 shadow text-[#1a365d] dark:text-unt-gold-light'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
                   <LayoutList className="h-3.5 w-3.5" />
@@ -864,8 +864,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 p-6">
             {/* ── Formulario (4 cols) ─────────────────────────────────────── */}
-            <div className="lg:col-span-4 bg-gray-50/50 p-5 rounded-xl border border-gray-100 space-y-4">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
+            <div className="lg:col-span-4 bg-gray-50/50 dark:bg-slate-700/30 p-5 rounded-xl border border-gray-100 dark:border-slate-600 space-y-4">
+              <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 dark:text-slate-400 flex items-center gap-2">
                 <Plus className="h-4 w-4" />
                 {isEditing ? 'Editar Bloque Horario' : 'Nuevo Bloque Horario'}
               </h3>
@@ -873,13 +873,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
               <form onSubmit={handleGuardarBloque} className="space-y-4">
                 {/* Curso */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                     Asignatura / Curso *
                   </label>
                   <select
                     value={formState.cursoId}
                     onChange={(e) => setFormState({ ...formState, cursoId: e.target.value, grupoId: '' })}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     <option value="">Seleccionar curso...</option>
@@ -911,13 +911,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
                 {/* Grupo */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                     Grupo / Sección
                   </label>
                   <select
                     value={formState.grupoId}
                     onChange={(e) => setFormState({ ...formState, grupoId: e.target.value })}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent disabled:opacity-50"
+                    className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent disabled:opacity-50"
                     disabled={!formState.cursoId}
                   >
                     <option value="">Seleccionar grupo (opcional)...</option>
@@ -931,13 +931,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
                 {/* Ambiente */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                     Ambiente / Aula / Laboratorio *
                   </label>
                   <select
                     value={formState.ambienteId}
                     onChange={(e) => setFormState({ ...formState, ambienteId: e.target.value })}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     <option value="">Seleccionar ambiente...</option>
@@ -951,13 +951,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
                 {/* Día */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                     Día de la Semana *
                   </label>
                   <select
                     value={formState.diaSemana}
                     onChange={(e) => setFormState({ ...formState, diaSemana: e.target.value })}
-                    className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                    className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                     required
                   >
                     {DIAS.map((dia) => (
@@ -971,13 +971,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                 {/* Horas */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                       Hora Inicio *
                     </label>
                     <select
                       value={formState.horaInicio}
                       onChange={(e) => setFormState({ ...formState, horaInicio: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                      className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                       required
                     >
                       {HORAS.slice(0, -1).map((hora) => (
@@ -988,13 +988,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-slate-300 mb-1">
                       Hora Fin *
                     </label>
                     <select
                       value={formState.horaFin}
                       onChange={(e) => setFormState({ ...formState, horaFin: e.target.value })}
-                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
+                      className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1a365d] focus:border-transparent"
                       required
                     >
                       {HORAS.slice(1).map((hora) => (
@@ -1008,9 +1008,9 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
                 {/* Validador en vivo */}
                 {formState.cursoId && formState.ambienteId && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <AlertCircle className="h-3.5 w-3.5 text-slate-500" />
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50/50 dark:bg-slate-800/50 p-4 space-y-3">
+                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                      <AlertCircle className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                       Estado de Validación en Vivo:
                     </h4>
                     <div className="space-y-2 text-xs">
@@ -1025,11 +1025,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className={`font-semibold ${validacionEnVivo.rangoOk ? 'text-green-800' : 'text-red-700'}`}>
                             Rango Horario
                           </p>
-                          <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeRango}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{validacionEnVivo.mensajeRango}</p>
                         </div>
                       </div>
                       {/* Docente */}
-                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
+                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100 dark:border-slate-700">
                         {validacionEnVivo.docenteOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                         ) : (
@@ -1039,11 +1039,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className={`font-semibold ${validacionEnVivo.docenteOk ? 'text-green-800' : 'text-red-700'}`}>
                             Disponibilidad del Docente
                           </p>
-                          <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeDocente}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{validacionEnVivo.mensajeDocente}</p>
                         </div>
                       </div>
                       {/* Ambiente */}
-                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
+                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100 dark:border-slate-700">
                         {validacionEnVivo.ambienteOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                         ) : (
@@ -1053,11 +1053,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className={`font-semibold ${validacionEnVivo.ambienteOk ? 'text-green-800' : 'text-red-700'}`}>
                             Disponibilidad del Ambiente
                           </p>
-                          <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeAmbiente}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{validacionEnVivo.mensajeAmbiente}</p>
                         </div>
                       </div>
                       {/* Horas */}
-                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100">
+                      <div className="flex items-start gap-2 border-t pt-2 border-slate-100 dark:border-slate-700">
                         {validacionEnVivo.horasOk ? (
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
                         ) : (
@@ -1067,7 +1067,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           <p className={`font-semibold ${validacionEnVivo.horasOk ? 'text-green-800' : 'text-red-700'}`}>
                             Límite de Horas Curso
                           </p>
-                          <p className="text-[10px] text-slate-500">{validacionEnVivo.mensajeHoras}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{validacionEnVivo.mensajeHoras}</p>
                         </div>
                       </div>
                     </div>
@@ -1090,7 +1090,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                         setFormState({ id: '', cursoId: '', grupoId: '', ambienteId: '', diaSemana: 'LUNES', horaInicio: '08:00', horaFin: '10:00' });
                         setFormError(null);
                       }}
-                      className="flex-1 px-4 py-2 border rounded-lg hover:bg-gray-100 text-sm font-medium text-gray-700 transition-colors"
+                      className="flex-1 px-4 py-2 border dark:border-slate-600 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-sm font-medium text-gray-700 dark:text-slate-300 transition-colors"
                     >
                       Cancelar
                     </button>
@@ -1125,10 +1125,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
             <div className="lg:col-span-8 space-y-6">
               {/* Leyenda */}
               {cursosUnicos.length > 0 && (
-                <div className="flex flex-wrap gap-2.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200 items-center">
+                <div className="flex flex-wrap gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600 items-center">
                   <div className="flex items-center gap-1.5 mr-2 shrink-0">
                     <BookOpen className="w-4 h-4 text-slate-400" />
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       Asignaturas:
                     </span>
                   </div>
@@ -1138,11 +1138,11 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                       return (
                         <div
                           key={c.codigo}
-                          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-white px-2.5 py-1 rounded-lg border border-slate-100 shadow-sm"
+                          className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm"
                         >
                           <span className={`w-2 h-2 rounded-full ${col.badge}`} />
                           <span>
-                            <strong className="text-slate-900">{c.codigo}</strong>: {c.nombre}
+                            <strong className="text-slate-900 dark:text-slate-100">{c.codigo}</strong>: {c.nombre}
                           </span>
                         </div>
                       );
@@ -1155,20 +1155,20 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
               {vistaWorkspace === 'tarjetas' ? (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 dark:text-slate-400 flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4" />
                       Horarios Programados en Borrador
                     </h3>
-                    <span className="bg-slate-100 text-slate-700 text-xs font-bold px-2.5 py-1 rounded-full">
+                    <span className="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-2.5 py-1 rounded-full">
                       Semana: {totalHorasSemana}h registradas
                     </span>
                   </div>
 
                   {horariosBorrador.length === 0 ? (
-                    <div className="border border-dashed rounded-xl p-12 text-center text-gray-500">
+                    <div className="border dark:border-slate-600 border-dashed rounded-xl p-12 text-center text-gray-500 dark:text-slate-400">
                       <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-30 text-primary-600" />
                       <p className="font-semibold text-sm">No hay bloques de horario en borrador</p>
-                      <p className="text-xs text-gray-400 mt-1">
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
                         Usa el formulario de la izquierda para registrar el primer bloque.
                       </p>
                     </div>
@@ -1179,18 +1179,18 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                         return (
                           <div
                             key={bloque.id}
-                            className={`bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-4 border-l-4 ${col.border}`}
+                            className={`bg-white dark:bg-slate-700 border dark:border-slate-600 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow flex items-start justify-between gap-4 border-l-4 ${col.border}`}
                           >
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded text-white shadow-sm ${col.badge}`}>
                                   {bloque.curso.codigo}
                                 </span>
-                                <span className="font-bold text-sm text-gray-900">
+                                <span className="font-bold text-sm text-gray-900 dark:text-slate-100">
                                   {bloque.curso.nombre}
                                 </span>
                               </div>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-600 mt-2">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-slate-300 mt-2">
                                 <div className="flex items-center gap-1">
                                   <Users2 className="h-3.5 w-3.5 text-gray-400" />
                                   <span>Grupo: {bloque.grupo?.nombre || 'General'}</span>
@@ -1211,17 +1211,17 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                 </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-lg border">
+                            <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-600 p-1 rounded-lg border dark:border-slate-500">
                               <button
                                 onClick={() => handleEditarBloque(bloque)}
-                                className="p-2 text-slate-500 hover:text-[#1a365d] hover:bg-white rounded-lg transition-colors"
+                                className="p-2 text-slate-500 dark:text-slate-300 hover:text-[#1a365d] dark:hover:text-white hover:bg-white dark:hover:bg-slate-500 rounded-lg transition-colors"
                                 title="Editar"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => handleEliminarBloque(bloque.id)}
-                                className="p-2 text-slate-500 hover:text-red-600 hover:bg-white rounded-lg transition-colors"
+                                className="p-2 text-slate-500 dark:text-slate-300 hover:text-red-600 hover:bg-white dark:hover:bg-slate-500 rounded-lg transition-colors"
                                 title="Eliminar"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -1237,7 +1237,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                 /* ── Vista CALENDARIO GRID ── */
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 flex items-center gap-2">
+                    <h3 className="font-semibold text-sm uppercase tracking-wider text-gray-600 dark:text-slate-400 flex items-center gap-2">
                       <CalendarIcon className="h-4 w-4" />
                       Cuadrícula Horaria del Docente (Borrador + Confirmados)
                     </h3>
@@ -1246,7 +1246,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     </span>
                   </div>
 
-                  <div className="shadow-lg rounded-xl overflow-hidden border border-slate-200 bg-white">
+                  <div className="shadow-lg rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm text-left border-collapse min-w-[800px] table-fixed">
                         <thead className="bg-[#1a365d] text-white">
@@ -1267,7 +1267,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                             </th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200">
+                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                           {HORAS_NUM.map((horaNum, rowIndex) => {
                             /**
                              * feat/alexis logic:
@@ -1309,13 +1309,13 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                             return (
                               <tr
                                 key={horaNum}
-                                className={rowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}
+                                className={rowIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/30 dark:bg-slate-700/30'}
                               >
                                 {/* HORA Izquierda */}
                                 {!isCoveredByRowspan && (
                                   <td
                                     rowSpan={horaRowSpan}
-                                    className="py-2.5 px-2 text-center border-r border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
+                                    className="py-2.5 px-2 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
                                   >
                                     {`${horaNum.toString().padStart(2, '0')}:00`}
                                     {horaRowSpan > 1 && (
@@ -1366,7 +1366,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                       <td
                                         key={`${dia}-${horaNum}`}
                                         rowSpan={cellRowSpan}
-                                        className="p-0 border-r border-b border-slate-200 align-top relative"
+                                        className="p-0 border-r border-b border-slate-200 dark:border-slate-700 align-top relative"
                                       >
                                         {/* Contenedor flex para múltiples clases en el mismo slot */}
                                         <div className="flex flex-col h-full w-full divide-y divide-black/5">
@@ -1508,7 +1508,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                   return (
                                     <td
                                       key={`${dia}-${horaNum}`}
-                                      className="p-0 border-r border-b border-slate-200 align-top transition-colors bg-white hover:bg-slate-50/50 min-h-[50px]"
+                                      className="p-0 border-r border-b border-slate-200 dark:border-slate-700 align-top transition-colors bg-white dark:bg-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-700/30 min-h-[50px]"
                                     />
                                   );
                                 })}
@@ -1517,7 +1517,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                 {!isCoveredByRowspan && (
                                   <td
                                     rowSpan={horaRowSpan}
-                                    className="py-2.5 px-2 text-center border-l border-slate-200 bg-slate-100 text-slate-500 font-mono text-xs whitespace-nowrap"
+                                    className="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
                                   >
                                     {`${horaNum.toString().padStart(2, '0')}:00`}
                                     {horaRowSpan > 1 && (

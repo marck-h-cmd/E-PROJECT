@@ -199,10 +199,10 @@ export default function DocentesPage() {
       header: 'Usuario',
       cell: (r) => (
         <div>
-          <div className="font-medium text-gray-900">
+          <div className="font-medium text-gray-900 dark:text-slate-100">
             {Formateadores.nombreUsuario({ nombre: r.usuario.nombre, apellidos: r.usuario.apellidos })}
           </div>
-          <div className="text-xs text-gray-500">{r.usuario.email}</div>
+          <div className="text-xs text-gray-500 dark:text-slate-400">{r.usuario.email}</div>
         </div>
       ),
     },
