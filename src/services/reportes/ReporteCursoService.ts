@@ -3,14 +3,14 @@ import { GeneradorPDF, ReporteConfig } from './GeneradorPDF';
 import {
   htmlDocumentoHorario,
   htmlResumenConsolidado,
-  htmlSeccionAmbiente,
+  htmlSeccionCurso,
   unirSeccionesPaginadas,
 } from './reporte-horario-html';
 
 const horariosInclude = {
   where: { estado: { not: 'CANCELADO' as const } },
   include: {
-    curso: { select: { codigo: true, nombre: true } },
+    ambiente: { select: { codigo: true, tipo: true } },
     docente: {
       include: { usuario: { select: { nombre: true, apellidos: true } } },
     },
@@ -19,19 +19,19 @@ const horariosInclude = {
   orderBy: [{ diaSemana: 'asc' as const }, { horaInicio: 'asc' as const }],
 };
 
-export class ReporteAulaService {
+export class ReporteCursoService {
   private generadorPDF = new GeneradorPDF();
 
-  async generar(ambienteId: string, periodoId: string): Promise<Buffer> {
-    const ambiente = await prisma.ambiente.findUnique({
-      where: { id: ambienteId },
+  async generar(cursoId: string, periodoId: string): Promise<Buffer> {
+    const curso = await prisma.curso.findUnique({
+      where: { id: cursoId },
       include: {
         horarios: { ...horariosInclude, where: { ...horariosInclude.where, periodoId } },
       },
     });
 
-    if (!ambiente) {
-      throw new Error('Ambiente no encontrado');
+    if (!curso) {
+      throw new Error('Curso no encontrado');
     }
 
     const periodo = await prisma.periodoAcademico.findUnique({
@@ -39,12 +39,12 @@ export class ReporteAulaService {
     });
 
     const html = htmlDocumentoHorario(
-      'Reporte de horario por ambiente',
-      htmlSeccionAmbiente(ambiente),
-      { periodo: periodo?.nombre, subtitulo: ambiente.codigo }
+      'Reporte de horario por curso',
+      htmlSeccionCurso(curso),
+      { periodo: periodo?.nombre, subtitulo: curso.codigo }
     );
 
-    return this.generadorPDF.generarPDF(html, this.configPdf('Horario por ambiente'));
+    return this.generadorPDF.generarPDF(html, this.configPdf('Horario por curso'));
   }
 
   async generarTodos(periodoId: string): Promise<Buffer> {
@@ -52,31 +52,31 @@ export class ReporteAulaService {
       where: { id: periodoId },
     });
 
-    const ambientes = await prisma.ambiente.findMany({
+    const cursos = await prisma.curso.findMany({
       where: { activo: true },
       include: {
         horarios: { ...horariosInclude, where: { ...horariosInclude.where, periodoId } },
       },
-      orderBy: { codigo: 'asc' },
+      orderBy: [{ ciclo: 'asc' }, { codigo: 'asc' }],
     });
 
-    const conHorario = ambientes.filter((a) => a.horarios.length > 0);
-    const totalSesiones = ambientes.reduce((s, a) => s + a.horarios.length, 0);
+    const conHorario = cursos.filter((c) => c.horarios.length > 0);
+    const totalSesiones = cursos.reduce((s, c) => s + c.horarios.length, 0);
 
     const cuerpo =
       htmlResumenConsolidado([
-        { label: 'Ambientes activos', value: ambientes.length },
+        { label: 'Cursos activos', value: cursos.length },
         { label: 'Con horario asignado', value: conHorario.length },
         { label: 'Sesiones totales', value: totalSesiones },
       ]) +
-      unirSeccionesPaginadas(ambientes.map((a) => htmlSeccionAmbiente(a)));
+      unirSeccionesPaginadas(cursos.map((c) => htmlSeccionCurso(c)));
 
-    const html = htmlDocumentoHorario('Horarios de todos los ambientes', cuerpo, {
+    const html = htmlDocumentoHorario('Horarios de todos los cursos', cuerpo, {
       periodo: periodo?.nombre,
-      subtitulo: `${ambientes.length} ambientes registrados`,
+      subtitulo: `${cursos.length} cursos registrados`,
     });
 
-    return this.generadorPDF.generarPDF(html, this.configPdf('Horarios todos los ambientes'));
+    return this.generadorPDF.generarPDF(html, this.configPdf('Horarios todos los cursos'));
   }
 
   private configPdf(titulo: string): ReporteConfig {

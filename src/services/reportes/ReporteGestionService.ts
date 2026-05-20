@@ -2,22 +2,21 @@ import { prisma } from '@/lib/prisma';
 import { GeneradorPDF, ReporteConfig } from './GeneradorPDF';
 import { ServicioEstadisticas } from '@/services/estadisticas/ServicioEstadisticas';
 import { Formateadores } from '@/lib/formateadores';
+import {
+  generarKpiGrid,
+  generarSeccionTitulo,
+  generarTablaHTML,
+  generarCajaInfo,
+} from './reporte-estilos';
 
 export class ReporteGestionService {
-  private generadorPDF: GeneradorPDF;
-  private servicioEstadisticas: ServicioEstadisticas;
-
-  constructor() {
-    this.generadorPDF = new GeneradorPDF();
-    this.servicioEstadisticas = new ServicioEstadisticas();
-  }
+  private generadorPDF = new GeneradorPDF();
+  private servicioEstadisticas = new ServicioEstadisticas();
 
   async generar(periodoId: string): Promise<Buffer> {
     const periodo = await prisma.periodoAcademico.findUnique({
       where: { id: periodoId },
-      include: {
-        configuraciones: true,
-      },
+      include: { configuraciones: true },
     });
 
     if (!periodo) {
@@ -28,80 +27,51 @@ export class ReporteGestionService {
     const avanceCategoria = await this.servicioEstadisticas.obtenerAvanceCategoria(periodoId);
     const ocupacion = await this.servicioEstadisticas.obtenerOcupacionAmbientes(periodoId);
 
-    // Estadísticas adicionales
-    const totalDocentesPorCategoria = await prisma.docente.groupBy({
-      by: ['categoria'],
-      where: { usuario: { activo: true } },
-      _count: true,
-    });
-
     const docentesConHorarios = await prisma.horario.groupBy({
       by: ['docenteId'],
       where: { periodoId, estado: { not: 'CANCELADO' } },
     });
 
-    let html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Reporte de Gestión</title>
-      </head>
-      <body>
-        ${this.generadorPDF.generarEncabezado(
-          'Reporte de Gestión de Horarios',
-          periodo.nombre
-        )}
-        
-        <h2 style="color: #1a365d; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">1. Resumen General</h2>
-        
-        <div class="resumen-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Total Docentes:</strong> ${resumen.totalDocentes}
-          </div>
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Total Cursos:</strong> ${resumen.totalCursos}
-          </div>
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Total Ambientes:</strong> ${resumen.totalAmbientes}
-          </div>
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Total Horarios:</strong> ${resumen.totalHorarios}
-          </div>
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Docentes con Horarios:</strong> ${docentesConHorarios.length}
-          </div>
-          <div style="padding: 10px; background: #ebf4ff; border-radius: 5px;">
-            <strong>Período:</strong> ${new Date(periodo.fechaInicio).toLocaleDateString('es-PE')} - ${new Date(periodo.fechaFin).toLocaleDateString('es-PE')}
-          </div>
-        </div>
-    `;
-
-    // Sección de avance por categoría
-    html += `
-      <h2 style="color: #1a365d; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">2. Avance por Categoría Docente</h2>
-    `;
-
-    const filasCategoria = Object.entries(avanceCategoria).map(([categoria, datos]: [string, any]) => [
-      Formateadores.categoriaDocente(categoria),
-      datos.totalDocentes.toString(),
-      datos.totalCursosAsignados.toString(),
-      datos.horasRequeridas.toFixed(1),
-      datos.horasAsignadas.toFixed(1),
-      `${datos.porcentajeAvance}%`,
+    let contenido = generarKpiGrid([
+      { label: 'Docentes', value: resumen.totalDocentes },
+      { label: 'Cursos', value: resumen.totalCursos },
+      { label: 'Ambientes', value: resumen.totalAmbientes },
+      { label: 'Horarios', value: resumen.totalHorarios },
+      { label: 'Doc. con horario', value: docentesConHorarios.length },
+      {
+        label: 'Vigencia período',
+        value: `${new Date(periodo.fechaInicio).toLocaleDateString('es-PE')} – ${new Date(periodo.fechaFin).toLocaleDateString('es-PE')}`,
+      },
     ]);
 
-    html += this.generadorPDF.generarTabla(
-      ['Categoría', 'Docentes', 'Cursos', 'Horas Req.', 'Horas Asig.', 'Avance'],
+    contenido += generarSeccionTitulo('Avance por categoría docente');
+
+    const filasCategoria = Object.entries(avanceCategoria).map(([categoria, datos]) => {
+      const d = datos as {
+        totalDocentes: number;
+        totalCursosAsignados: number;
+        horasRequeridas: number;
+        horasAsignadas: number;
+        porcentajeAvance: number;
+      };
+      return [
+        Formateadores.categoriaDocente(categoria),
+        d.totalDocentes.toString(),
+        d.totalCursosAsignados.toString(),
+        d.horasRequeridas.toFixed(1),
+        d.horasAsignadas.toFixed(1),
+        `${d.porcentajeAvance}%`,
+      ];
+    });
+
+    contenido += generarTablaHTML(
+      ['Categoría', 'Docentes', 'Cursos', 'Horas req.', 'Horas asig.', 'Avance'],
       filasCategoria
     );
 
-    // Sección de ocupación de ambientes
-    html += `
-      <h2 style="color: #1a365d; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">3. Ocupación de Ambientes</h2>
-    `;
+    contenido += generarSeccionTitulo('Ocupación de ambientes (top 15)');
 
-    const filasOcupacion = ocupacion.slice(0, 10).map(a => [
+    const filasOcupacion = ocupacion.slice(0, 15).map((a) => [
       a.codigo,
       a.nombre,
       Formateadores.tipoAmbiente(a.tipo),
@@ -109,30 +79,29 @@ export class ReporteGestionService {
       `${a.porcentajeOcupacion}%`,
     ]);
 
-    html += this.generadorPDF.generarTabla(
+    contenido += generarTablaHTML(
       ['Código', 'Nombre', 'Tipo', 'Horarios', '% Ocupación'],
       filasOcupacion
     );
 
-    // Sección de configuración del período
     if (periodo.configuraciones) {
-      html += `
-        <h2 style="color: #1a365d; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">4. Configuración del Período</h2>
-        
-        <div style="padding: 15px; background: #f7fafc; border-radius: 5px;">
-          <p><strong>Horas máximas diarias por docente:</strong> ${periodo.configuraciones.horasMaxDiariasDocente}</p>
-          <p><strong>Horas máximas continuas:</strong> ${periodo.configuraciones.horasMaxContinuas}</p>
-          <p><strong>Descanso mínimo entre horas:</strong> ${periodo.configuraciones.descansoMinEntreHoras}h</p>
-          <p><strong>Orden de atención:</strong> ${(periodo.configuraciones.ordenCategorias as string[]).map(c => Formateadores.categoriaDocente(c)).join(' → ')}</p>
-        </div>
-      `;
+      const cfg = periodo.configuraciones;
+      contenido += generarSeccionTitulo('Configuración del período');
+      contenido += generarCajaInfo('Parámetros operativos', [
+        `<strong>Horas máx. diarias por docente:</strong> ${cfg.horasMaxDiariasDocente}`,
+        `<strong>Horas máx. continuas:</strong> ${cfg.horasMaxContinuas}`,
+        `<strong>Descanso mínimo entre sesiones:</strong> ${cfg.descansoMinEntreHoras} h`,
+        `<strong>Orden de atención:</strong> ${(cfg.ordenCategorias as string[])
+          .map((c) => Formateadores.categoriaDocente(c))
+          .join(' → ')}`,
+      ]);
     }
 
-    html += `
-        ${this.generadorPDF.generarPiePagina()}
-      </body>
-      </html>
-    `;
+    const html = this.generadorPDF.generarDocumento(
+      'Reporte de Gestión de Horarios',
+      contenido,
+      { periodo: periodo.nombre }
+    );
 
     const config: ReporteConfig = {
       titulo: 'Reporte de Gestión',
@@ -140,6 +109,6 @@ export class ReporteGestionService {
       formato: 'A4',
     };
 
-    return await this.generadorPDF.generarPDF(html, config);
+    return this.generadorPDF.generarPDF(html, config);
   }
 }
