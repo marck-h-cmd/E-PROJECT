@@ -177,6 +177,23 @@ export class GestorNotificaciones {
     }
   }
 
+  async marcarComoLeida(id: string): Promise<void> {
+    await prisma.notificacion.update({
+      where: { id },
+      data: { estado: 'LEIDA' },
+    });
+  }
+
+  async marcarTodasComoLeidas(usuarioId: string): Promise<void> {
+    await prisma.notificacion.updateMany({
+      where: {
+        usuarioId,
+        estado: { not: 'LEIDA' },
+      },
+      data: { estado: 'LEIDA' },
+    });
+  }
+
   private obtenerServicio(canal: CanalNotificacion): ServicioNotificacionBase | undefined {
     if (!this.servicios.has(canal)) {
       if (canal === 'WHATSAPP') {

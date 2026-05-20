@@ -24,6 +24,7 @@ export interface DocenteCreateInput {
   departamento?: string;
   telefono?: string;
   whatsapp?: string;
+  fechaIngreso?: Date | null;
 }
 
 export interface DocenteUpdateInput extends Partial<DocenteCreateInput> {
@@ -168,6 +169,7 @@ export class ServicioDocente {
         departamento: datos.departamento,
         telefono: datos.telefono,
         whatsapp: datos.whatsapp,
+        fechaIngreso: datos.fechaIngreso ?? null,
         usuario: {
           create: {
             email: datos.email,
@@ -211,6 +213,7 @@ export class ServicioDocente {
     if (datos.verificadoWhatsapp !== undefined) updateData.verificadoWhatsapp = datos.verificadoWhatsapp;
     if (datos.verificadoTelegram !== undefined) updateData.verificadoTelegram = datos.verificadoTelegram;
     if (datos.telegramId !== undefined) updateData.telegramId = datos.telegramId;
+    if (datos.fechaIngreso !== undefined) updateData.fechaIngreso = datos.fechaIngreso;
 
     const usuarioUpdate: any = {};
     if (datos.nombre) usuarioUpdate.nombre = datos.nombre;

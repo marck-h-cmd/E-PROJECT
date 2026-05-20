@@ -36,6 +36,7 @@ interface DocenteRow {
   categoria: string;
   departamento: string | null;
   usuario: UsuarioDocente;
+  fechaIngreso?: string | null;
 }
 
 const CATEGORIAS = Object.values(CategoriaDocente);
@@ -65,6 +66,7 @@ export default function DocentesPage() {
     telefono: string;
     whatsapp: string;
     activo: boolean;
+    fechaIngreso: string;
   }>({
     email: '',
     nombre: '',
@@ -75,6 +77,7 @@ export default function DocentesPage() {
     telefono: '',
     whatsapp: '',
     activo: true,
+    fechaIngreso: '',
   });
 
   const resetForm = () => {
@@ -88,6 +91,7 @@ export default function DocentesPage() {
       telefono: '',
       whatsapp: '',
       activo: true,
+      fechaIngreso: '',
     });
     setEditing(null);
   };
@@ -116,6 +120,9 @@ export default function DocentesPage() {
         telefono: d.telefono ?? '',
         whatsapp: d.whatsapp ?? '',
         activo: d.usuario?.activo ?? row.usuario.activo,
+        fechaIngreso: d.fechaIngreso 
+          ? new Date(d.fechaIngreso).toISOString().split('T')[0] 
+          : '',
       });
       setDialogOpen(true);
     } catch (e) {
@@ -137,6 +144,7 @@ export default function DocentesPage() {
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
           activo: form.activo,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente actualizado');
       } else {
@@ -149,6 +157,7 @@ export default function DocentesPage() {
           departamento: form.departamento || undefined,
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente creado');
       }
@@ -184,11 +193,7 @@ export default function DocentesPage() {
   }, [search, setPage]);
 
   const columns: Column<DocenteRow>[] = [
-    {
-      key: 'codigo',
-      header: 'Código',
-      cell: (r) => <span className="font-mono text-sm">{r.codigo}</span>,
-    },
+    { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
     {
       key: 'nombre',
       header: 'Usuario',
@@ -206,10 +211,18 @@ export default function DocentesPage() {
       header: 'Categoría',
       cell: (r) => Formateadores.categoriaDocente(r.categoria),
     },
+    { key: 'depto', header: 'Departamento', cell: (r) => r.departamento || '—' },
     {
-      key: 'depto',
-      header: 'Departamento',
-      cell: (r) => r.departamento || '—',
+      key: 'antiguedad',
+      header: 'Antigüedad',
+      cell: (r) => {
+        if (!r.fechaIngreso) return '—';
+        const años = Math.floor(
+          (new Date().getTime() - new Date(r.fechaIngreso).getTime())
+          / (1000 * 60 * 60 * 24 * 365.25)
+        );
+        return `${años} año${años !== 1 ? 's' : ''}`;
+      }
     },
     {
       key: 'activo',
@@ -376,6 +389,18 @@ export default function DocentesPage() {
                 value={form.departamento}
                 onChange={(e) => setForm((f) => ({ ...f, departamento: e.target.value }))}
               />
+            </div>
+            <div>
+              <Label htmlFor="fechaIngreso">Fecha de ingreso</Label>
+              <Input
+                id="fechaIngreso"
+                type="date"
+                value={form.fechaIngreso}
+                onChange={(e) => setForm((f) => ({ ...f, fechaIngreso: e.target.value }))}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Determina el orden de antigüedad en ventanas de atención
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
