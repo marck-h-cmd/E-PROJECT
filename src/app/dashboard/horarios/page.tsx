@@ -841,7 +841,7 @@ export default function HorariosPage() {
                   <tr 
                     key={horaNum} 
                     className={cn(
-                      "group",
+                      "group h-16",
                       rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/30"
                     )}
                   >
@@ -854,124 +854,226 @@ export default function HorariosPage() {
 
                     {/* Celdas de Días */}
                     {DIAS.map(dia => {
-                      // Verificar si esta franja ya está cubierta por una clase que empezó antes
-                      const isCovered = horariosFiltrados.some(h => {
-                        if (h.diaSemana !== dia) return false;
-                        const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                        const fin = parseInt(h.horaFin.split(':')[0], 10);
-                        return inicio < horaNum && fin > horaNum;
+                      if (rowIndex > 0) return null; // Solo renderizar el TD en la primera fila (rowSpan={14})
+
+                      // Encontrar todos los horarios para este día
+                      const dayClasses = horariosFiltrados.filter(h => h.diaSemana === dia);
+
+                      // Agrupar en lanes (sub-columnas) que no se crucen entre sí
+                      const lanes: typeof dayClasses[] = [];
+                      const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
+                      
+                      const sortedClasses = [...dayClasses].sort((a, b) => parseTime(a.horaInicio) - parseTime(b.horaInicio));
+
+                      sortedClasses.forEach(c => {
+                        const start = parseTime(c.horaInicio);
+                        const end = parseTime(c.horaFin);
+
+                        let placed = false;
+                        for (let i = 0; i < lanes.length; i++) {
+                          const hasOverlap = lanes[i].some(existing => {
+                            const estart = parseTime(existing.horaInicio);
+                            const eend = parseTime(existing.horaFin);
+                            return Math.max(start, estart) < Math.min(end, eend);
+                          });
+                          if (!hasOverlap) {
+                            lanes[i].push(c);
+                            placed = true;
+                            break;
+                          }
+                        }
+                        if (!placed) {
+                          lanes.push([c]);
+                        }
                       });
 
-                      if (isCovered) return null; // Saltar el renderizado porque rowspan de una clase anterior lo cubre
-
-                      // Encontrar clases que empiecen exactamente en esta hora
-                      const startingClasses = horariosFiltrados.filter(h => {
-                        if (h.diaSemana !== dia) return false;
-                        const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                        return inicio === horaNum;
-                      });
-
-                      if (startingClasses.length > 0) {
-                        const maxDuration = Math.max(...startingClasses.map(h => {
-                          const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                          const fin = parseInt(h.horaFin.split(':')[0], 10);
-                          return fin - inicio;
-                        }), 1);
-
-                        return (
-                          <td 
-                            key={`${dia}-${horaNum}`} 
-                            rowSpan={maxDuration}
-                            className={cn(
-                              "p-0 border-r border-b border-slate-200 align-top transition-colors relative",
-                              diaResaltado === dia && "bg-blue-50/30"
-                            )}
-                          >
-                            <div className="flex flex-col h-full w-full">
-                              {startingClasses.map(h => {
-                                const col = getColorForCurso(h.curso.codigo);
-                                const esLab = h.ambiente.codigo.toUpperCase().includes('LAB') || (h.ambiente as any).tipo === 'LABORATORIO';
-                                const isBorrador = h.estado === 'BORRADOR';
-                                return (
-                                  <div 
-                                    key={h.id}
-                                    className={cn(
-                                      "relative flex flex-col p-3 h-full w-full border-l-4 transition-all hover:shadow-inner cursor-pointer flex-1",
-                                      col.bg, col.border, col.text
-                                    )}
-                                  >
-                                    <div className="flex justify-between items-start mb-2 gap-2">
-                                      <span className={cn("text-[10px] font-bold px-1.5 py-0.5 rounded text-white shadow-sm", col.badge)}>
-                                        {esLab ? 'LAB' : 'TEORÍA'}
-                                      </span>
-                                      
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="text-[10px] font-mono opacity-80 font-semibold whitespace-nowrap bg-white/40 px-1 rounded">
-                                          {h.horaInicio} - {h.horaFin}
-                                        </span>
-                                        
-                                        {isBorrador && (
-                                          <div className="flex items-center gap-1 bg-white/60 p-0.5 rounded shadow-sm">
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleEditOpen(h);
-                                              }}
-                                              title="Editar"
-                                              className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
-                                            >
-                                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                              </svg>
-                                            </button>
-                                            <button
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(h);
-                                              }}
-                                              title="Eliminar"
-                                              className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
-                                            >
-                                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                              </svg>
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    
-                                    <div className="font-bold text-sm leading-tight mb-0.5">{h.curso.codigo}</div>
-                                    <div className="text-[11px] leading-snug line-clamp-2 opacity-90 mb-2" title={h.curso.nombre}>{h.curso.nombre}</div>
-                                    
-                                    <div className="mt-auto flex flex-col xl:flex-row xl:justify-between items-start xl:items-center text-[10px] opacity-85 font-medium pt-1.5 border-t border-black/5 gap-1 xl:gap-0">
-                                      <div className="flex items-center gap-1 bg-white/40 px-1.5 py-0.5 rounded">
-                                        <Users className="w-3 h-3" />
-                                        <span>{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1 bg-white/40 px-1.5 py-0.5 rounded">
-                                        <MapPin className="w-3 h-3" />
-                                        <span>{h.ambiente.codigo}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        );
+                      // Si no hay clases, mostrar una lane vacía
+                      if (lanes.length === 0) {
+                        lanes.push([]);
                       }
 
-                      // Celda Vacía
                       return (
                         <td 
-                          key={`${dia}-${horaNum}`} 
+                          key={dia} 
+                          rowSpan={14}
                           className={cn(
-                            "p-2 border-r border-slate-200 transition-colors",
-                            diaResaltado === dia && "bg-blue-50/55"
+                            "p-0 border-r border-b border-slate-200 align-top transition-colors relative h-full min-h-[600px]",
+                            diaResaltado === dia && "bg-blue-50/30"
                           )}
                         >
-                           <div className="w-full h-full min-h-[40px] rounded border border-transparent hover:border-slate-300 transition-colors" />
+                          <div className="absolute inset-0 flex flex-row divide-x divide-slate-200 h-full w-full">
+                            {lanes.map((lane, laneIdx) => {
+                              // Generar bloques y espacios vacíos para esta lane de 7:00 a 21:00 (14 horas)
+                              const laneItems: Array<{
+                                type: 'class' | 'empty';
+                                duration: number;
+                                class?: typeof dayClasses[0];
+                                startHour: number;
+                                endHour: number;
+                              }> = [];
+
+                              let currentHour = 7;
+                              const laneClasses = [...lane].sort((a, b) => parseTime(a.horaInicio) - parseTime(b.horaInicio));
+
+                              laneClasses.forEach(c => {
+                                const start = parseTime(c.horaInicio);
+                                const end = parseTime(c.horaFin);
+
+                                if (start > currentHour) {
+                                  laneItems.push({
+                                    type: 'empty',
+                                    duration: start - currentHour,
+                                    startHour: currentHour,
+                                    endHour: start
+                                  });
+                                }
+                                laneItems.push({
+                                  type: 'class',
+                                  duration: end - start,
+                                  class: c,
+                                  startHour: start,
+                                  endHour: end
+                                });
+                                currentHour = end;
+                              });
+
+                              if (currentHour < 21) {
+                                laneItems.push({
+                                  type: 'empty',
+                                  duration: 21 - currentHour,
+                                  startHour: currentHour,
+                                  endHour: 21
+                                });
+                              }
+
+                              return (
+                                <div 
+                                  key={laneIdx} 
+                                  className="flex flex-col flex-1 h-full justify-between items-stretch"
+                                >
+                                  {laneItems.map((item, itemIdx) => {
+                                    if (item.type === 'class') {
+                                      const h = item.class!;
+                                      const col = getColorForCurso(h.curso.codigo);
+                                      const esLab = h.ambiente.codigo.toUpperCase().includes('LAB') || (h.ambiente as any).tipo === 'LABORATORIO';
+                                      const isBorrador = h.estado === 'BORRADOR';
+
+                                      const laneCount = lanes.length;
+                                      const isCompact = laneCount > 1;
+                                      const isSuperCompact = laneCount >= 3 || item.duration <= 1;
+
+                                      return (
+                                        <div
+                                          key={h.id}
+                                          style={{ flexGrow: item.duration, flexBasis: 0 }}
+                                          className="flex flex-col w-full group relative overflow-hidden"
+                                        >
+                                          <div
+                                            className={cn(
+                                              "relative flex flex-col h-full w-full border-l-4 transition-all hover:shadow-inner cursor-pointer flex-1 border-b border-b-black/5 overflow-hidden",
+                                              isSuperCompact ? "p-1.5" : isCompact ? "p-2" : "p-3",
+                                              col.bg, col.border, col.text
+                                            )}
+                                          >
+                                            <div className={cn("flex justify-between items-start gap-1", isSuperCompact ? "mb-1" : "mb-2")}>
+                                              <span className={cn(
+                                                "font-bold rounded text-white shadow-sm shrink-0",
+                                                isSuperCompact ? "text-[8px] px-1 py-0" : "text-[10px] px-1.5 py-0.5",
+                                                col.badge
+                                              )}>
+                                                {esLab ? 'LAB' : 'TEORÍA'}
+                                              </span>
+                                              
+                                              <div className="flex items-center gap-1">
+                                                <span className={cn(
+                                                  "font-mono opacity-80 font-semibold whitespace-nowrap bg-white/40 px-1 rounded shrink-0",
+                                                  isSuperCompact ? "text-[7.5px]" : "text-[10px]"
+                                                )}>
+                                                  {h.horaInicio} - {h.horaFin}
+                                                </span>
+                                                
+                                                {isBorrador && (
+                                                  <div className="flex items-center gap-0.5 bg-white/70 p-0.5 rounded shadow-sm opacity-0 hover:opacity-100 group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleEditOpen(h);
+                                                      }}
+                                                      title="Editar"
+                                                      className="p-0.5 hover:bg-slate-200 text-slate-700 rounded transition-colors"
+                                                    >
+                                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                      </svg>
+                                                    </button>
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleDelete(h);
+                                                      }}
+                                                      title="Eliminar"
+                                                      className="p-0.5 hover:bg-red-100 text-red-600 rounded transition-colors"
+                                                    >
+                                                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                      </svg>
+                                                    </button>
+                                                  </div>
+                                                )}
+                                              </div>
+                                            </div>
+                                            
+                                            <div className={cn(
+                                              "font-bold leading-tight",
+                                              isSuperCompact ? "text-[10px] mb-0" : isCompact ? "text-xs mb-0.5" : "text-sm mb-0.5"
+                                            )}>
+                                              {h.curso.codigo}
+                                            </div>
+                                            
+                                            <div 
+                                              className={cn(
+                                                "leading-snug opacity-90",
+                                                isSuperCompact ? "hidden" : isCompact ? "text-[9px] line-clamp-1 mb-1" : "text-[11px] line-clamp-2 mb-2"
+                                              )} 
+                                              title={h.curso.nombre}
+                                            >
+                                              {h.curso.nombre}
+                                            </div>
+                                            
+                                            <div className={cn(
+                                              "mt-auto flex opacity-85 font-medium pt-1 border-t border-black/5 gap-1 w-full overflow-hidden",
+                                              isCompact 
+                                                ? "flex-col items-stretch text-[8px]" 
+                                                : "flex-row justify-between items-center text-[10px]"
+                                            )}>
+                                              <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                {!isCompact && <Users className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                <span className="truncate text-center w-full">{h.grupo?.nombre ? `Gr. ${h.grupo.nombre}` : 'Sin Gr.'}</span>
+                                              </div>
+                                              <div className="flex items-center gap-0.5 bg-white/40 px-1 py-0.5 rounded truncate max-w-full justify-center">
+                                                {!isCompact && <MapPin className="w-2.5 h-2.5 text-slate-400 shrink-0" />}
+                                                <span className="truncate text-center w-full">{h.ambiente.codigo}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div
+                                          key={itemIdx}
+                                          style={{ flexGrow: item.duration, flexBasis: 0 }}
+                                          className="border-b last:border-b-0 border-slate-200/50 w-full hover:bg-slate-50/50 transition-colors flex flex-col justify-center items-center"
+                                        >
+                                          <div className="w-full h-full min-h-[30px] rounded border border-transparent" />
+                                        </div>
+                                      );
+                                    }
+                                  })}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </td>
                       );
                     })}
