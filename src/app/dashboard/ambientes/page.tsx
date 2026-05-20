@@ -34,7 +34,6 @@ interface AmbienteRow {
   nombre: string;
   tipo: string;
   capacidad: number;
-  ubicacion?: string | null;
   activo?: boolean;
 }
 
@@ -64,14 +63,12 @@ export default function AmbientesPage() {
     nombre: string;
     tipo: TipoAmbiente;
     capacidad: number;
-    ubicacion: string;
     activo: boolean;
   }>({
     codigo: '',
     nombre: '',
     tipo: TipoAmbiente.AULA,
     capacidad: 40,
-    ubicacion: '',
     activo: true,
   });
 
@@ -81,7 +78,6 @@ export default function AmbientesPage() {
       nombre: '',
       tipo: tab === 'LABORATORIO' ? TipoAmbiente.LABORATORIO : TipoAmbiente.AULA,
       capacidad: 40,
-      ubicacion: '',
       activo: true,
     });
     setEditing(null);
@@ -108,7 +104,6 @@ export default function AmbientesPage() {
         nombre: a.nombre,
         tipo: a.tipo as TipoAmbiente,
         capacidad: a.capacidad,
-        ubicacion: a.ubicacion ?? '',
         activo: a.activo !== false,
       });
       setDialogOpen(true);
@@ -128,7 +123,6 @@ export default function AmbientesPage() {
           nombre: form.nombre,
           tipo: form.tipo,
           capacidad: form.capacidad,
-          ubicacion: form.ubicacion || undefined,
           activo: form.activo,
         });
         toast.success('Ambiente actualizado');
@@ -138,7 +132,6 @@ export default function AmbientesPage() {
           nombre: form.nombre,
           tipo: form.tipo,
           capacidad: form.capacidad,
-          ubicacion: form.ubicacion || undefined,
         });
         toast.success('Ambiente creado');
       }
@@ -183,7 +176,6 @@ export default function AmbientesPage() {
       header: 'Capacidad',
       cell: (r) => Formateadores.capacidad(r.capacidad),
     },
-    { key: 'ubi', header: 'Ubicación', cell: (r) => r.ubicacion || '—' },
     {
       key: 'activo',
       header: 'Activo',
@@ -316,14 +308,6 @@ export default function AmbientesPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <Label htmlFor="ubi">Ubicación</Label>
-              <Input
-                id="ubi"
-                value={form.ubicacion}
-                onChange={(e) => setForm((f) => ({ ...f, ubicacion: e.target.value }))}
-              />
             </div>
             {editing && (
               <div className="flex items-center gap-2">

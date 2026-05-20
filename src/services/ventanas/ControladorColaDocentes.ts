@@ -15,6 +15,7 @@ export interface DocenteEnCola {
   estado: EstadoAtencion;
   horaInicio: Date | null;
   horaFin: Date | null;
+  fechaIngreso?: string | null;
 }
 
 export class ControladorColaDocentes {
@@ -181,18 +182,37 @@ export class ControladorColaDocentes {
     atendidos: number;
     ausentes: number;
   }> {
+    const ORDEN_CATEGORIA: Record<string, number> = {
+      PRINCIPAL: 1,
+      ASOCIADO: 2,
+      AUXILIAR: 3,
+      CONTRATADO: 4,
+      INVITADO: 5,
+    };
+
     const atenciones = await prisma.atencionVentana.findMany({
       where: { ventanaId },
       include: {
         docente: {
           include: {
-            usuario: {
-              select: { nombre: true, apellidos: true, email: true },
-            },
+            usuario: true,
           },
         },
       },
-      orderBy: { posicion: 'asc' },
+    });
+
+    atenciones.sort((a: any, b: any) => {
+      const catA = ORDEN_CATEGORIA[a.docente.categoria] ?? 99;
+      const catB = ORDEN_CATEGORIA[b.docente.categoria] ?? 99;
+      if (catA !== catB) return catA - catB;
+
+      const fechaA = a.docente.fechaIngreso
+        ? new Date(a.docente.fechaIngreso).getTime()
+        : Infinity;
+      const fechaB = b.docente.fechaIngreso
+        ? new Date(b.docente.fechaIngreso).getTime()
+        : Infinity;
+      return fechaA - fechaB;
     });
 
     const enEspera: DocenteEnCola[] = [];
@@ -200,10 +220,11 @@ export class ControladorColaDocentes {
     let atendidos = 0;
     let ausentes = 0;
 
-    for (const atencion of atenciones) {
+    for (let i = 0; i < atenciones.length; i++) {
+      const atencion = atenciones[i];
       const docenteEnCola: DocenteEnCola = {
         atencionId: atencion.id,
-        posicion: atencion.posicion,
+        posicion: i + 1,
         docenteId: atencion.docenteId,
         codigo: atencion.docente.codigo,
         nombre: atencion.docente.usuario.nombre,
@@ -213,6 +234,7 @@ export class ControladorColaDocentes {
         estado: atencion.estado,
         horaInicio: atencion.horaInicio,
         horaFin: atencion.horaFin,
+        fechaIngreso: atencion.docente.fechaIngreso?.toISOString(),
       };
 
       switch (atencion.estado) {

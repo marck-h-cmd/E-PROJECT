@@ -4,8 +4,8 @@
   "private": true,
   "description": "Sistema de Gestión de Horarios - Escuela de Ingeniería de Sistemas UNT",
   "prisma": {
-  "seed": "tsx prisma/seed.ts"
-},
+    "seed": "tsx scripts/seed.ts"
+  },
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build",
@@ -15,7 +15,7 @@
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "db:studio": "prisma studio",
     "test": "vitest",
     "test:ui": "vitest --ui",
@@ -27,7 +27,8 @@
     "docker:rebuild": "docker compose build app && docker compose up -d --force-recreate app",
     "docker:dev": "docker compose --profile dev up -d app-dev",
     "docker:logs": "docker compose logs -f app",
-    "docker:seed": "docker exec unt_app node scripts/docker-seed-min.js"
+    "docker:seed": "docker exec unt_app node scripts/docker-seed-min.js",
+    "docker:seed:full": "docker cp scripts/seed.ts unt_app:/app/scripts/seed.ts && docker exec unt_app npx tsx scripts/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -44,12 +45,16 @@
     "clsx": "^2.1.1",
     "cors": "^2.8.5",
     "date-fns": "^3.6.0",
+    "exceljs": "^4.4.0",
     "express-rate-limit": "^7.3.0",
+    "file-saver": "^2.0.5",
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
     "ioredis": "^5.4.0",
     "jsonwebtoken": "^9.0.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.16.0",
     "next": "^14.2.0",
     "nodemailer": "^6.9.0",
@@ -71,6 +76,7 @@
     "@testing-library/react": "^15.0.0",
     "@types/bcryptjs": "^2.4.0",
     "@types/cors": "^2.8.0",
+    "@types/file-saver": "^2.0.7",
     "@types/jsonwebtoken": "^9.0.0",
     "@types/node": "^20.12.0",
     "@types/nodemailer": "^6.4.0",

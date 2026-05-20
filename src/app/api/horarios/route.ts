@@ -15,6 +15,7 @@ const filtrosSchema = z.object({
   ambienteId: z.string().optional(),
   diaSemana: z.nativeEnum(DiaSemana).optional(),
   estado: z.nativeEnum(EstadoHorario).optional(),
+  ciclo: z.string().optional(),
   page: z.string().optional().default('1'),
   limit: z.string().optional().default('20'),
   sortBy: z.string().optional().default('createdAt'),
@@ -60,10 +61,13 @@ export async function GET(request: NextRequest) {
       return createErrorResponse('VALIDATION_ERROR', 'Parámetros inválidos', 400, validation.error.errors);
     }
 
-    const { page, limit, sortBy, sortOrder, ...filtros } = validation.data;
+    const { page, limit, sortBy, sortOrder, ciclo, ...filtros } = validation.data;
 
     const resultado = await servicioHorario.listar(
-      filtros,
+      {
+        ...filtros,
+        ciclo: ciclo ? parseInt(ciclo) : undefined,
+      },
       {
         page: parseInt(page),
         limit: parseInt(limit),

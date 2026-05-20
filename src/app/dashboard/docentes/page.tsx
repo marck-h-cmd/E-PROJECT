@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -35,6 +36,7 @@ interface DocenteRow {
   categoria: string;
   departamento: string | null;
   usuario: UsuarioDocente;
+  fechaIngreso?: string | null;
 }
 
 const CATEGORIAS = Object.values(CategoriaDocente);
@@ -64,6 +66,7 @@ export default function DocentesPage() {
     telefono: string;
     whatsapp: string;
     activo: boolean;
+    fechaIngreso: string;
   }>({
     email: '',
     nombre: '',
@@ -74,6 +77,7 @@ export default function DocentesPage() {
     telefono: '',
     whatsapp: '',
     activo: true,
+    fechaIngreso: '',
   });
 
   const resetForm = () => {
@@ -87,6 +91,7 @@ export default function DocentesPage() {
       telefono: '',
       whatsapp: '',
       activo: true,
+      fechaIngreso: '',
     });
     setEditing(null);
   };
@@ -115,6 +120,9 @@ export default function DocentesPage() {
         telefono: d.telefono ?? '',
         whatsapp: d.whatsapp ?? '',
         activo: d.usuario?.activo ?? row.usuario.activo,
+        fechaIngreso: d.fechaIngreso 
+          ? new Date(d.fechaIngreso).toISOString().split('T')[0] 
+          : '',
       });
       setDialogOpen(true);
     } catch (e) {
@@ -136,6 +144,7 @@ export default function DocentesPage() {
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
           activo: form.activo,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente actualizado');
       } else {
@@ -148,6 +157,7 @@ export default function DocentesPage() {
           departamento: form.departamento || undefined,
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente creado');
       }
@@ -203,6 +213,18 @@ export default function DocentesPage() {
     },
     { key: 'depto', header: 'Departamento', cell: (r) => r.departamento || '—' },
     {
+      key: 'antiguedad',
+      header: 'Antigüedad',
+      cell: (r) => {
+        if (!r.fechaIngreso) return '—';
+        const años = Math.floor(
+          (new Date().getTime() - new Date(r.fechaIngreso).getTime())
+          / (1000 * 60 * 60 * 24 * 365.25)
+        );
+        return `${años} año${años !== 1 ? 's' : ''}`;
+      }
+    },
+    {
       key: 'activo',
       header: 'Activo',
       cell: (r) =>
@@ -243,13 +265,15 @@ export default function DocentesPage() {
         title="Docentes"
         description="Gestión del personal académico."
         actions={
-          <Button
-            onClick={openCreate}
-            className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo docente
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={openCreate}
+              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo docente
+            </Button>
+          </div>
         }
       />
 
@@ -275,7 +299,11 @@ export default function DocentesPage() {
         emptyTitle="No hay docentes"
         emptyDescription="Ajuste la búsqueda o registre un nuevo docente."
         emptyAction={
-          <Button type="button" onClick={openCreate} className="bg-unt-blue text-white hover:bg-primary-700">
+          <Button
+            type="button"
+            onClick={openCreate}
+            className="bg-unt-blue text-white hover:bg-primary-700"
+          >
             <Plus className="h-4 w-4" />
             Registrar docente
           </Button>
@@ -361,6 +389,18 @@ export default function DocentesPage() {
                 value={form.departamento}
                 onChange={(e) => setForm((f) => ({ ...f, departamento: e.target.value }))}
               />
+            </div>
+            <div>
+              <Label htmlFor="fechaIngreso">Fecha de ingreso</Label>
+              <Input
+                id="fechaIngreso"
+                type="date"
+                value={form.fechaIngreso}
+                onChange={(e) => setForm((f) => ({ ...f, fechaIngreso: e.target.value }))}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Determina el orden de antigüedad en ventanas de atención
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
