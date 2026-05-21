@@ -771,7 +771,7 @@ export default function VentanasAtencionPage() {
                     type: e.target.value as 'NOMBRADOS' | 'CONTRATADOS',
                   })
                 }
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
               >
                 <option value="NOMBRADOS">Día Nombrados (Principal, Asociado, Auxiliar, JP)</option>
                 <option value="CONTRATADOS">
@@ -830,7 +830,7 @@ export default function VentanasAtencionPage() {
             <div>
               <Label>Categoría atendida</Label>
               <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={form.categoria}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, categoria: e.target.value as CategoriaDocente }))

@@ -368,7 +368,7 @@ export default function DocentesPage() {
                 <Label htmlFor="categoria">Categoría</Label>
                 <select
                   id="categoria"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
                   value={form.categoria}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, categoria: e.target.value as CategoriaDocente }))

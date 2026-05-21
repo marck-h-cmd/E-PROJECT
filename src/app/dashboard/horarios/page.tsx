@@ -857,13 +857,13 @@ export default function HorariosPage() {
                   <th className="py-3 px-4 text-center font-semibold w-24 border-b border-slate-700">HORA</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                 {HORAS.map((horaNum, rowIndex) => (
                   <tr 
                     key={horaNum} 
                     className={cn(
                       "group h-16",
-                      rowIndex % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                      rowIndex % 2 === 0 ? "bg-white dark:bg-slate-800" : "bg-slate-50/30 dark:bg-slate-700/20"
                     )}
                   >
                     {/* HORA Izquierda */}

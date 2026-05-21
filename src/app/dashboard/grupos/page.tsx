@@ -198,7 +198,7 @@ function GruposInner() {
         header: 'Curso',
         cell: (r) => (
           <div className="flex flex-col">
-            <span className="font-medium text-gray-900 dark:text-slate-100">{r.curso.nombre}</span>
+            <span className="font-medium text-gray-900 dark:text-slate-100 truncate max-w-[220px] block">{r.curso.nombre}</span>
             <span className="text-xs text-gray-500 dark:text-slate-400 font-mono">
               {r.curso.codigo} {r.curso.ciclo ? `• Ciclo ${Formateadores.ciclo(r.curso.ciclo)}` : ''}
             </span>
