@@ -14,12 +14,12 @@ import { DEMO_USERS, DEMO_PASSWORD_HINT } from '@/lib/demo-users';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import type { DemoUser } from '@/lib/demo-users';
 
-const ROLE_COLORS: Record<string, { dot: string; text: string; textDark: string }> = {
-  'super-admin': { dot: '#a78bfa', text: '#6d28d9', textDark: '#c4b5fd' },
-  'admin':       { dot: '#60a5fa', text: '#1d4ed8', textDark: '#93c5fd' },
-  'operador':    { dot: '#fbbf24', text: '#b45309', textDark: '#fcd34d' },
-  'docente':     { dot: '#34d399', text: '#065f46', textDark: '#6ee7b7' },
-  'monitor':     { dot: '#f472b6', text: '#9d174d', textDark: '#f9a8d4' },
+const ROLE_COLORS: Record<string, { dot: string }> = {
+  'super-admin': { dot: '#a78bfa' },
+  'admin':       { dot: '#60a5fa' },
+  'operador':    { dot: '#fbbf24' },
+  'docente':     { dot: '#34d399' },
+  'monitor':     { dot: '#f472b6' },
 };
 
 export default function LoginPage() {
@@ -67,7 +67,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
 
       {/* ════════════════════════════════
           PANEL IZQUIERDO — siempre oscuro
@@ -93,12 +93,13 @@ export default function LoginPage() {
         <div className="absolute left-0 top-0 h-full w-px pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, transparent, rgba(201,168,76,0.4) 35%, rgba(55,138,221,0.4) 70%, transparent)' }} />
 
-        <div className="relative z-10 flex flex-col gap-10 p-12 xl:p-16 pt-14 xl:pt-16">
+        {/* Contenido top */}
+        <div className="relative z-10 flex flex-col gap-6 p-10 xl:p-12 pt-12">
 
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
               style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)' }}>
-              <svg width="24" height="24" viewBox="0 0 22 22" fill="none">
+              <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <rect x="1" y="1" width="9" height="9" rx="2" fill="#c9a84c"/>
                 <rect x="12" y="1" width="9" height="9" rx="2" fill="rgba(255,255,255,0.35)"/>
                 <rect x="1" y="12" width="9" height="9" rx="2" fill="rgba(255,255,255,0.35)"/>
@@ -106,36 +107,36 @@ export default function LoginPage() {
               </svg>
             </div>
             <div>
-              <p style={{ fontSize: 11, letterSpacing: 3, color: 'rgba(201,168,76,0.65)', textTransform: 'uppercase', fontWeight: 500 }}>
+              <p style={{ fontSize: 10, letterSpacing: 2.5, color: 'rgba(201,168,76,0.65)', textTransform: 'uppercase', fontWeight: 500 }}>
                 Universidad Nacional de Trujillo
               </p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: 'rgba(255,255,255,0.9)', lineHeight: 1.3 }}>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.9)', lineHeight: 1.3 }}>
                 Horarios Académicos
               </p>
             </div>
           </div>
 
-          <div className="inline-flex w-fit items-center gap-2.5 rounded-full px-4 py-2"
+          <div className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5"
             style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
-            <span className="h-2 w-2 rounded-full animate-pulse" style={{ background: '#c9a84c' }} />
-            <span style={{ fontSize: 12, fontWeight: 500, color: '#c9a84c', letterSpacing: 1 }}>
+            <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: '#c9a84c' }} />
+            <span style={{ fontSize: 11, fontWeight: 500, color: '#c9a84c', letterSpacing: 0.8 }}>
               Período Académico 2026-I · Activo
             </span>
           </div>
 
-          <div style={{ lineHeight: 1.05 }}>
-            <h2 style={{ fontSize: 'clamp(3rem, 4.5vw, 5rem)', fontWeight: 800, color: '#ffffff', letterSpacing: -2, margin: 0 }}>
+          <div style={{ lineHeight: 1 }}>
+            <h2 style={{ fontSize: 'clamp(2.5rem, 4vw, 4.5rem)', fontWeight: 800, color: '#ffffff', letterSpacing: -2, margin: 0 }}>
               Gestión
             </h2>
-            <h2 style={{ fontSize: 'clamp(3rem, 4.5vw, 5rem)', fontWeight: 800, color: '#c9a84c', letterSpacing: -2, margin: 0 }}>
+            <h2 style={{ fontSize: 'clamp(2.5rem, 4vw, 4.5rem)', fontWeight: 800, color: '#c9a84c', letterSpacing: -2, margin: 0 }}>
               inteligente
             </h2>
-            <h2 style={{ fontSize: 'clamp(3rem, 4.5vw, 5rem)', fontWeight: 800, color: 'rgba(255,255,255,0.35)', letterSpacing: -2, margin: 0 }}>
+            <h2 style={{ fontSize: 'clamp(2.5rem, 4vw, 4.5rem)', fontWeight: 800, color: 'rgba(255,255,255,0.35)', letterSpacing: -2, margin: 0 }}>
               de horarios.
             </h2>
           </div>
 
-          <p style={{ fontSize: 15, lineHeight: 1.7, color: 'rgba(255,255,255,0.4)', maxWidth: 360 }}>
+          <p style={{ fontSize: 13, lineHeight: 1.6, color: 'rgba(255,255,255,0.4)', maxWidth: 360 }}>
             Plataforma unificada para programación de clases, aulas,
             laboratorios y notificaciones · Facultad de Ingeniería de Sistemas.
           </p>
@@ -146,14 +147,14 @@ export default function LoginPage() {
               { n: '02', icon: Shield,        text: 'Roles diferenciados: Admin, Operador, Docente y Monitor' },
               { n: '03', icon: GraduationCap, text: 'Reportes PDF, notificaciones multicanal y ventanas de atención' },
             ].map(({ n, icon: Icon, text }) => (
-              <div key={n} className="flex items-center gap-5"
-                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '16px 0' }}>
-                <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: 'rgba(201,168,76,0.3)', minWidth: 20 }}>
+              <div key={n} className="flex items-center gap-4"
+                style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '12px 0' }}>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: 'rgba(201,168,76,0.3)', minWidth: 18 }}>
                   {n}
                 </span>
-                <div style={{ width: 1, height: 16, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
-                <Icon style={{ width: 16, height: 16, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                <span style={{ fontSize: 14, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
+                <Icon style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
                   {text}
                 </span>
               </div>
@@ -161,8 +162,9 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="relative z-10 px-12 pb-10 xl:px-16">
-          <div className="grid grid-cols-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 24, marginBottom: 20 }}>
+        {/* Stats + footer */}
+        <div className="relative z-10 px-10 pb-8 xl:px-12">
+          <div className="grid grid-cols-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 18, marginBottom: 14 }}>
             {[
               { n: '30',  l: 'Docentes' },
               { n: '82',  l: 'Cursos' },
@@ -171,90 +173,86 @@ export default function LoginPage() {
             ].map((s, i) => (
               <div key={s.l} className="text-center"
                 style={{ borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: '#c9a84c', letterSpacing: -0.5 }}>{s.n}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.22)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{s.l}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#c9a84c', letterSpacing: -0.5 }}>{s.n}</div>
+                <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>{s.l}</div>
               </div>
             ))}
           </div>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.14)', letterSpacing: 1 }}>
+          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.14)', letterSpacing: 0.8 }}>
             © {new Date().getFullYear()} UNT · Sistema de demostración académica
           </p>
         </div>
       </div>
 
       {/* ════════════════════════════════
-          PANEL DERECHO — formulario adaptable
+          PANEL DERECHO — formulario compacto
       ════════════════════════════════ */}
-      <div className="relative flex flex-1 flex-col items-center justify-center overflow-y-auto px-8 py-10
+      <div className="relative flex flex-1 flex-col items-center justify-center px-6 py-6
         bg-slate-100 dark:bg-[#0a0f1a]">
 
-        {/* Patrón de puntos solo light */}
         <div className="absolute inset-0 dark:hidden pointer-events-none" style={{
           backgroundImage: 'radial-gradient(circle, rgba(0,0,0,0.04) 1px, transparent 1px)',
           backgroundSize: '20px 20px',
         }} />
 
-        {/* Patrón de puntos dark */}
         <div className="absolute inset-0 hidden dark:block pointer-events-none" style={{
           backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px)',
           backgroundSize: '20px 20px',
         }} />
 
-        <div className="absolute right-6 top-6 z-10">
+        <div className="absolute right-5 top-5 z-10">
           <ThemeToggle variant="login" />
         </div>
 
         {/* Logo mobile */}
-        <div className="mb-8 text-center lg:hidden">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl"
+        <div className="mb-4 text-center lg:hidden">
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl"
             style={{ background: '#060d1a' }}>
-            <svg width="26" height="26" viewBox="0 0 22 22" fill="none">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
               <rect x="1" y="1" width="9" height="9" rx="2" fill="#c9a84c"/>
               <rect x="12" y="1" width="9" height="9" rx="2" fill="rgba(255,255,255,0.4)"/>
               <rect x="1" y="12" width="9" height="9" rx="2" fill="rgba(255,255,255,0.4)"/>
               <rect x="12" y="12" width="9" height="9" rx="2" fill="#378add"/>
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">Iniciar sesión</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">UNT · Horarios Académicos</p>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">UNT · Horarios Académicos</h2>
         </div>
 
-        {/* CARD adaptable */}
+        {/* CARD COMPACTA */}
         <div className={`relative z-10 w-full transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
-          style={{ maxWidth: 480 }}>
+          style={{ maxWidth: 440 }}>
 
           <div className="
-            overflow-hidden rounded-[20px]
+            overflow-hidden rounded-2xl
             bg-white dark:bg-[#0f172a]
-            shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_4px_6px_rgba(0,0,0,0.04),0_20px_60px_rgba(0,0,0,0.1)]
-            dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_20px_60px_rgba(0,0,0,0.5)]">
+            shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_20px_50px_rgba(0,0,0,0.1)]
+            dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_20px_50px_rgba(0,0,0,0.5)]">
 
-            {/* Barra de acento */}
             <div style={{ height: 2, background: 'linear-gradient(90deg, transparent, #c9a84c 30%, #378add 70%, transparent)' }} />
 
-            <div className="p-9">
+            <div className="px-7 py-6">
 
-              {/* Header */}
-              <div className="hidden lg:block mb-7">
-                <h2 className="text-[26px] font-bold tracking-tight text-slate-900 dark:text-white">
+              {/* Header compacto */}
+              <div className="hidden lg:block mb-4">
+                <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
                   Bienvenido de vuelta
                 </h2>
-                <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
-                  Ingrese sus credenciales institucionales para continuar
+                <p className="mt-1 text-[13px] text-slate-500 dark:text-slate-400">
+                  Ingrese sus credenciales para continuar
                 </p>
               </div>
 
               {/* ROLES */}
-              <div className="mb-6">
-                <div className="mb-3.5 flex items-center gap-3">
+              <div className="mb-4">
+                <div className="mb-2.5 flex items-center gap-2">
                   <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-                  <span className="text-[10px] font-semibold tracking-[2px] uppercase text-slate-400 dark:text-slate-500">
+                  <span className="text-[9px] font-semibold tracking-[2px] uppercase text-slate-400 dark:text-slate-500">
                     Acceso rápido
                   </span>
                   <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5">
                   {DEMO_USERS.map((u) => {
                     const c = ROLE_COLORS[u.id] ?? ROLE_COLORS['admin'];
                     const sel = selectedDemo === u.id;
@@ -264,25 +262,21 @@ export default function LoginPage() {
                         type="button"
                         onClick={() => fillDemo(u)}
                         className={`
-                          rounded-xl px-3 py-2.5 text-left transition-all duration-150
-                          border
+                          rounded-lg px-2.5 py-2 text-left transition-all duration-150 border
                           ${sel
-                            ? 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 scale-[1.02]'
+                            ? 'border-[#1a365d] dark:border-blue-500 bg-blue-50 dark:bg-blue-950/30 scale-[1.03]'
                             : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700'
                           }
                         `}
                       >
-                        <div className="flex items-center gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="block h-1.5 w-1.5 rounded-full shrink-0"
                             style={{ background: sel ? c.dot : '#cbd5e1' }} />
-                          <span className="text-[12px] font-semibold"
-                            style={{ color: sel ? (typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? c.textDark : c.text) : undefined }}>
-                            <span className="block text-slate-700 dark:text-slate-200">
-                              {u.label}
-                            </span>
+                          <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate">
+                            {u.label}
                           </span>
                         </div>
-                        <span className="block truncate text-[10px] text-slate-400 dark:text-slate-500 pl-3">
+                        <span className="block truncate text-[9px] text-slate-400 dark:text-slate-500 pl-3">
                           {u.description}
                         </span>
                       </button>
@@ -290,9 +284,9 @@ export default function LoginPage() {
                   })}
                 </div>
 
-                <p className="mt-3 text-center text-[11px] text-slate-400 dark:text-slate-500">
+                <p className="mt-2 text-center text-[10px] text-slate-400 dark:text-slate-500">
                   Contraseña de prueba:{' '}
-                  <code className="rounded-md border px-1.5 py-0.5 font-mono text-[11px]
+                  <code className="rounded border px-1.5 py-0.5 font-mono text-[10px]
                     bg-slate-50 dark:bg-slate-800
                     border-slate-200 dark:border-slate-700
                     text-slate-600 dark:text-slate-300">
@@ -302,31 +296,29 @@ export default function LoginPage() {
               </div>
 
               {/* Separador */}
-              <div className="mb-5 flex items-center gap-3">
+              <div className="mb-3 flex items-center gap-2">
                 <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
-                <span className="text-[11px] tracking-wider uppercase text-slate-300 dark:text-slate-600">
+                <span className="text-[9px] tracking-wider uppercase text-slate-300 dark:text-slate-600">
                   o ingrese manualmente
                 </span>
                 <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
               </div>
 
-              {/* Error */}
               {error && (
-                <div className="mb-5 flex items-start gap-3 rounded-xl p-3.5
+                <div className="mb-3 flex items-start gap-2 rounded-lg p-2.5
                   bg-red-50 dark:bg-red-950/30
                   border border-red-100 dark:border-red-900/40">
-                  <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
-                    <div className="h-1.5 w-1.5 rounded-full bg-red-500" />
+                  <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                    <div className="h-1 w-1 rounded-full bg-red-500" />
                   </div>
-                  <p className="text-sm text-red-700 dark:text-red-400 m-0 leading-snug">{error}</p>
+                  <p className="text-[12px] text-red-700 dark:text-red-400 m-0 leading-snug">{error}</p>
                 </div>
               )}
 
-              {/* FORM */}
-              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-3">
                 <div>
                   <label htmlFor="email"
-                    className="block mb-2 text-[12px] font-semibold tracking-wide uppercase text-slate-600 dark:text-slate-400">
+                    className="block mb-1.5 text-[10px] font-semibold tracking-wider uppercase text-slate-600 dark:text-slate-400">
                     Correo electrónico
                   </label>
                   <Input
@@ -337,7 +329,7 @@ export default function LoginPage() {
                     onChange={(e) => { setEmail(e.target.value); setSelectedDemo(null); }}
                     required
                     autoComplete="email"
-                    className="h-12 text-base
+                    className="h-10 text-sm
                       bg-slate-50 dark:bg-slate-900
                       border-slate-200 dark:border-slate-700
                       text-slate-900 dark:text-white
@@ -349,7 +341,7 @@ export default function LoginPage() {
 
                 <div>
                   <label htmlFor="password"
-                    className="block mb-2 text-[12px] font-semibold tracking-wide uppercase text-slate-600 dark:text-slate-400">
+                    className="block mb-1.5 text-[10px] font-semibold tracking-wider uppercase text-slate-600 dark:text-slate-400">
                     Contraseña
                   </label>
                   <div className="relative">
@@ -360,7 +352,7 @@ export default function LoginPage() {
                       onChange={(e) => { setPassword(e.target.value); setSelectedDemo(null); }}
                       required
                       autoComplete="current-password"
-                      className="h-12 text-base pr-12
+                      className="h-10 text-sm pr-10
                         bg-slate-50 dark:bg-slate-900
                         border-slate-200 dark:border-slate-700
                         text-slate-900 dark:text-white
@@ -372,13 +364,13 @@ export default function LoginPage() {
                       onClick={() => setShowPassword(v => !v)}
                       tabIndex={-1}
                       aria-label={showPassword ? 'Ocultar' : 'Mostrar'}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1.5
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1
                         text-slate-400 hover:text-slate-600
                         dark:text-slate-500 dark:hover:text-slate-300
                         hover:bg-slate-100 dark:hover:bg-slate-800
                         transition-colors"
                     >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                     </button>
                   </div>
                 </div>
@@ -386,30 +378,27 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="h-12 w-full gap-2 text-base font-semibold rounded-xl
+                  className="h-10 w-full gap-2 text-sm font-semibold rounded-lg mt-1
                     bg-[#1a365d] hover:bg-[#1e4070]
                     dark:bg-blue-600 dark:hover:bg-blue-500
-                    text-white shadow-lg shadow-[#1a365d]/20 dark:shadow-blue-600/20
+                    text-white shadow-md shadow-[#1a365d]/20 dark:shadow-blue-600/20
                     transition-all"
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       Verificando...
                     </>
                   ) : (
                     <>
-                      <LogIn className="h-5 w-5" />
+                      <LogIn className="h-4 w-4" />
                       Ingresar al sistema
                     </>
                   )}
                 </Button>
               </form>
-            </div>
 
-            {/* Footer card */}
-            <div className="px-9 pb-5 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <p className="text-center text-[11px] text-slate-400 dark:text-slate-600">
+              <p className="mt-4 text-center text-[10px] text-slate-400 dark:text-slate-600 pt-3 border-t border-slate-100 dark:border-slate-800">
                 © {new Date().getFullYear()} Universidad Nacional de Trujillo · Ing. de Sistemas
               </p>
             </div>
