@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Eye, EyeOff, LogIn, Loader2,
-  CalendarDays, Shield, GraduationCap, CheckCircle2, HelpCircle,
+  CalendarDays, Shield, GraduationCap, CheckCircle2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -32,11 +32,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
 
-  // Toast de confirmación
   const [toast, setToast] = useState<{ visible: boolean; message: string }>({ visible: false, message: '' });
-
-  // Highlight de inputs al rellenar
   const [highlightInputs, setHighlightInputs] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
@@ -48,7 +46,6 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
-  // Auto-hide toast después de 2.5s
   useEffect(() => {
     if (toast.visible) {
       const t = setTimeout(() => setToast({ visible: false, message: '' }), 2500);
@@ -56,7 +53,6 @@ export default function LoginPage() {
     }
   }, [toast.visible]);
 
-  // Quitar highlight de inputs después de la animación
   useEffect(() => {
     if (highlightInputs) {
       const t = setTimeout(() => setHighlightInputs(false), 800);
@@ -88,6 +84,10 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const detectCapsLock = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setCapsLock(e.getModifierState && e.getModifierState('CapsLock'));
   };
 
   return (
@@ -129,10 +129,10 @@ export default function LoginPage() {
           backgroundSize: '60px 60px',
         }} />
 
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none"
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full pointer-events-none animate-[float_8s_ease-in-out_infinite]"
           style={{ background: 'radial-gradient(circle, rgba(26,54,93,0.5) 0%, transparent 60%)' }} />
 
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 pointer-events-none"
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 pointer-events-none animate-[float_10s_ease-in-out_infinite_reverse]"
           style={{ background: 'radial-gradient(circle, rgba(201,168,76,0.1) 0%, transparent 65%)' }} />
 
         <div className="absolute left-0 top-0 h-full w-px pointer-events-none"
@@ -141,7 +141,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col gap-8 p-12 xl:p-14 pt-14">
 
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform hover:scale-105 cursor-default"
               style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.25)' }}>
               <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                 <rect x="1" y="1" width="9" height="9" rx="2" fill="#c9a84c"/>
@@ -162,7 +162,10 @@ export default function LoginPage() {
 
           <div className="inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5"
             style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)' }}>
-            <span className="h-1.5 w-1.5 rounded-full animate-pulse" style={{ background: '#c9a84c' }} />
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: '#c9a84c' }} />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full" style={{ background: '#c9a84c' }} />
+            </span>
             <span style={{ fontSize: 11, fontWeight: 500, color: '#c9a84c', letterSpacing: 0.8 }}>
               Período Académico 2026-I · Activo
             </span>
@@ -191,14 +194,15 @@ export default function LoginPage() {
               { n: '02', icon: Shield,        text: 'Roles diferenciados: Admin, Operador, Docente y Monitor' },
               { n: '03', icon: GraduationCap, text: 'Reportes PDF, notificaciones multicanal y ventanas de atención' },
             ].map(({ n, icon: Icon, text }) => (
-              <div key={n} className="flex items-center gap-4"
+              <div key={n} className="group flex items-center gap-4 transition-all duration-200 hover:pl-2 cursor-default"
                 style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '14px 0' }}>
-                <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: 'rgba(201,168,76,0.3)', minWidth: 18 }}>
+                <span style={{ fontSize: 10, fontFamily: 'monospace', fontWeight: 700, color: 'rgba(201,168,76,0.3)', minWidth: 18 }}
+                  className="transition-colors group-hover:text-[#c9a84c]">
                   {n}
                 </span>
                 <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.08)', flexShrink: 0 }} />
-                <Icon style={{ width: 14, height: 14, color: 'rgba(255,255,255,0.2)', flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.4 }}>
+                <Icon style={{ width: 14, height: 14, flexShrink: 0 }} className="transition-colors duration-200 text-white/20 group-hover:text-white/60" />
+                <span style={{ fontSize: 13, lineHeight: 1.4 }} className="transition-colors duration-200 text-white/40 group-hover:text-white/70">
                   {text}
                 </span>
               </div>
@@ -214,15 +218,17 @@ export default function LoginPage() {
               { n: '12',  l: 'Ambientes' },
               { n: '246', l: 'Grupos' },
             ].map((s, i) => (
-              <div key={s.l} className="text-center"
+              <div key={s.l} className="text-center group cursor-default"
                 style={{ borderRight: i < 3 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#c9a84c', letterSpacing: -0.5 }}>{s.n}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#c9a84c', letterSpacing: -0.5 }}
+                  className="transition-transform duration-200 group-hover:scale-110 inline-block">
+                  {s.n}
+                </div>
                 <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.22)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2 }}>{s.l}</div>
               </div>
             ))}
           </div>
 
-          {/* Links del footer */}
           <div className="flex items-center gap-4 mb-3">
             {['Soporte', 'Documentación', 'Privacidad'].map(link => (
               <button key={link}
@@ -283,24 +289,19 @@ export default function LoginPage() {
             shadow-[0_0_0_1px_rgba(0,0,0,0.06),0_25px_60px_rgba(0,0,0,0.12)]
             dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_25px_60px_rgba(0,0,0,0.5)]">
 
-            <div style={{ height: 3, background: 'linear-gradient(90deg, transparent, #c9a84c 30%, #378add 70%, transparent)' }} />
-
             <div className="px-10 py-9">
 
-              {/* Header con saludo */}
+              {/* Header */}
               <div className="hidden lg:block mb-6">
-                <div className="flex items-center gap-2.5 mb-1.5">
-                  <h2 className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
-                    Bienvenido de vuelta
-                  </h2>
-                  <span className="text-2xl animate-[wave_2s_ease-in-out_infinite] origin-[70%_70%]">👋</span>
-                </div>
-                <p className="text-[14px] text-slate-500 dark:text-slate-400">
+                <h2 className="text-[28px] font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
+                  Bienvenido de vuelta
+                </h2>
+                <p className="mt-2 text-[14px] text-slate-500 dark:text-slate-400">
                   Ingrese sus credenciales institucionales para continuar
                 </p>
               </div>
 
-              {/* ROLES con avatares de iniciales */}
+              {/* ROLES */}
               <div className="mb-6">
                 <div className="mb-3 flex items-center gap-3">
                   <div className="h-px flex-1 bg-slate-100 dark:bg-slate-800" />
@@ -311,7 +312,7 @@ export default function LoginPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2">
-                  {DEMO_USERS.map((u) => {
+                  {DEMO_USERS.map((u, idx) => {
                     const c = ROLE_COLORS[u.id] ?? ROLE_COLORS['admin'];
                     const sel = selectedDemo === u.id;
                     return (
@@ -319,18 +320,20 @@ export default function LoginPage() {
                         key={u.id}
                         type="button"
                         onClick={() => fillDemo(u)}
+                        style={{ animationDelay: `${idx * 60}ms` }}
                         className={`
-                          group rounded-xl px-3 py-2.5 text-left transition-all duration-200 border
+                          group rounded-xl px-3 py-2.5 text-left border
+                          transition-all duration-200
+                          animate-[slideUp_0.4s_ease-out_backwards]
                           ${sel
                             ? 'border-[#1a365d] dark:border-blue-500 bg-blue-50 dark:bg-blue-950/30 scale-[1.03] shadow-md'
-                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.01]'
+                            : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 hover:scale-[1.02] hover:-translate-y-0.5'
                           }
                         `}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          {/* Avatar de iniciales */}
                           <div
-                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[9px] font-bold transition-transform duration-200 group-hover:scale-110"
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[9px] font-bold transition-all duration-200 group-hover:scale-110 group-hover:rotate-3"
                             style={{
                               background: sel ? c.dot : `${c.dot}25`,
                               color: sel ? '#ffffff' : c.dot,
@@ -355,7 +358,14 @@ export default function LoginPage() {
                   <code className="rounded border px-2 py-0.5 font-mono text-[11px]
                     bg-slate-50 dark:bg-slate-800
                     border-slate-200 dark:border-slate-700
-                    text-slate-600 dark:text-slate-300">
+                    text-slate-600 dark:text-slate-300
+                    cursor-pointer transition-colors
+                    hover:bg-slate-100 dark:hover:bg-slate-700"
+                    onClick={() => {
+                      navigator.clipboard.writeText(DEMO_PASSWORD_HINT);
+                      setToast({ visible: true, message: 'Contraseña copiada al portapapeles' });
+                    }}
+                    title="Click para copiar">
                     {DEMO_PASSWORD_HINT}
                   </code>
                 </p>
@@ -408,16 +418,26 @@ export default function LoginPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="password"
-                    className="block mb-2 text-[11px] font-semibold tracking-wider uppercase text-slate-600 dark:text-slate-400">
-                    Contraseña
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label htmlFor="password"
+                      className="text-[11px] font-semibold tracking-wider uppercase text-slate-600 dark:text-slate-400">
+                      Contraseña
+                    </label>
+                    {capsLock && (
+                      <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1 animate-[fadeIn_0.2s_ease-out]">
+                        <span className="h-1 w-1 rounded-full bg-amber-500 animate-pulse" />
+                        Mayús activado
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => { setPassword(e.target.value); setSelectedDemo(null); }}
+                      onKeyUp={detectCapsLock}
+                      onKeyDown={detectCapsLock}
                       required
                       autoComplete="current-password"
                       className={`h-12 text-[15px] px-4 pr-12 transition-all duration-300
@@ -438,7 +458,7 @@ export default function LoginPage() {
                         text-slate-400 hover:text-slate-600
                         dark:text-slate-500 dark:hover:text-slate-300
                         hover:bg-slate-100 dark:hover:bg-slate-800
-                        transition-colors"
+                        transition-all hover:scale-110"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -447,36 +467,32 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  disabled={loading}
-                  className="h-12 w-full gap-2 text-[15px] font-semibold rounded-xl mt-2
+                  disabled={loading || !email || !password}
+                  className="relative h-12 w-full gap-2 text-[15px] font-semibold rounded-xl mt-2
                     bg-[#1a365d] hover:bg-[#1e4070]
                     dark:bg-blue-600 dark:hover:bg-blue-500
                     text-white shadow-lg shadow-[#1a365d]/25 dark:shadow-blue-600/25
                     transition-all hover:shadow-xl hover:shadow-[#1a365d]/30 dark:hover:shadow-blue-600/30
-                    active:scale-[0.98]"
+                    active:scale-[0.98]
+                    disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:shadow-lg
+                    overflow-hidden group"
                 >
+                  {/* Efecto shimmer al hover */}
+                  <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000
+                    bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
                   {loading ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      Verificando credenciales...
+                      <Loader2 className="h-5 w-5 animate-spin relative z-10" />
+                      <span className="relative z-10">Verificando credenciales...</span>
                     </>
                   ) : (
                     <>
-                      <LogIn className="h-5 w-5" />
-                      Ingresar al sistema
+                      <LogIn className="h-5 w-5 relative z-10 transition-transform group-hover:translate-x-0.5" />
+                      <span className="relative z-10">Ingresar al sistema</span>
                     </>
                   )}
                 </Button>
-
-                {/* Link de ayuda */}
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-1.5 text-[12px] text-slate-500 dark:text-slate-400
-                    hover:text-[#1a365d] dark:hover:text-blue-400 transition-colors mt-1"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                  ¿Olvidaste tu contraseña?
-                </button>
               </form>
 
               <p className="mt-6 text-center text-[11px] text-slate-400 dark:text-slate-600 pt-4 border-t border-slate-100 dark:border-slate-800">
@@ -487,17 +503,23 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Animaciones CSS */}
       <style jsx>{`
-        @keyframes wave {
-          0%, 100% { transform: rotate(0deg); }
-          25% { transform: rotate(-15deg); }
-          75% { transform: rotate(15deg); }
-        }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           25% { transform: translateX(-4px); }
           75% { transform: translateX(4px); }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes float {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(20px, -20px); }
         }
       `}</style>
     </div>
