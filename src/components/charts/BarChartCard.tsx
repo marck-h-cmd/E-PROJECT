@@ -38,27 +38,29 @@ export function BarChartCard({
 
   const gridColor  = isDark ? '#334155' : '#e2e8f0';
   const tickColor  = isDark ? '#94a3b8' : '#64748b';
-  const barColor   = isDark ? '#c9a84c' : color;
+  const barColor   = '#c9a84c';
   const tooltipBg  = isDark ? '#1e293b' : '#ffffff';
   const tooltipBorder = isDark ? '#334155' : '#e2e8f0';
   const tooltipText   = isDark ? '#f1f5f9' : '#0f172a';
 
+  const filteredData = data.filter(d => (d[dataKey] as number) > 0);
+
   return (
-    <div className={cn('card bg-slate-800/50 border border-slate-700', className)}>
-      <div className="card-header">
+    <div className={cn('bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm', className)}>
+      <div className="p-6">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
         {description && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>}
       </div>
-      <div className="card-body" style={{ minHeight: CHART_MIN_HEIGHT }}>
+      <div className="p-6 pt-0" style={{ minHeight: CHART_MIN_HEIGHT }}>
         {loading ? (
           <div className="skeleton h-full min-h-[288px] w-full rounded-lg" />
-        ) : data.length === 0 ? (
+        ) : filteredData.length === 0 ? (
           <div className="flex h-full min-h-[288px] items-center justify-center text-sm text-slate-500 dark:text-slate-400">
             Sin datos para mostrar
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={CHART_MIN_HEIGHT}>
-            <BarChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <BarChart data={filteredData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
               <XAxis dataKey={xKey} tick={{ fontSize: 11, fill: tickColor }} />
               <YAxis tick={{ fontSize: 11, fill: tickColor }} />

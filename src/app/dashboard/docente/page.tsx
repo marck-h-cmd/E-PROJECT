@@ -357,7 +357,7 @@ export default function DocenteDashboardPage() {
           { label: 'Horas Laboratorio', value: `${horasLaboratorio}h`, icon: <FlaskConical className="h-6 w-6" />, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
           { label: 'Asignaturas', value: cursosAsignados, icon: <TrendingUp className="h-6 w-6" />, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
         ].map((kpi, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+          <div key={i} className="group relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md text-slate-900 dark:text-slate-100">
             <div className="flex items-center justify-between">
               <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${kpi.bg} ${kpi.color} transition-transform group-hover:scale-110`}>
                 {kpi.icon}
@@ -386,8 +386,8 @@ export default function DocenteDashboardPage() {
             className={cn(
               "flex items-center gap-2 px-6 py-3 text-sm font-bold transition-all rounded-xl whitespace-nowrap",
               activeTab === tab.id
-                ? 'text-white bg-slate-900 shadow-lg'
-                : 'text-slate-400 bg-white border border-slate-100 hover:text-slate-600'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-lg'
+                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             )}
           >
             {tab.icon}
@@ -436,7 +436,7 @@ export default function DocenteDashboardPage() {
               ) : (
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
                    <table className="w-full min-w-[1000px] border-collapse">
-                      <thead className="bg-slate-900 dark:bg-slate-900 text-white">
+                      <thead className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white">
                         <tr>
                           <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
                           {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black">{DIAS_LABEL[d]}</th>)}

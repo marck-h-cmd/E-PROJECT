@@ -23,12 +23,12 @@ export function PieChartCard({ title, description, data, className, loading }: P
   const legendColor   = isDark ? '#94a3b8' : '#475569';
 
   return (
-    <div className={cn('card bg-slate-800/50 border border-slate-700', className)}>
-      <div className="card-header">
+    <div className={cn('bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm', className)}>
+      <div className="p-6">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
         {description && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>}
       </div>
-      <div className="card-body" style={{ minHeight: CHART_MIN_HEIGHT }}>
+      <div className="p-6 pt-0" style={{ minHeight: CHART_MIN_HEIGHT }}>
         {loading ? (
           <div className="skeleton h-full min-h-[288px] w-full rounded-lg" />
         ) : data.length === 0 ? (
