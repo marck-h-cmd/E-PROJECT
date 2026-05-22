@@ -70,19 +70,27 @@ const DIAS_LABEL: Record<string, string> = {
   VIERNES: 'VIERNES',
 };
 
-const HORAS = [
-  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
-  '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
-];
+const HORAS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 to 20
 
 const COLORES_CURSO = [
-  { bg: 'bg-blue-100', border: 'border-blue-400', text: 'text-blue-900', badge: 'bg-blue-500' },
-  { bg: 'bg-green-100', border: 'border-green-400', text: 'text-green-900', badge: 'bg-green-500' },
-  { bg: 'bg-purple-100', border: 'border-purple-400', text: 'text-purple-900', badge: 'bg-purple-500' },
-  { bg: 'bg-amber-100', border: 'border-amber-400', text: 'text-amber-900', badge: 'bg-amber-500' },
-  { bg: 'bg-rose-100', border: 'border-rose-400', text: 'text-rose-900', badge: 'bg-rose-500' },
-  { bg: 'bg-teal-100', border: 'border-teal-400', text: 'text-teal-900', badge: 'bg-teal-500' },
+  { bg: 'bg-blue-100',   border: 'border-l-blue-500',   text: 'text-blue-900',   badge: 'bg-blue-500'   },
+  { bg: 'bg-green-100',  border: 'border-l-green-500',  text: 'text-green-900',  badge: 'bg-green-500'  },
+  { bg: 'bg-purple-100', border: 'border-l-purple-500', text: 'text-purple-900', badge: 'bg-purple-500' },
+  { bg: 'bg-amber-100',  border: 'border-l-amber-500',  text: 'text-amber-900',  badge: 'bg-amber-500'  },
+  { bg: 'bg-rose-100',   border: 'border-l-rose-500',   text: 'text-rose-900',   badge: 'bg-rose-500'   },
+  { bg: 'bg-teal-100',   border: 'border-l-teal-500',   text: 'text-teal-900',   badge: 'bg-teal-500'   },
+  { bg: 'bg-orange-100', border: 'border-l-orange-500', text: 'text-orange-900', badge: 'bg-orange-500' },
+  { bg: 'bg-cyan-100',   border: 'border-l-cyan-500',   text: 'text-cyan-900',   badge: 'bg-cyan-500'   },
 ];
+
+const getColorForCurso = (cursoId: string) => {
+  let hash = 0;
+  for (let i = 0; i < cursoId.length; i++) {
+    hash = cursoId.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = Math.abs(hash) % COLORES_CURSO.length;
+  return COLORES_CURSO[index];
+};
 
 const NOTIF_ICONS: Record<string, any> = {
   TURNO: <Timer className="h-4 w-4 text-emerald-500" />,
@@ -242,14 +250,6 @@ export default function DocenteDashboardPage() {
     return `${years} años de servicio`;
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
-      </div>
-    );
-  }
-
   // CÁLCULOS CORRECTOS
   const totalSesiones = horarios.length;
   
@@ -317,9 +317,14 @@ export default function DocenteDashboardPage() {
     return maxDuracion;
   };
 
-  const horasARenderizar = HORAS.filter(hora => !horaGlobalmenteBloqueada(hora));
+  const HORAS_STRINGS = [
+    '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
+    '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
+  ];
 
-  const horasConClase = HORAS.filter(h => DIAS.some(d => matriz[d]?.[h] || horasBloqueadasPorDia[d]?.has(h)));
+  const horasARenderizar = HORAS_STRINGS.filter(hora => !horaGlobalmenteBloqueada(hora));
+
+  const horasConClase = HORAS_STRINGS.filter(h => DIAS.some(d => matriz[d]?.[h] || horasBloqueadasPorDia[d]?.has(h)));
   const cursosUnicos = Array.from(new Set(horarios.map(h => h.curso?.codigo)));
   const cursoColorMap: Record<string, any> = {};
   cursosUnicos.forEach((codigo, index) => {
@@ -338,6 +343,14 @@ export default function DocenteDashboardPage() {
     dia: DIAS_LABEL[dia],
     sesiones: horasPorDia[dia] || 0,
   }));
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[400px] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -440,28 +453,27 @@ export default function DocenteDashboardPage() {
                   <p className="text-slate-500 dark:text-slate-400">Tu horario oficial aparecerá aquí una vez sea validado.</p>
                 </div>
               ) : (
-                <div className="bg-slate-900 dark:bg-slate-900 border border-slate-700 rounded-xl overflow-hidden shadow-lg">
-                  <div className="overflow-y-auto max-h-[600px]">
-                    <table className="w-full min-w-[1000px] border-collapse">
-                      <thead className="bg-slate-800 text-white sticky top-0 z-10">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+                   <table className="w-full min-w-[1000px] border-collapse">
+                      <thead className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white">
                         <tr>
-                          <th className="py-4 px-4 text-center font-bold tracking-wider text-xs border-b border-slate-700 w-28">HORA</th>
-                          {DIAS.map(d => <th key={d} className="py-4 px-2 text-center font-bold tracking-wider text-xs border-b border-slate-700 border-r border-slate-700 last:border-r-0">{DIAS_LABEL[d]}</th>)}
-                          <th className="py-4 px-4 text-center font-bold tracking-wider text-xs border-b border-slate-700 w-28">HORA</th>
+                          <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
+                          {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black">{DIAS_LABEL[d]}</th>)}
+                          <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {horasARenderizar.map(hora => { 
                           const rowSpanHora = calcularRowSpanHora(hora);
                           return (
-                          <tr key={hora}> 
+                          <tr key={hora} className="bg-white dark:bg-slate-800"> 
                             <td 
                               rowSpan={rowSpanHora}
-                              className="bg-slate-900 py-3 px-4 text-center border-b border-r border-slate-800 text-slate-400 text-xs font-mono"
+                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
                             >
                               <div className="font-semibold">{hora}</div>
                               {rowSpanHora > 1 && (
-                                <div className="text-[10px] opacity-70">
+                                <div className="text-[10px] opacity-60">
                                   {`${(parseInt(hora.split(':')[0]) + rowSpanHora).toString().padStart(2,'0')}:00`}
                                 </div>
                               )}
@@ -470,26 +482,25 @@ export default function DocenteDashboardPage() {
                               if (horasBloqueadasPorDia[dia]?.has(hora)) return null; 
                               const sesion = matriz[dia]?.[hora]; 
                               const duracion = sesion ? calcDuracion(sesion.horaInicio, sesion.horaFin) : 1; 
-                              if (!sesion) return <td key={dia} className="p-1 border-b border-r border-slate-800 last:border-r-0 bg-slate-900" rowSpan={duracion} />;
+                              if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800" />;
+                              const colors = cursoColorMap[sesion.curso.codigo];
                               const esLab = sesion.ambiente.tipo === 'LABORATORIO';
-                              const cellColor = 'bg-slate-700';
-                              const borderColor = esLab ? 'border-green-400' : 'border-blue-400';
+                              const cellColor = esLab ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-blue-400 bg-blue-50 dark:bg-blue-900/20';
                               const badgeColor = esLab ? 'bg-green-500' : 'bg-blue-500';
-                              const badgeText = esLab ? 'LAB' : 'AULA';
                               return ( 
-                                <td key={dia} rowSpan={duracion} className="p-2 border-b border-r border-slate-800 last:border-r-0"> 
-                                  <div className={cn("rounded-md border-l-4 p-3 h-full", cellColor, borderColor)}>
+                                <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100 dark:border-slate-700"> 
+                                  <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", cellColor, colors.border)}>
                                     <div className="flex items-center justify-between mb-2">
                                       <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", badgeColor)}>
-                                        {badgeText}
+                                        {sesion.ambiente.tipo}
                                       </span>
-                                      <span className="text-[9px] font-bold text-slate-400">{sesion.horaInicio}-{sesion.horaFin}</span>
+                                      <span className="text-[9px] font-bold opacity-60">{sesion.horaInicio}-{sesion.horaFin}</span>
                                     </div>
-                                    <p className="text-xs font-black text-white mb-1">{sesion.curso.nombre}</p>
-                                    <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2">
+                                    <p className={cn("text-xs font-black mb-1", colors.text, "dark:text-slate-100")}>{sesion.curso.nombre}</p>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                       <Users className="h-3 w-3" /> Grupo {sesion.grupo?.nombre || 'A'}
                                     </div>
-                                    <div className="text-[10px] font-bold text-slate-400 flex items-center gap-2 mt-1">
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
                                       <MapPin className="h-3 w-3" /> {sesion.ambiente.codigo}
                                     </div>
                                   </div>
@@ -498,11 +509,11 @@ export default function DocenteDashboardPage() {
                             })} 
                             <td 
                               rowSpan={rowSpanHora}
-                              className="bg-slate-900 py-3 px-4 text-center border-b border-slate-800 text-slate-400 text-xs font-mono"
+                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
                             >
                               <div className="font-semibold">{hora}</div>
                               {rowSpanHora > 1 && (
-                                <div className="text-[10px] opacity-70">
+                                <div className="text-[10px] opacity-60">
                                   {`${(parseInt(hora.split(':')[0]) + rowSpanHora).toString().padStart(2,'0')}:00`}
                                 </div>
                               )}
@@ -511,8 +522,7 @@ export default function DocenteDashboardPage() {
                           );
                         })}
                       </tbody>
-                    </table>
-                  </div>
+                   </table>
                 </div>
               )}
           </div>
