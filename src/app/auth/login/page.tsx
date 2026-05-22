@@ -3,12 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  Eye,
-  EyeOff,
-  CalendarDays,
-  Shield,
-  Sparkles,
-  GraduationCap,
+  Eye, EyeOff, CalendarDays, Shield, GraduationCap,
+  LogIn, Loader2, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,7 +25,6 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Redirección automática si ya está autenticado
   useEffect(() => {
     if (user) {
       if (user.rol === 'DOCENTE') {
@@ -40,10 +35,10 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
-  const fillDemo = (user: DemoUser) => {
-    setEmail(user.email);
-    setPassword(user.password);
-    setSelectedDemo(user.id);
+  const fillDemo = (u: DemoUser) => {
+    setEmail(u.email);
+    setPassword(u.password);
+    setSelectedDemo(u.id);
     setError('');
   };
 
@@ -53,8 +48,6 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      // La redirección ahora es manejada por el AuthContext.login,
-      // pero agregamos una capa extra de seguridad aquí por si acaso.
     } catch (err) {
       setError(
         err instanceof ApiClientError
@@ -68,190 +61,270 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      {/* Panel institucional */}
-      <div className="relative hidden w-[44%] overflow-hidden bg-unt-blue lg:flex lg:flex-col lg:justify-between">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(255,215,0,0.18),_transparent_55%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(0,0,0,0.15)_0%,transparent_50%)]" />
+
+      {/* ── Panel izquierdo institucional ── */}
+      <div className="relative hidden w-[42%] lg:flex lg:flex-col lg:justify-between overflow-hidden bg-[#0d1f35] dark:bg-[#080f1a]">
+
+        {/* Grid de puntos decorativo */}
         <div
-          className="absolute inset-0 opacity-[0.07]"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
-            backgroundImage:
-              'linear-gradient(rgba(255,255,255,.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.4) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
+            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,.8) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
           }}
         />
 
-        <div className="relative z-10 flex flex-col gap-8 p-10 xl:p-14">
+        {/* Glows de color */}
+        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-20"
+          style={{ background: 'radial-gradient(circle, #1a365d 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-15"
+          style={{ background: 'radial-gradient(circle, #c9a84c 0%, transparent 70%)' }} />
+
+        {/* Contenido superior */}
+        <div className="relative z-10 flex flex-col gap-10 p-10 xl:p-14">
+
+          {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 shadow-lg ring-1 ring-white/25 backdrop-blur-sm">
-              <span className="font-display text-xl font-bold text-unt-gold">UNT</span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-white/20"
+              style={{ background: 'rgba(201,168,76,0.15)' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <rect x="1" y="1" width="10" height="10" rx="2" fill="#c9a84c"/>
+                <rect x="13" y="1" width="10" height="10" rx="2" fill="rgba(255,255,255,0.4)"/>
+                <rect x="1" y="13" width="10" height="10" rx="2" fill="rgba(255,255,255,0.4)"/>
+                <rect x="13" y="13" width="10" height="10" rx="2" fill="#378add"/>
+              </svg>
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-widest text-unt-gold/90">
+              <p className="text-[11px] font-medium tracking-widest uppercase text-[#c9a84c]/80">
                 Universidad Nacional de Trujillo
               </p>
-              <h1 className="font-display text-lg font-bold text-white">
+              <h1 className="text-base font-semibold text-white leading-tight">
                 Horarios Académicos
               </h1>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <h2 className="font-display text-3xl font-bold leading-tight text-white xl:text-4xl">
-              Gestión inteligente
-              <br />
-              <span className="text-unt-gold">de horarios 2026</span>
-            </h2>
-            <p className="max-w-md text-sm leading-relaxed text-blue-100/90">
-              Programación de clases, aulas, laboratorios y notificaciones en una
-              plataforma unificada para la Facultad de Ingeniería.
+          {/* Hero */}
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-3xl xl:text-4xl font-semibold text-white leading-tight">
+                Gestión inteligente
+              </h2>
+              <h2 className="text-3xl xl:text-4xl font-semibold leading-tight" style={{ color: '#c9a84c' }}>
+                de horarios 2026
+              </h2>
+            </div>
+            <p className="text-sm leading-relaxed max-w-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              Programación de clases, aulas, laboratorios y notificaciones
+              para la Facultad de Ingeniería.
             </p>
           </div>
 
-          <ul className="space-y-3 text-sm text-blue-50/90">
-            <li className="flex items-center gap-3">
-              <CalendarDays className="h-5 w-5 shrink-0 text-unt-gold" />
-              Calendario semanal y detección de conflictos
-            </li>
-            <li className="flex items-center gap-3">
-              <Shield className="h-5 w-5 shrink-0 text-unt-gold" />
-              Roles: Admin, Operador, Docente y Monitor
-            </li>
-            <li className="flex items-center gap-3">
-              <GraduationCap className="h-5 w-5 shrink-0 text-unt-gold" />
-              Reportes PDF y notificaciones multicanal
-            </li>
+          {/* Features */}
+          <ul className="space-y-3">
+            {[
+              { icon: CalendarDays, text: 'Calendario semanal y detección de conflictos' },
+              { icon: Shield, text: 'Roles: Admin, Operador, Docente y Monitor' },
+              { icon: GraduationCap, text: 'Reportes PDF y notificaciones multicanal' },
+            ].map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-3">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                  style={{ background: 'rgba(55,138,221,0.15)', border: '0.5px solid rgba(55,138,221,0.25)' }}>
+                  <Icon className="h-3.5 w-3.5" style={{ color: '#85b7eb' }} />
+                </div>
+                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{text}</span>
+              </li>
+            ))}
           </ul>
         </div>
 
-        <p className="relative z-10 p-10 text-xs text-blue-200/70 xl:p-14">
-          © {new Date().getFullYear()} UNT — Sistema de demostración académica
-        </p>
+        {/* Stats + footer */}
+        <div className="relative z-10 p-10 xl:p-14 space-y-6">
+          <div className="flex items-center gap-0"
+            style={{ borderTop: '0.5px solid rgba(255,255,255,0.08)', paddingTop: '20px' }}>
+            {[
+              { n: '30', l: 'Docentes' },
+              { n: '82', l: 'Cursos' },
+              { n: '12', l: 'Ambientes' },
+              { n: '2026-I', l: 'Período' },
+            ].map((s, i) => (
+              <div key={s.l} className="flex-1 text-center"
+                style={{ borderRight: i < 3 ? '0.5px solid rgba(255,255,255,0.08)' : 'none' }}>
+                <div className="text-lg font-semibold" style={{ color: '#c9a84c' }}>{s.n}</div>
+                <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
+            © {new Date().getFullYear()} UNT — Sistema de demostración académica
+          </p>
+        </div>
       </div>
 
-      {/* Formulario */}
-      <div className="relative flex flex-1 flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-white to-blue-50/80 p-4 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 sm:p-8">
-        <div className="absolute right-4 top-4 sm:right-8 sm:top-8">
+      {/* ── Panel derecho — formulario ── */}
+      <div className="relative flex flex-1 flex-col items-center justify-center p-6 sm:p-10
+        bg-white dark:bg-[#111827]">
+
+        {/* Toggle de tema */}
+        <div className="absolute right-5 top-5">
           <ThemeToggle variant="login" />
         </div>
-        <div className="w-full max-w-lg animate-fadeIn">
-          <div className="mb-6 text-center lg:hidden">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-unt-blue shadow-lg">
-              <span className="font-display text-lg font-bold text-unt-gold">UNT</span>
-            </div>
-            <h2 className="font-display text-xl font-bold text-unt-blue">
-              Iniciar sesión
-            </h2>
-          </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-xl shadow-slate-200/50 backdrop-blur-sm dark:border-slate-700 dark:bg-slate-800/95 dark:shadow-black/30 sm:p-8">
+        {/* Logo mobile */}
+        <div className="mb-6 text-center lg:hidden">
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a365d]">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <rect x="1" y="1" width="10" height="10" rx="2" fill="#c9a84c"/>
+              <rect x="13" y="1" width="10" height="10" rx="2" fill="rgba(255,255,255,0.5)"/>
+              <rect x="1" y="13" width="10" height="10" rx="2" fill="rgba(255,255,255,0.5)"/>
+              <rect x="13" y="13" width="10" height="10" rx="2" fill="#378add"/>
+            </svg>
+          </div>
+          <h2 className="text-lg font-semibold text-[#1a365d] dark:text-white">
+            Iniciar sesión
+          </h2>
+        </div>
+
+        <div className="w-full max-w-md">
+
+          {/* Card formulario */}
+          <div className="rounded-2xl p-7 sm:p-8
+            bg-white dark:bg-[#1f2937]
+            border border-gray-100 dark:border-gray-700
+            shadow-xl shadow-gray-100/80 dark:shadow-black/30">
+
+            {/* Header */}
             <div className="mb-6 hidden lg:block">
-              <h2 className="font-display text-2xl font-bold text-slate-900 dark:text-slate-50">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 Bienvenido
               </h2>
-              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Ingrese sus credenciales institucionales
               </p>
             </div>
 
-            {/* Acceso rápido por rol */}
-            <div className="mb-6">
-              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                <Sparkles className="h-3.5 w-3.5 text-unt-gold" />
-                Acceso rápido (demostración)
+            {/* Acceso rápido */}
+            <div className="mb-5">
+              <div className="mb-3 flex items-center gap-2">
+                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-700" />
+                <span className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase text-gray-400 dark:text-gray-500">
+                  <Sparkles className="h-3 w-3 text-[#c9a84c]" />
+                  Acceso rápido (demo)
+                </span>
+                <div className="h-px flex-1 bg-gray-100 dark:bg-gray-700" />
               </div>
+
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
-                {DEMO_USERS.map((user) => (
+                {DEMO_USERS.map((u) => (
                   <button
-                    key={user.id}
+                    key={u.id}
                     type="button"
-                    onClick={() => fillDemo(user)}
-                    className={`rounded-xl border-2 px-3 py-2.5 text-left text-xs transition-all duration-200 ${
-                      selectedDemo === user.id
-                        ? `${user.accentClass} ring-2 ring-offset-1 ring-unt-blue/30 scale-[1.02]`
-                        : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 hover:bg-white dark:border-slate-600 dark:bg-slate-700/50 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700'
+                    onClick={() => fillDemo(u)}
+                    className={`rounded-xl border px-3 py-2.5 text-left text-xs transition-all duration-150 ${
+                      selectedDemo === u.id
+                        ? 'border-[#1a365d] bg-blue-50 dark:border-blue-500 dark:bg-[#1e3a5f] scale-[1.02]'
+                        : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
-                    <span className="block font-semibold">{user.label}</span>
-                    <span className="mt-0.5 block truncate text-[10px] opacity-80">
-                      {user.description}
+                    <span className={`block font-semibold ${
+                      selectedDemo === u.id
+                        ? 'text-[#1a365d] dark:text-blue-300'
+                        : 'text-gray-800 dark:text-gray-200'
+                    }`}>
+                      {u.label}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[10px] text-gray-400 dark:text-gray-500">
+                      {u.description}
                     </span>
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-center text-[11px] text-slate-400 dark:text-slate-500">
+
+              <p className="mt-2.5 text-center text-[11px] text-gray-400 dark:text-gray-500">
                 Contraseña de prueba:{' '}
-                <code className="rounded bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 font-mono text-slate-600 dark:text-slate-300">
+                <code className="rounded bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 font-mono text-gray-600 dark:text-gray-300 text-[11px]">
                   {DEMO_PASSWORD_HINT}
                 </code>
               </p>
             </div>
 
-            {error ? (
-              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+            {/* Error */}
+            {error && (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                 {error}
               </div>
-            ) : null}
+            )}
 
+            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="email">Correo electrónico</Label>
+                <Label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Correo electrónico
+                </Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="usuario@unitru.edu.pe"
                   value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setSelectedDemo(null);
-                  }}
+                  onChange={(e) => { setEmail(e.target.value); setSelectedDemo(null); }}
                   required
                   autoComplete="email"
-                  className="mt-1.5 h-11 border-slate-200 focus-visible:ring-unt-blue"
+                  className="mt-1.5 h-11 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white focus-visible:ring-[#1a365d] dark:focus-visible:ring-blue-500"
                 />
               </div>
+
               <div>
-                <Label htmlFor="password">Contraseña</Label>
+                <Label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Contraseña
+                </Label>
                 <div className="relative mt-1.5">
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setSelectedDemo(null);
-                    }}
+                    onChange={(e) => { setPassword(e.target.value); setSelectedDemo(null); }}
                     required
                     autoComplete="current-password"
-                    className="h-11 border-slate-200 pr-11 focus-visible:ring-unt-blue"
+                    className="h-11 border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-white pr-11 focus-visible:ring-[#1a365d] dark:focus-visible:ring-blue-500"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-slate-500 dark:text-slate-400 transition-colors hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-unt-blue"
-                    aria-label={
-                      showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'
-                    }
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-600"
                     tabIndex={-1}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" aria-hidden />
-                    ) : (
-                      <Eye className="h-4 w-4" aria-hidden />
-                    )}
+                    {showPassword
+                      ? <EyeOff className="h-4 w-4" aria-hidden />
+                      : <Eye className="h-4 w-4" aria-hidden />
+                    }
                   </button>
                 </div>
               </div>
 
               <Button
                 type="submit"
-                className="h-11 w-full bg-unt-blue text-base font-semibold shadow-md shadow-unt-blue/25 hover:bg-primary-700"
                 disabled={loading}
+                className="h-11 w-full gap-2 bg-[#1a365d] text-white hover:bg-[#254d84] dark:bg-blue-600 dark:hover:bg-blue-700 font-semibold"
               >
-                {loading ? 'Iniciando sesión…' : 'Ingresar al sistema'}
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                    Ingresando...
+                  </>
+                ) : (
+                  <>
+                    <LogIn className="h-4 w-4" aria-hidden />
+                    Ingresar al sistema
+                  </>
+                )}
               </Button>
             </form>
           </div>
+
+          <p className="mt-4 text-center text-[11px] text-gray-300 dark:text-gray-600">
+            © {new Date().getFullYear()} UNT — Sistema de demostración académica
+          </p>
         </div>
       </div>
     </div>
