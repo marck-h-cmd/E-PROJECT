@@ -454,10 +454,10 @@ export default function SeleccionHorarioPage() {
               </Card>
             </div>
           ) : (
-            <div className="flex h-[500px] flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
-              <BookOpen className="h-12 w-12 text-slate-300" />
-              <h3 className="text-lg font-bold text-slate-700">Selecciona un curso</h3>
-              <p className="text-sm text-slate-500">Haz clic en uno de tus cursos de la lista para comenzar.</p>
+            <div className="flex h-[500px] flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed border-slate-700 bg-slate-900/50 dark:bg-slate-900/50 p-12 text-center">
+              <BookOpen className="h-12 w-12 text-slate-500 dark:text-slate-400" />
+              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">Selecciona un curso</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Haz clic en uno de tus cursos de la lista para comenzar.</p>
             </div>
           )}
         </div>

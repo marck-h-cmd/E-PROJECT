@@ -201,7 +201,6 @@ export default function EstadisticasPage() {
             data={barPorDia}
             xKey="dia"
             dataKey="cantidad"
-            color="#1a365d"
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -210,7 +209,6 @@ export default function EstadisticasPage() {
               data={barOcupacion}
               xKey="ambiente"
               dataKey="pct"
-              color="#1a365d"
             />
             <PieChartCard title="Avance horario por categoría" data={pieAvance} />
           </div>
@@ -220,7 +218,6 @@ export default function EstadisticasPage() {
             data={barMapaCalor}
             xKey="franja"
             dataKey="sesiones"
-            color="#1a365d"
           />
         </>
       )}
