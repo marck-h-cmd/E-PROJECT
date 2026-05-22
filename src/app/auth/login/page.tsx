@@ -74,31 +74,31 @@ export default function LoginPage() {
           }}
         />
 
-        {/* Glows de color */}
-        <div className="absolute top-0 right-0 w-72 h-72 rounded-full opacity-20"
+        {/* Glows de color mejorados */}
+        <div className="absolute top-0 right-0 w-80 h-80 rounded-full opacity-20 blur-3xl"
           style={{ background: 'radial-gradient(circle, #1a365d 0%, transparent 70%)' }} />
-        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full opacity-15"
+        <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full opacity-15 blur-3xl"
           style={{ background: 'radial-gradient(circle, #c9a84c 0%, transparent 70%)' }} />
 
         {/* Contenido superior */}
         <div className="relative z-10 flex flex-col gap-10 p-10 xl:p-14">
 
-          {/* Logo */}
+          {/* Logo mejorado */}
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl ring-1 ring-white/20"
-              style={{ background: 'rgba(201,168,76,0.15)' }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <rect x="1" y="1" width="10" height="10" rx="2" fill="#c9a84c"/>
-                <rect x="13" y="1" width="10" height="10" rx="2" fill="rgba(255,255,255,0.4)"/>
-                <rect x="1" y="13" width="10" height="10" rx="2" fill="rgba(255,255,255,0.4)"/>
-                <rect x="13" y="13" width="10" height="10" rx="2" fill="#378add"/>
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl ring-1 ring-white/20 shadow-lg"
+              style={{ background: 'rgba(201,168,76,0.12)' }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                <rect x="1" y="1" width="10" height="10" rx="2.5" fill="#c9a84c"/>
+                <rect x="13" y="1" width="10" height="10" rx="2.5" fill="rgba(255,255,255,0.55)"/>
+                <rect x="1" y="13" width="10" height="10" rx="2.5" fill="rgba(255,255,255,0.55)"/>
+                <rect x="13" y="13" width="10" height="10" rx="2.5" fill="#378add"/>
               </svg>
             </div>
             <div>
-              <p className="text-[11px] font-medium tracking-widest uppercase text-[#c9a84c]/80">
+              <p className="text-[11px] font-medium tracking-[2px] uppercase text-[#c9a84c]/80">
                 Universidad Nacional de Trujillo
               </p>
-              <h1 className="text-base font-semibold text-white leading-tight">
+              <h1 className="text-base font-semibold text-white leading-tight tracking-tight">
                 Horarios Académicos
               </h1>
             </div>
@@ -107,10 +107,10 @@ export default function LoginPage() {
           {/* Hero */}
           <div className="space-y-5">
             <div>
-              <h2 className="text-3xl xl:text-4xl font-semibold text-white leading-tight">
+              <h2 className="text-3xl xl:text-4xl font-semibold text-white leading-tight tracking-tighter">
                 Gestión inteligente
               </h2>
-              <h2 className="text-3xl xl:text-4xl font-semibold leading-tight" style={{ color: '#c9a84c' }}>
+              <h2 className="text-3xl xl:text-4xl font-semibold leading-tight tracking-tighter" style={{ color: '#c9a84c' }}>
                 de horarios 2026
               </h2>
             </div>
@@ -120,19 +120,24 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Features */}
-          <ul className="space-y-3">
+          {/* Features con iconos mejorados */}
+          <ul className="space-y-4">
             {[
               { icon: CalendarDays, text: 'Calendario semanal y detección de conflictos' },
               { icon: Shield, text: 'Roles: Admin, Operador, Docente y Monitor' },
               { icon: GraduationCap, text: 'Reportes PDF y notificaciones multicanal' },
-            ].map(({ icon: Icon, text }) => (
-              <li key={text} className="flex items-center gap-3">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                  style={{ background: 'rgba(55,138,221,0.15)', border: '0.5px solid rgba(55,138,221,0.25)' }}>
-                  <Icon className="h-3.5 w-3.5" style={{ color: '#85b7eb' }} />
+            ].map(({ icon: Icon, text }, index) => (
+              <li key={index} className="group flex items-center gap-4">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl 
+                  bg-gradient-to-br from-[#378add]/10 to-transparent 
+                  border border-[#378add]/25 shadow-sm transition-all duration-200 
+                  group-hover:from-[#378add]/15 group-hover:border-[#378add]/40 group-hover:shadow-md">
+                  <Icon className="h-4 w-4 text-[#7fb3e8] transition-all duration-200 
+                    group-hover:text-[#a8d0f5] group-hover:scale-110" />
                 </div>
-                <span className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{text}</span>
+                <span className="text-sm tracking-tight" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                  {text}
+                </span>
               </li>
             ))}
           </ul>
@@ -150,12 +155,12 @@ export default function LoginPage() {
             ].map((s, i) => (
               <div key={s.l} className="flex-1 text-center"
                 style={{ borderRight: i < 3 ? '0.5px solid rgba(255,255,255,0.08)' : 'none' }}>
-                <div className="text-lg font-semibold" style={{ color: '#c9a84c' }}>{s.n}</div>
-                <div className="text-[10px]" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.l}</div>
+                <div className="text-lg font-semibold tracking-tight" style={{ color: '#c9a84c' }}>{s.n}</div>
+                <div className="text-[10px] tracking-wide" style={{ color: 'rgba(255,255,255,0.3)' }}>{s.l}</div>
               </div>
             ))}
           </div>
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.2)' }}>
+          <p className="text-xs tracking-wide" style={{ color: 'rgba(255,255,255,0.2)' }}>
             © {new Date().getFullYear()} UNT — Sistema de demostración académica
           </p>
         </div>
@@ -172,12 +177,12 @@ export default function LoginPage() {
 
         {/* Logo mobile */}
         <div className="mb-6 text-center lg:hidden">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a365d]">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="1" y="1" width="10" height="10" rx="2" fill="#c9a84c"/>
-              <rect x="13" y="1" width="10" height="10" rx="2" fill="rgba(255,255,255,0.5)"/>
-              <rect x="1" y="13" width="10" height="10" rx="2" fill="rgba(255,255,255,0.5)"/>
-              <rect x="13" y="13" width="10" height="10" rx="2" fill="#378add"/>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1a365d]">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="1" y="1" width="10" height="10" rx="2.5" fill="#c9a84c"/>
+              <rect x="13" y="1" width="10" height="10" rx="2.5" fill="rgba(255,255,255,0.6)"/>
+              <rect x="1" y="13" width="10" height="10" rx="2.5" fill="rgba(255,255,255,0.6)"/>
+              <rect x="13" y="13" width="10" height="10" rx="2.5" fill="#378add"/>
             </svg>
           </div>
           <h2 className="text-lg font-semibold text-[#1a365d] dark:text-white">
@@ -195,7 +200,7 @@ export default function LoginPage() {
 
             {/* Header */}
             <div className="mb-6 hidden lg:block">
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight">
                 Bienvenido
               </h2>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -207,7 +212,7 @@ export default function LoginPage() {
             <div className="mb-5">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-px flex-1 bg-gray-100 dark:bg-gray-700" />
-                <span className="flex items-center gap-1.5 text-[11px] font-medium tracking-wide uppercase text-gray-400 dark:text-gray-500">
+                <span className="flex items-center gap-1.5 text-[11px] font-medium tracking-widest uppercase text-gray-400 dark:text-gray-500">
                   <Sparkles className="h-3 w-3 text-[#c9a84c]" />
                   Acceso rápido (demo)
                 </span>
@@ -220,13 +225,13 @@ export default function LoginPage() {
                     key={u.id}
                     type="button"
                     onClick={() => fillDemo(u)}
-                    className={`rounded-xl border px-3 py-2.5 text-left text-xs transition-all duration-150 ${
+                    className={`rounded-xl border px-3 py-2.5 text-left text-xs transition-all duration-150 active:scale-[0.985] ${
                       selectedDemo === u.id
                         ? 'border-[#1a365d] bg-blue-50 dark:border-blue-500 dark:bg-[#1e3a5f] scale-[1.02]'
                         : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
-                    <span className={`block font-semibold ${
+                    <span className={`block font-semibold tracking-tight ${
                       selectedDemo === u.id
                         ? 'text-[#1a365d] dark:text-blue-300'
                         : 'text-gray-800 dark:text-gray-200'
@@ -305,7 +310,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="h-11 w-full gap-2 bg-[#1a365d] text-white hover:bg-[#254d84] dark:bg-blue-600 dark:hover:bg-blue-700 font-semibold"
+                className="h-11 w-full gap-2 bg-[#1a365d] text-white hover:bg-[#254d84] dark:bg-blue-600 dark:hover:bg-blue-700 font-semibold tracking-tight"
               >
                 {loading ? (
                   <>
