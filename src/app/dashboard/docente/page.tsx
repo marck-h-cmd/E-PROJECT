@@ -352,19 +352,19 @@ export default function DocenteDashboardPage() {
       {/* KPIs SECTION */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: 'Carga Lectiva', value: `${totalHorasSemanal}h`, icon: <Clock className="h-5 w-5" />, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Horas Teoría', value: `${horasTeoria}h`, icon: <BookOpen className="h-5 w-5" />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Horas Laboratorio', value: `${horasLaboratorio}h`, icon: <FlaskConical className="h-5 w-5" />, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Asignaturas', value: cursosAsignados, icon: <TrendingUp className="h-5 w-5" />, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Carga Lectiva', value: `${totalHorasSemanal}h`, icon: <Clock className="h-6 w-6" />, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+          { label: 'Horas Teoría', value: `${horasTeoria}h`, icon: <BookOpen className="h-6 w-6" />, color: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+          { label: 'Horas Laboratorio', value: `${horasLaboratorio}h`, icon: <FlaskConical className="h-6 w-6" />, color: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+          { label: 'Asignaturas', value: cursosAsignados, icon: <TrendingUp className="h-6 w-6" />, color: 'text-amber-600', bg: 'bg-amber-50 dark:bg-amber-900/20' },
         ].map((kpi, i) => (
-          <div key={i} className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
+          <div key={i} className="group relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md">
             <div className="flex items-center justify-between">
-              <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${kpi.bg} ${kpi.color} transition-transform group-hover:scale-110`}>
+              <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${kpi.bg} ${kpi.color} transition-transform group-hover:scale-110`}>
                 {kpi.icon}
               </div>
               <div className="text-right">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">{kpi.label}</p>
-                <p className="text-2xl font-black tracking-tight text-slate-900">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-400">{kpi.label}</p>
+                <p className="text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
                   {loading ? '...' : kpi.value}
                 </p>
               </div>
@@ -406,19 +406,19 @@ export default function DocenteDashboardPage() {
           <div className="p-8 space-y-6">
              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
                 <PieChartCard title="Distribución de Horas" data={pieData} loading={loading} />
-                <BarChartCard title="Actividad Semanal" data={barData} xKey="dia" dataKey="sesiones" color="#1a365d" loading={loading} />
+                <BarChartCard title="Actividad Semanal" data={barData} xKey="dia" dataKey="sesiones" color="#c9a84c" loading={loading} />
               </div>
               
               {cursosUnicos.length > 0 && (
-                <div className="flex flex-wrap gap-3 p-3 bg-white rounded-lg border border-slate-200 shadow-sm items-center">
+                <div className="flex flex-wrap gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm items-center">
                   <div className="flex items-center gap-2 mr-2">
-                     <BookOpen className="w-4 h-4 text-slate-400" />
-                     <span className="text-sm font-semibold text-slate-600">Asignaturas:</span>
+                     <BookOpen className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+                     <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">Asignaturas:</span>
                   </div>
                   {cursosUnicos.map(c => {
                     const col = cursoColorMap[c];
                     return (
-                      <div key={c} className="flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-50 px-2 py-1 rounded-md border border-slate-100">
+                      <div key={c} className="flex items-center gap-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-700 px-2 py-1 rounded-md border border-slate-100 dark:border-slate-600">
                         <span className={cn("w-2.5 h-2.5 rounded-full shadow-sm", col.badge)}></span>
                         <span>{c}</span>
                       </div>
@@ -428,29 +428,29 @@ export default function DocenteDashboardPage() {
               )}
 
               {horasConClase.length === 0 ? (
-                <div className="flex min-h-[300px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-100 p-12 text-center">
+                <div className="flex min-h-[300px] flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-100 dark:border-slate-700 p-12 text-center bg-white dark:bg-slate-800">
                   <div className="mb-4 text-4xl">📅</div>
-                  <h3 className="text-lg font-bold">Sin horario confirmado</h3>
-                  <p className="text-slate-500">Tu horario oficial aparecerá aquí una vez sea validado.</p>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Sin horario confirmado</h3>
+                  <p className="text-slate-500 dark:text-slate-400">Tu horario oficial aparecerá aquí una vez sea validado.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
                    <table className="w-full min-w-[1000px] border-collapse">
-                      <thead className="bg-slate-900 text-white">
+                      <thead className="bg-slate-900 dark:bg-slate-900 text-white">
                         <tr>
                           <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
                           {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black">{DIAS_LABEL[d]}</th>)}
                           <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {horasARenderizar.map(hora => { 
                           const rowSpanHora = calcularRowSpanHora(hora);
                           return (
-                          <tr key={hora}> 
+                          <tr key={hora} className="bg-white dark:bg-slate-800"> 
                             <td 
                               rowSpan={rowSpanHora}
-                              className="bg-slate-50 p-4 text-center border-r text-[11px] font-bold text-slate-500"
+                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
                             >
                               <div className="font-semibold">{hora}</div>
                               {rowSpanHora > 1 && (
@@ -463,22 +463,25 @@ export default function DocenteDashboardPage() {
                               if (horasBloqueadasPorDia[dia]?.has(hora)) return null; 
                               const sesion = matriz[dia]?.[hora]; 
                               const duracion = sesion ? calcDuracion(sesion.horaInicio, sesion.horaFin) : 1; 
-                              if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 bg-white" />;
+                              if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800" />;
                               const colors = cursoColorMap[sesion.curso.codigo];
+                              const esLab = sesion.ambiente.tipo === 'LABORATORIO';
+                              const cellColor = esLab ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-blue-400 bg-blue-50 dark:bg-blue-900/20';
+                              const badgeColor = esLab ? 'bg-green-500' : 'bg-blue-500';
                               return ( 
-                                <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100"> 
-                                  <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", colors.bg, colors.border)}>
+                                <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100 dark:border-slate-700"> 
+                                  <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", cellColor, colors.border)}>
                                     <div className="flex items-center justify-between mb-2">
-                                      <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", colors.badge)}>
+                                      <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", badgeColor)}>
                                         {sesion.ambiente.tipo}
                                       </span>
                                       <span className="text-[9px] font-bold opacity-60">{sesion.horaInicio}-{sesion.horaFin}</span>
                                     </div>
-                                    <p className={cn("text-xs font-black mb-1", colors.text)}>{sesion.curso.nombre}</p>
-                                    <div className="text-[10px] font-bold text-slate-500 flex items-center gap-2">
+                                    <p className={cn("text-xs font-black mb-1", colors.text, "dark:text-slate-100")}>{sesion.curso.nombre}</p>
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
                                       <Users className="h-3 w-3" /> Grupo {sesion.grupo?.nombre || 'A'}
                                     </div>
-                                    <div className="text-[10px] font-bold text-slate-500 flex items-center gap-2 mt-1">
+                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
                                       <Info className="h-3 w-3" /> {sesion.ambiente.codigo}
                                     </div>
                                   </div>
@@ -487,7 +490,7 @@ export default function DocenteDashboardPage() {
                             })} 
                             <td 
                               rowSpan={rowSpanHora}
-                              className="bg-slate-50 p-4 text-center border-r text-[11px] font-bold text-slate-500"
+                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
                             >
                               <div className="font-semibold">{hora}</div>
                               {rowSpanHora > 1 && (
@@ -500,15 +503,15 @@ export default function DocenteDashboardPage() {
                           );
                         })}
                       </tbody>
-                      <tfoot className="bg-slate-800 text-white font-bold shadow-inner">
+                      <tfoot className="bg-slate-800 dark:bg-slate-900 text-white font-bold shadow-inner">
                         <tr>
-                          <td className="py-3 px-4 text-center border-t border-slate-700">TOTALES</td>
+                          <td className="py-3 px-4 text-center border-t border-slate-700 dark:border-slate-600">TOTALES</td>
                           {DIAS.map(dia => (
-                            <td key={dia} className="py-3 px-4 text-center border-t border-slate-700 border-r border-slate-700/50">
+                            <td key={dia} className="py-3 px-4 text-center border-t border-slate-700 dark:border-slate-600 border-r border-slate-700/50">
                               {horasPorDia[dia]}h
                             </td>
                           ))}
-                          <td className="py-3 px-4 text-center border-t border-slate-700 bg-unt-blue">
+                          <td className="py-3 px-4 text-center border-t border-slate-700 dark:border-slate-600 bg-unt-blue">
                             <div className="flex flex-col items-center justify-center">
                               <span className="text-[10px] text-blue-200 font-normal leading-tight uppercase">Semanal</span>
                               <span className="bg-blue-500 text-white px-2 py-0.5 rounded-md text-sm shadow-sm">{totalHorasSemanal}h</span>
