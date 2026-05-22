@@ -455,11 +455,10 @@ export default function DocenteDashboardPage() {
               ) : (
                 <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
                    <table className="w-full min-w-[1000px] border-collapse">
-                      <thead className="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white">
+                      <thead className="bg-slate-100 dark:bg-slate-800">
                         <tr>
-                          <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
-                          {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black">{DIAS_LABEL[d]}</th>)}
-                          <th className="p-4 text-[10px] uppercase font-black opacity-60">Hora</th>
+                          <th className="p-4 text-[10px] uppercase font-black bg-slate-100 dark:bg-slate-800 text-slate-400">Hora</th>
+                          {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black text-slate-700 dark:text-white bg-slate-100 dark:bg-slate-800 tracking-widest">{DIAS_LABEL[d]}</th>)}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -469,7 +468,7 @@ export default function DocenteDashboardPage() {
                           <tr key={hora} className="bg-white dark:bg-slate-800"> 
                             <td 
                               rowSpan={rowSpanHora}
-                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
+                              className="bg-slate-100 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
                             >
                               <div className="font-semibold">{hora}</div>
                               {rowSpanHora > 1 && (
@@ -482,42 +481,47 @@ export default function DocenteDashboardPage() {
                               if (horasBloqueadasPorDia[dia]?.has(hora)) return null; 
                               const sesion = matriz[dia]?.[hora]; 
                               const duracion = sesion ? calcDuracion(sesion.horaInicio, sesion.horaFin) : 1; 
-                              if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800" />;
+                              if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900" />;
                               const colors = cursoColorMap[sesion.curso.codigo];
                               const esLab = sesion.ambiente.tipo === 'LABORATORIO';
-                              const cellColor = esLab ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-blue-400 bg-blue-50 dark:bg-blue-900/20';
-                              const badgeColor = esLab ? 'bg-green-500' : 'bg-blue-500';
                               return ( 
-                                <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100 dark:border-slate-700"> 
-                                  <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", cellColor, colors.border)}>
+                                <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100 dark:border-slate-800"> 
+                                  <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", 
+                                    esLab 
+                                      ? "bg-emerald-50 dark:bg-slate-700 border-emerald-500 dark:border-emerald-400" 
+                                      : "bg-indigo-50 dark:bg-slate-700 border-indigo-500 dark:border-indigo-400"
+                                  )}>
                                     <div className="flex items-center justify-between mb-2">
-                                      <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", badgeColor)}>
+                                      <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", 
+                                        esLab ? "bg-emerald-500" : "bg-indigo-500"
+                                      )}>
                                         {sesion.ambiente.tipo}
                                       </span>
                                       <span className="text-[9px] font-bold opacity-60">{sesion.horaInicio}-{sesion.horaFin}</span>
                                     </div>
-                                    <p className={cn("text-xs font-black mb-1", colors.text, "dark:text-slate-100")}>{sesion.curso.nombre}</p>
-                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                                    <p className={cn("text-xs font-black mb-1", 
+                                      esLab 
+                                        ? "text-emerald-900 dark:text-white" 
+                                        : "text-indigo-900 dark:text-white"
+                                    )}>{sesion.curso.nombre}</p>
+                                    <div className={cn("text-[10px] font-bold flex items-center gap-2",
+                                      esLab 
+                                        ? "text-emerald-600 dark:text-slate-400" 
+                                        : "text-indigo-600 dark:text-slate-400"
+                                    )}>
                                       <Users className="h-3 w-3" /> Grupo {sesion.grupo?.nombre || 'A'}
                                     </div>
-                                    <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+                                    <div className={cn("text-[10px] font-bold flex items-center gap-2 mt-1",
+                                      esLab 
+                                        ? "text-emerald-600 dark:text-slate-400" 
+                                        : "text-indigo-600 dark:text-slate-400"
+                                    )}>
                                       <MapPin className="h-3 w-3" /> {sesion.ambiente.codigo}
                                     </div>
                                   </div>
                                 </td> 
                               ); 
                             })} 
-                            <td 
-                              rowSpan={rowSpanHora}
-                              className="bg-slate-50 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
-                            >
-                              <div className="font-semibold">{hora}</div>
-                              {rowSpanHora > 1 && (
-                                <div className="text-[10px] opacity-60">
-                                  {`${(parseInt(hora.split(':')[0]) + rowSpanHora).toString().padStart(2,'0')}:00`}
-                                </div>
-                              )}
-                            </td>
                           </tr> 
                           );
                         })}
@@ -710,16 +714,16 @@ export default function DocenteDashboardPage() {
       </div>
 
       <Modal open={showJustifyModal} onOpenChange={setShowJustifyModal}>
-        <ModalContent>
+        <ModalContent className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 p-6">
           <ModalHeader>
-            <ModalTitle>Justificar ausencia</ModalTitle>
-            <ModalDescription>Si no puedes asistir a seleccionar tu horario, registra tu justificación.</ModalDescription>
+            <ModalTitle className="text-slate-900 dark:text-white text-xl font-bold">Justificar ausencia</ModalTitle>
+            <ModalDescription className="text-slate-500 dark:text-slate-400 text-sm mt-1">Si no puedes asistir a seleccionar tu horario, registra tu justificación.</ModalDescription>
           </ModalHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase">Tipo de ausencia</label>
+              <label className="text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Tipo de ausencia</label>
               <select 
-                className="w-full rounded-xl border-slate-200 text-sm focus:ring-unt-blue"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 value={justifyForm.tipo}
                 onChange={(e) => setJustifyForm({...justifyForm, tipo: e.target.value})}
               >
@@ -731,19 +735,19 @@ export default function DocenteDashboardPage() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase">Motivo (min. 20 caracteres)</label>
+              <label className="text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Motivo (min. 20 caracteres)</label>
               <textarea 
-                className="w-full rounded-xl border-slate-200 text-sm focus:ring-unt-blue min-h-[100px]"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-4 py-3 w-full min-h-[120px] focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
                 placeholder="Describe el motivo de tu ausencia..."
                 value={justifyForm.motivo}
                 onChange={(e) => setJustifyForm({...justifyForm, motivo: e.target.value})}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 uppercase">N° de documento (opcional)</label>
+              <label className="text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">N° de documento (opcional)</label>
               <input 
                 type="text"
-                className="w-full rounded-xl border-slate-200 text-sm focus:ring-unt-blue"
+                className="w-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-xl px-4 py-3 w-full focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-slate-400 dark:placeholder:text-slate-500"
                 placeholder="Ej: Certificado médico N° 12345"
                 value={justifyForm.documento}
                 onChange={(e) => setJustifyForm({...justifyForm, documento: e.target.value})}
@@ -751,9 +755,9 @@ export default function DocenteDashboardPage() {
             </div>
           </div>
           <ModalFooter>
-            <Boton variant="ghost" onClick={() => setShowJustifyModal(false)}>Cancelar</Boton>
+            <Boton variant="ghost" onClick={() => setShowJustifyModal(false)} className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white font-medium px-4 py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-all">Cancelar</Boton>
             <Boton 
-              className="bg-amber-600 hover:bg-amber-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-indigo-600/20 transition-all active:scale-95"
               disabled={!justifyForm.tipo || justifyForm.motivo.length < 20 || justifying}
               onClick={handleJustificar}
             >
