@@ -528,13 +528,13 @@ export default function DocenteDashboardPage() {
         {activeTab === 'ventana' && (
           <div className="p-8">
             {!ventana ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                <div className="rounded-full bg-slate-100 p-6">
-                  <Clock className="h-12 w-12 text-slate-300" />
+              <div className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-slate-800 dark:bg-slate-800 border border-slate-700 rounded-2xl p-10">
+                <div className="rounded-full bg-slate-700 p-6">
+                  <Clock className="h-12 w-12 text-slate-200" />
                 </div>
                 <div className="max-w-xs">
-                  <h3 className="text-xl font-bold text-slate-900">No hay ventanas de atención activas</h3>
-                  <p className="text-sm text-slate-500 mt-2">
+                  <h3 className="text-xl font-bold text-slate-100">No hay ventanas de atención activas</h3>
+                  <p className="text-sm text-slate-400 mt-2">
                     El administrador abrirá una ventana cuando sea el momento de seleccionar horarios.
                   </p>
                 </div>
@@ -668,23 +668,25 @@ export default function DocenteDashboardPage() {
                     onClick={() => handleLeerNotificacion(notif.id)}
                     className={cn(
                       "group relative p-4 rounded-2xl border transition-all cursor-pointer hover:shadow-md",
-                      notif.estado !== 'LEIDA' ? "bg-blue-50/50 border-blue-100" : "bg-white border-slate-100"
+                      notif.estado !== 'LEIDA' 
+                        ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" 
+                        : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"
                     )}
                   >
                     <div className="flex gap-4">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm">
-                        {NOTIF_ICONS[notif.tipo] || <Bell className="h-4 w-4 text-slate-400" />}
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-slate-700 shadow-sm">
+                        {NOTIF_ICONS[notif.tipo] || <Bell className="h-4 w-4 text-slate-400 dark:text-slate-300" />}
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
-                          <h5 className={cn("text-sm font-bold", notif.estado !== 'LEIDA' ? "text-slate-900" : "text-slate-600")}>
+                          <h5 className={cn("text-sm font-bold", notif.estado !== 'LEIDA' ? "text-slate-900 dark:text-slate-100" : "text-slate-600 dark:text-slate-400")}>
                             {notif.titulo}
                           </h5>
-                          <span className="text-[10px] font-medium text-slate-400">
+                          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                             {new Date(notif.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-500 leading-relaxed">{notif.mensaje}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{notif.mensaje}</p>
                         
                         {notif.tipo === 'TURNO' && (
                           <Link href="/dashboard/horarios/seleccion" className="inline-flex items-center gap-2 mt-3 text-[11px] font-black text-unt-blue uppercase tracking-widest hover:underline">

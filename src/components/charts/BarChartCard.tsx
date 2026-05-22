@@ -44,7 +44,7 @@ export function BarChartCard({
   const tooltipText   = isDark ? '#f1f5f9' : '#0f172a';
 
   return (
-    <div className={cn('card', className)}>
+    <div className={cn('card bg-slate-800/50 border border-slate-700', className)}>
       <div className="card-header">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</h3>
         {description && <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{description}</p>}
