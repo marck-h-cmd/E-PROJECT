@@ -76,6 +76,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [notificaciones, setNotificaciones] = React.useState<any[]>([]);
   const [tiempoAtencion, setTiempoAtencion] = React.useState(0);
   const [tiempoVentana, setTiempoVentana] = React.useState(0);
+  const [todosLosHorarios, setTodosLosHorarios] = React.useState<any[]>([]);
 
   // Docente en atención y su carga/horarios
   const [docenteActual, setDocenteActual] = React.useState<any>(null);
@@ -106,7 +107,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [isEditing, setIsEditing] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+  const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
   const HORAS_NUM = Array.from({ length: 14 }, (_, i) => i + 7); // 7 to 20
 
   const HORAS = [
@@ -120,6 +121,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     MIERCOLES: 'MIÉRCOLES',
     JUEVES: 'JUEVES',
     VIERNES: 'VIERNES',
+    SABADO: 'SÁBADO',
   };
 
   // Fetch inicial
@@ -137,6 +139,15 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       else if (est === 'ABIERTA' || est === 'EN_CURSO') setEstadoVentana('activa');
       else if (est === 'CERRADA') setEstadoVentana('finalizada');
       else if (est === 'CANCELADA') setEstadoVentana('finalizada');
+
+      // Cargar todos los horarios del periodo para la verificación de disponibilidad
+      if (dataVentana.data.periodoId) {
+        const resTodosHor = await fetch(`/api/horarios?periodoId=${dataVentana.data.periodoId}&limit=2000`);
+        if (resTodosHor.ok) {
+          const dataTodos = await resTodosHor.json();
+          setTodosLosHorarios(dataTodos.data || []);
+        }
+      }
 
       // 2. Obtener cola
       const resCola = await fetch(`/api/ventanas-atencion/${ventanaId}/cola`);
@@ -626,6 +637,36 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     };
   }, [formState, allHorariosDocente, horariosAmbiente, cursosCarga]);
 
+  const getDisponibilidadAmbiente = (ambienteId: string) => {
+    const { diaSemana, horaInicio, horaFin, id: editingId } = formState;
+    const parseTime = (t: string) => {
+      const parts = t.split(':');
+      if (parts.length < 2) return NaN;
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+    const start = parseTime(horaInicio);
+    const end = parseTime(horaFin);
+
+    if (isNaN(start) || isNaN(end) || start >= end) return { disponible: false, mensaje: 'Hora inválida' };
+
+    const cruces = todosLosHorarios.filter(h => {
+      if (editingId && h.id === editingId) return false;
+      if (h.ambiente.id !== ambienteId) return false;
+      if (h.diaSemana !== diaSemana) return false;
+      if (h.estado === 'CANCELADO') return false;
+      
+      const hStart = parseTime(h.horaInicio);
+      const hEnd = parseTime(h.horaFin);
+      
+      return Math.max(start, hStart) < Math.min(end, hEnd);
+    });
+
+    if (cruces.length > 0) {
+      return { disponible: false, mensaje: `Ocupado (${cruces[0].curso.codigo})` };
+    }
+    return { disponible: true, mensaje: 'Sí' };
+  };
+
   // ── Helpers de la grilla ──────────────────────────────────────────────────
   const getHorasDia = (dia: string) => {
     return allHorariosDocente
@@ -1080,6 +1121,110 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                     <span>{formError}</span>
                   </div>
                 )}
+
+                {/* TABLAS DE DISPONIBILIDAD DE AMBIENTES */}
+                {formState.cursoId && formState.horaInicio && formState.horaFin && (() => {
+                  const aulas = ambientes.filter(a => a.tipo === 'AULA');
+                  const labs = ambientes.filter(a => a.tipo === 'LABORATORIO');
+                  
+                  return (
+                    <div className="border-t border-slate-200 dark:border-slate-600 pt-4 mt-2">
+                      <h4 className="text-[10px] font-bold text-gray-500 dark:text-slate-400 mb-2 uppercase tracking-wide">
+                        Ambientes disponibles para asignación
+                      </h4>
+                      
+                      <div className="space-y-4">
+                        {/* TEORÍA */}
+                        <div>
+                          <h5 className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mb-1">TEORÍA (Aulas):</h5>
+                          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-sm overflow-hidden text-[10px] max-h-40 overflow-y-auto">
+                            <table className="w-full text-left">
+                              <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0">
+                                <tr>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400">Ambiente</th>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400 text-center">Cap.</th>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400">Estado</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                {aulas.map(a => {
+                                  const { disponible, mensaje } = getDisponibilidadAmbiente(a.id);
+                                  return (
+                                    <tr 
+                                      key={a.id} 
+                                      className={cn(
+                                        disponible ? "bg-white dark:bg-slate-800" : "bg-red-50/50 dark:bg-red-900/10 opacity-75",
+                                        "hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                                      )}
+                                      onClick={() => {
+                                        if(disponible) setFormState(f => ({...f, ambienteId: a.id}));
+                                      }}
+                                    >
+                                      <td className="px-2 py-1 font-medium dark:text-slate-200">
+                                        {a.codigo}
+                                        {formState.ambienteId === a.id && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                                      </td>
+                                      <td className="px-2 py-1 text-slate-500 dark:text-slate-400 text-center">{a.capacidad ?? '-'}</td>
+                                      <td className="px-2 py-1">
+                                        {disponible 
+                                          ? <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5"><CheckCircle className="w-2.5 h-2.5"/> Libre</span> 
+                                          : <span className="text-red-500 dark:text-red-400 flex items-center gap-0.5"><X className="w-2.5 h-2.5"/> {mensaje}</span>}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                        
+                        {/* LABORATORIO */}
+                        <div>
+                          <h5 className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mb-1">LABORATORIO:</h5>
+                          <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-sm overflow-hidden text-[10px] max-h-40 overflow-y-auto">
+                            <table className="w-full text-left">
+                              <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0">
+                                <tr>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400">Ambiente</th>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400 text-center">Cap.</th>
+                                  <th className="px-2 py-1 font-medium text-slate-500 dark:text-slate-400">Estado</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                                {labs.map(a => {
+                                  const { disponible, mensaje } = getDisponibilidadAmbiente(a.id);
+                                  return (
+                                    <tr 
+                                      key={a.id} 
+                                      className={cn(
+                                        disponible ? "bg-white dark:bg-slate-800" : "bg-red-50/50 dark:bg-red-900/10 opacity-75",
+                                        "hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                                      )}
+                                      onClick={() => {
+                                        if(disponible) setFormState(f => ({...f, ambienteId: a.id}));
+                                      }}
+                                    >
+                                      <td className="px-2 py-1 font-medium dark:text-slate-200">
+                                        {a.codigo}
+                                        {formState.ambienteId === a.id && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                                      </td>
+                                      <td className="px-2 py-1 text-slate-500 dark:text-slate-400 text-center">{a.capacidad ?? '-'}</td>
+                                      <td className="px-2 py-1">
+                                        {disponible 
+                                          ? <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5"><CheckCircle className="w-2.5 h-2.5"/> Libre</span> 
+                                          : <span className="text-red-500 dark:text-red-400 flex items-center gap-0.5"><X className="w-2.5 h-2.5"/> {mensaje}</span>}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex gap-2">
                   {isEditing && (

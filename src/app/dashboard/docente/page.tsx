@@ -5,10 +5,11 @@ import { Rol, DiaSemana } from '@prisma/client';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
 import { apiGet, apiPost, apiPut, ApiClientError } from '@/lib/api-client';
+import { useDisponibilidad } from '@/hooks/useDisponibilidad';
 import { 
   Loader2, Calendar, Clock, TrendingUp, Users, 
   Bell, CheckCircle2, AlertTriangle, Timer, 
-  ArrowRight, MessageSquare, Info, X,
+  ArrowRight, MessageSquare, Info, X, CheckSquare, Square, Save,
   ShieldCheck, FileText, ExternalLink, FlaskConical, BookOpen, MapPin
 } from 'lucide-react';
 import Link from 'next/link';
@@ -108,7 +109,7 @@ const calcDuracion = (inicio: string, fin: string): number => {
 
 export default function DocenteDashboardPage() {
   const { user, loading: authLoading } = useRequireAuth([Rol.DOCENTE]);
-  const [activeTab, setActiveTab] = useState<'horario' | 'ventana' | 'notificaciones'>('horario');
+  const [activeTab, setActiveTab] = useState<'horario' | 'ventana' | 'notificaciones' | 'disponibilidad'>('horario');
   const [horarios, setHorarios] = useState<HorarioItem[]>([]);
   const [ventana, setVentana] = useState<VentanaAtencion | null>(null);
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
@@ -123,6 +124,10 @@ export default function DocenteDashboardPage() {
 
   const [timeLeft, setTimeLeft] = useState(900);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { slots, loading: slotsLoading, saving, error: slotsError, obtenerDisponibilidadDocente, guardarDisponibilidadDocente } = useDisponibilidad();
+  const [localSlots, setLocalSlots] = useState<Set<string>>(new Set());
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (user?.docenteId) setDocenteId(user.docenteId);
@@ -171,6 +176,44 @@ export default function DocenteDashboardPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    if (docenteId && activeTab === 'disponibilidad') {
+      obtenerDisponibilidadDocente(docenteId);
+    }
+  }, [docenteId, activeTab, obtenerDisponibilidadDocente]);
+
+  useEffect(() => {
+    const newSet = new Set<string>();
+    slots.forEach(s => newSet.add(`${s.diaSemana}-${s.horaInicio}`));
+    setLocalSlots(newSet);
+  }, [slots]);
+
+  const toggleSlot = (dia: string, hora: string) => {
+    const key = `${dia}-${hora}`;
+    setLocalSlots(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const handleSaveDisponibilidad = async () => {
+    if (!docenteId) return;
+    const nuevosSlots = Array.from(localSlots).map(key => {
+      const [diaSemana, horaInicio] = key.split('-');
+      const h = parseInt(horaInicio.split(':')[0]);
+      const horaFin = `${(h + 1).toString().padStart(2, '0')}:00`;
+      return { diaSemana, horaInicio, horaFin };
+    });
+    
+    const success = await guardarDisponibilidadDocente(docenteId, nuevosSlots);
+    if (success) {
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
+    }
+  };
 
   const handleMarcarAusente = useCallback(async () => {
     if (!ventana) return;
@@ -396,6 +439,7 @@ export default function DocenteDashboardPage() {
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
         {[
           { id: 'horario', label: 'Mi Horario Semanal', icon: <Calendar className="h-4 w-4" /> },
+          { id: 'disponibilidad', label: 'Mi Disponibilidad', icon: <Clock className="h-4 w-4" /> },
           { id: 'ventana', label: 'Ventanilla Virtual', icon: <Users className="h-4 w-4" /> },
           { id: 'notificaciones', label: 'Centro de Mensajes', icon: <Bell className="h-4 w-4" /> },
         ].map((tab) => (
@@ -529,6 +573,79 @@ export default function DocenteDashboardPage() {
                    </table>
                 </div>
               )}
+          </div>
+        )}
+
+        {activeTab === 'disponibilidad' && (
+          <div className="p-8 space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-700 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">Disponibilidad Horaria</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Marca las horas en las que estás disponible para que se te asignen clases.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                {showSaveSuccess && (
+                  <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 animate-in fade-in slide-in-from-right-4">
+                    <CheckCircle2 className="h-4 w-4" /> Guardado
+                  </span>
+                )}
+                <Boton
+                  onClick={handleSaveDisponibilidad}
+                  disabled={saving || slotsLoading}
+                  className="bg-unt-blue hover:bg-unt-blue/90 text-white font-bold flex items-center gap-2"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Guardar Cambios
+                </Boton>
+              </div>
+            </div>
+
+            {slotsError && <ErrorAlert message={slotsError} />}
+
+            {slotsLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-unt-blue" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full min-w-[800px] border-collapse select-none">
+                  <thead className="bg-slate-100 dark:bg-slate-800">
+                    <tr>
+                      <th className="p-4 text-[10px] uppercase font-black bg-slate-100 dark:bg-slate-800 text-slate-400">Hora</th>
+                      {DIAS.concat(['SABADO']).map(d => <th key={d} className="p-4 text-xs uppercase font-black text-slate-700 dark:text-white bg-slate-100 dark:bg-slate-800 tracking-widest">{d}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                    {HORAS_STRINGS.map(hora => (
+                      <tr key={hora} className="bg-white dark:bg-slate-900">
+                        <td className="bg-slate-50 dark:bg-slate-800 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          {hora}
+                        </td>
+                        {DIAS.concat(['SABADO']).map(dia => {
+                          const isAvailable = localSlots.has(`${dia}-${hora}`);
+                          return (
+                            <td 
+                              key={`${dia}-${hora}`} 
+                              className="p-1 border-l border-slate-100 dark:border-slate-800"
+                              onClick={() => toggleSlot(dia, hora)}
+                            >
+                              <div className={cn(
+                                "h-full w-full p-4 rounded-xl flex items-center justify-center cursor-pointer transition-all border-2",
+                                isAvailable 
+                                  ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-500 text-emerald-600 dark:text-emerald-400" 
+                                  : "bg-slate-50 dark:bg-slate-800/50 border-transparent hover:border-slate-200 dark:hover:border-slate-600 text-slate-300 dark:text-slate-600 hover:text-slate-400"
+                              )}>
+                                {isAvailable ? <CheckSquare className="h-6 w-6" /> : <Square className="h-6 w-6" />}
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 

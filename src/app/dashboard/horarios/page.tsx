@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, FileDown, Loader2, Plus, TableIcon, ExternalLink, Users, MapPin, Search, BookOpen } from 'lucide-react';
+import { AlertTriangle, FileDown, Loader2, Plus, TableIcon, ExternalLink, Users, MapPin, Search, BookOpen, CheckCircle2, X } from 'lucide-react';
 import { FormField, FormModalFooter, FormSection, FormSelect } from '@/components/forms';
 import { formControlClass } from '@/components/forms/FormField';
 import { Button } from '@/components/ui/button';
@@ -62,6 +62,8 @@ interface AmbienteOpt {
   codigo: string;
   nombre: string;
   tipo?: string;
+  capacidad?: number;
+  ubicacion?: string;
 }
 
 interface GrupoOpt {
@@ -89,6 +91,7 @@ const DIAS: DiaSemana[] = [
   DiaSemana.MIERCOLES,
   DiaSemana.JUEVES,
   DiaSemana.VIERNES,
+  DiaSemana.SABADO,
 ];
 
 const HORAS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 to 20
@@ -99,6 +102,7 @@ const DIA_LABEL: Record<string, string> = {
   MIERCOLES: 'MIÉRCOLES',
   JUEVES: 'JUEVES',
   VIERNES: 'VIERNES',
+  SABADO: 'SÁBADO',
 };
 
 const CICLO_OPTIONS = [
@@ -381,6 +385,37 @@ export default function HorariosPage() {
     }
   };
 
+  const getDisponibilidadAmbiente = (ambienteId: string) => {
+    const { diaSemana, horaInicio, horaFin } = form;
+    
+    const parseTime = (t: string) => {
+      const parts = t.split(':');
+      if (parts.length < 2) return NaN;
+      return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    };
+    
+    const start = parseTime(horaInicio);
+    const end = parseTime(horaFin);
+
+    if (isNaN(start) || isNaN(end) || start >= end) return { disponible: false, mensaje: 'Hora inválida' };
+
+    const cruces = horarios.filter(h => {
+      if (editingId && h.id === editingId) return false;
+      if (h.ambiente.id !== ambienteId) return false;
+      if (h.diaSemana !== diaSemana) return false;
+      
+      const hStart = parseTime(h.horaInicio);
+      const hEnd = parseTime(h.horaFin);
+      
+      return Math.max(start, hStart) < Math.min(end, hEnd);
+    });
+
+    if (cruces.length > 0) {
+      return { disponible: false, mensaje: `Ocupado (${cruces[0].curso.codigo})` };
+    }
+    return { disponible: true, mensaje: 'Sí' };
+  };
+
   const handleEditOpen = (h: HorarioCell) => {
     setEditingId(h.id);
     setForm({
@@ -568,8 +603,6 @@ export default function HorariosPage() {
 
   const horariosFiltrados = useMemo(() => {
     return horarios.filter(h => {
-      // Filtrar por sábado ya que fue eliminado
-      if (h.diaSemana === DiaSemana.SABADO) return false;
       if (estadoFiltro !== 'Todos' && h.estado !== estadoFiltro) {
         if (h.estado) return h.estado === estadoFiltro;
       }
@@ -1378,6 +1411,113 @@ export default function HorariosPage() {
               )}
             </FormSection>
           </div>
+
+          {/* TABLAS DE DISPONIBILIDAD DE AMBIENTES */}
+          {form.cursoId && form.horaInicio && form.horaFin && (() => {
+            const selectedCurso = cursos.find(c => c.id === form.cursoId);
+            const aulas = ambientesAll.filter(a => a.tipo === 'AULA');
+            const labs = ambientesAll.filter(a => a.tipo === 'LABORATORIO');
+            
+            return (
+              <div className="border-t border-slate-200 dark:border-slate-700 pt-6 mt-2">
+                <h3 className="text-sm font-bold text-[#1a365d] dark:text-blue-400 mb-4 uppercase tracking-wide">
+                  Configuración: Ambientes disponibles por curso
+                  {selectedCurso && <span className="block font-normal text-slate-500 mt-1 capitalize normal-case">Curso: {selectedCurso.nombre}</span>}
+                </h3>
+                
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* TEORÍA */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Ambientes para TEORÍA:</h4>
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden text-xs max-h-60 overflow-y-auto">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400">Ambiente</th>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400 text-center">Capacidad</th>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400">Disponible</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                          {aulas.map(a => {
+                            const { disponible, mensaje } = getDisponibilidadAmbiente(a.id);
+                            return (
+                              <tr 
+                                key={a.id} 
+                                className={cn(
+                                  disponible ? "bg-white dark:bg-slate-800" : "bg-red-50/50 dark:bg-red-900/10 opacity-75",
+                                  "hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                                )}
+                                onClick={() => {
+                                  if(disponible) setForm(f => ({...f, ambienteId: a.id}));
+                                }}
+                              >
+                                <td className="px-3 py-2 font-medium dark:text-slate-200">
+                                  {a.codigo}
+                                  {form.ambienteId === a.id && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-emerald-500"></span>}
+                                </td>
+                                <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-center">{a.capacidad ?? '-'}</td>
+                                <td className="px-3 py-2">
+                                  {disponible 
+                                    ? <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> {mensaje}</span> 
+                                    : <span className="text-red-500 dark:text-red-400 flex items-center gap-1"><X className="w-3 h-3"/> {mensaje}</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  
+                  {/* LABORATORIO */}
+                  <div>
+                    <h4 className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2">Ambientes para LABORATORIO:</h4>
+                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden text-xs max-h-60 overflow-y-auto">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 sticky top-0">
+                          <tr>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400">Ambiente</th>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400 text-center">Capacidad</th>
+                            <th className="px-3 py-2 font-medium text-slate-500 dark:text-slate-400">Disponible</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
+                          {labs.map(a => {
+                            const { disponible, mensaje } = getDisponibilidadAmbiente(a.id);
+                            return (
+                              <tr 
+                                key={a.id} 
+                                className={cn(
+                                  disponible ? "bg-white dark:bg-slate-800" : "bg-red-50/50 dark:bg-red-900/10 opacity-75",
+                                  "hover:bg-slate-50 dark:hover:bg-slate-700/50 cursor-pointer"
+                                )}
+                                onClick={() => {
+                                  if(disponible) setForm(f => ({...f, ambienteId: a.id}));
+                                }}
+                              >
+                                <td className="px-3 py-2 font-medium dark:text-slate-200">
+                                  {a.codigo}
+                                  {form.ambienteId === a.id && <span className="ml-2 inline-block w-2 h-2 rounded-full bg-emerald-500"></span>}
+                                </td>
+                                <td className="px-3 py-2 text-slate-500 dark:text-slate-400 text-center">{a.capacidad ?? '-'}</td>
+                                <td className="px-3 py-2">
+                                  {disponible 
+                                    ? <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-1"><CheckCircle2 className="w-3 h-3"/> {mensaje}</span> 
+                                    : <span className="text-red-500 dark:text-red-400 flex items-center gap-1"><X className="w-3 h-3"/> {mensaje}</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           <FormModalFooter
             onCancel={() => {
               setCreateOpen(false);
