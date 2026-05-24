@@ -2,6 +2,8 @@ import { prisma } from '@/lib/prisma';
 import { redis } from '@/lib/redis';
 import { AppError } from '@/services/auth/AuthService';
 import { EstadoVentana, EstadoAtencion, CategoriaDocente } from '@prisma/client';
+import { TemporizadorService } from './TemporizadorService';
+import { GestorNotificaciones } from '../notificaciones/GestorNotificaciones';
 
 export interface CrearVentanaDTO {
   periodoId: string;
@@ -232,6 +234,52 @@ export class GestorVentanasAtencion {
       },
     });
 
+    // Iniciar temporizador en Redis
+    const temporizadorService = new TemporizadorService();
+    await temporizadorService.iniciarTemporizador({
+      ventanaId: ventana.id,
+      atencionId: siguiente.id,
+      duracionMinutos: 15,
+      inicio: new Date(),
+    });
+
+    // Enviar notificaciones omnicanal
+    const gestorNotificaciones = new GestorNotificaciones();
+    const tituloNotif = 'Es su turno de atención';
+    const mensajeNotif = `Por favor, acérquese a la ${ventana.nombre} para seleccionar su horario. Dispone de 15 minutos.`;
+    const prefs = siguiente.docente.preferenciasNotificacion;
+    
+    // Canales habilitados para el envío
+    const canales: any[] = [];
+    if (prefs) {
+      if (prefs.correoActivo) canales.push('CORREO');
+      if (prefs.whatsappActivo && siguiente.docente.whatsapp) canales.push('WHATSAPP');
+      if (prefs.telegramActivo && siguiente.docente.telegramId) canales.push('TELEGRAM');
+      if (prefs.sistemaActivo) canales.push('SISTEMA');
+    } else {
+      canales.push('SISTEMA');
+    }
+
+    for (const canal of canales) {
+      try {
+        await gestorNotificaciones.enviarNotificacion({
+          usuarioId: siguiente.docente.usuarioId,
+          tipo: 'VENTANA_ATENCION',
+          titulo: tituloNotif,
+          mensaje: mensajeNotif,
+          prioridad: 'URGENTE',
+          canal,
+          metadata: {
+            ventanaId,
+            atencionId: siguiente.id,
+            tiempoLimiteSegundos: 900,
+          },
+        });
+      } catch (err) {
+        console.error(`Error enviando notificación de turno al docente por canal ${canal}:`, err);
+      }
+    }
+
     // Actualizar estado de la ventana
     if (ventana.estado === 'ABIERTA') {
       await prisma.ventanaAtencion.update({
@@ -346,6 +394,27 @@ export class GestorVentanasAtencion {
       ausentes: cola.filter(a => a.estado === 'AUSENTE').length,
       cola,
     };
+  }
+
+  /**
+   * Calcula la hora estimada de inicio del turno de un docente en la cola
+   * @param ventanaId ID de la ventana de atención
+   * @param posicion Posición del docente en la cola (1-indexed)
+   * @returns Date con la hora estimada de inicio
+   */
+  async calcularHoraEstimadaTurno(ventanaId: string, posicion: number): Promise<Date> {
+    const ventana = await prisma.ventanaAtencion.findUnique({
+      where: { id: ventanaId },
+      select: { fechaInicio: true },
+    });
+
+    if (!ventana) {
+      throw new AppError('Ventana de atención no encontrada', 404, 'VENTANA_NOT_FOUND');
+    }
+
+    const DURACION_TURNO_MS = 15 * 60 * 1000; // 15 minutos en milisegundos
+    const delay = (posicion - 1) * DURACION_TURNO_MS;
+    return new Date(new Date(ventana.fechaInicio).getTime() + delay);
   }
 
   private async generarColaDocentes(ventanaId: string) {

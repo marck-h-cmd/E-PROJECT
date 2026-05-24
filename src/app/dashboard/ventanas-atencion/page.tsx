@@ -962,17 +962,47 @@ export default function VentanasAtencionPage() {
                                 : '—'}
                             </td>
                             <td className="px-4 py-2.5">
-                              {a.estado === 'AUSENTE' && justificacion && (
-                                <button
-                                  onClick={() => {
-                                    setSelectedJustificacion(justificacion);
-                                    setJustificacionOpen(true);
-                                  }}
-                                  className="text-xs text-red-600 underline hover:text-red-800"
-                                >
-                                  Ver justificación
-                                </button>
-                              )}
+                              <div className="flex flex-col gap-1 items-start">
+                                {a.estado === 'AUSENTE' && justificacion && (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedJustificacion(justificacion);
+                                      setJustificacionOpen(true);
+                                    }}
+                                    className="text-xs text-red-600 underline hover:text-red-800 text-left"
+                                  >
+                                    Ver justificación
+                                  </button>
+                                )}
+                                {a.estado === 'AUSENTE' && (
+                                  <button
+                                    onClick={async () => {
+                                      if (confirm('¿Está seguro de reprogramar el turno de este docente? Se colocará al final de la cola activa de espera.')) {
+                                        try {
+                                          const res = await fetch(`/api/ventanas-atencion/${selectedHistorialWindow.id}/reprogramar`, {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ docenteId: a.docenteId }),
+                                          });
+                                          if (res.ok) {
+                                            toast.success('Docente reprogramado exitosamente');
+                                            // Refrescar el historial
+                                            handleVerHistorial(selectedHistorialWindow.id);
+                                          } else {
+                                            const err = await res.json();
+                                            throw new Error(err.message || 'Error al reprogramar');
+                                          }
+                                        } catch (err: any) {
+                                          toast.error(err.message);
+                                        }
+                                      }
+                                    }}
+                                    className="text-xs text-unt-blue hover:underline text-left font-semibold mt-1"
+                                  >
+                                    Reprogramar turno
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );

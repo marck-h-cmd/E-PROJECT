@@ -43,13 +43,14 @@ export async function exportarHorarioPDF(
   doc.setFont('helvetica', 'normal');
   doc.text(subtitulo, 148, 18, { align: 'center' });
 
-  const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+  const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
   const diasLabel: Record<string, string> = {
     LUNES: 'LUNES',
     MARTES: 'MARTES',
     MIERCOLES: 'MIÉRCOLES',
     JUEVES: 'JUEVES',
-    VIERNES: 'VIERNES'
+    VIERNES: 'VIERNES',
+    SABADO: 'SÁBADO'
   };
 
   const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
