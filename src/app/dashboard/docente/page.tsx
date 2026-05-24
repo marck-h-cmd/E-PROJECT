@@ -50,6 +50,7 @@ interface VentanaAtencion {
   atencionEstado?: 'ESPERANDO' | 'ATENDIENDO' | 'FINALIZADO' | 'AUSENTE' | 'JUSTIFICADO';
   fechaIngresoDocente?: string;
   categoriaDocente?: string;
+  tiempoRestanteSegundos?: number;
 }
 
 interface Notificacion {
@@ -62,13 +63,14 @@ interface Notificacion {
   createdAt: string;
 }
 
-const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const DIAS_LABEL: Record<string, string> = {
   LUNES: 'LUNES',
   MARTES: 'MARTES',
   MIERCOLES: 'MIÉRCOLES',
   JUEVES: 'JUEVES',
   VIERNES: 'VIERNES',
+  SABADO: 'SÁBADO',
 };
 
 const HORAS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 to 20
@@ -105,6 +107,23 @@ const calcDuracion = (inicio: string, fin: string): number => {
   const h1 = parseInt(inicio.split(':')[0]); 
   const h2 = parseInt(fin.split(':')[0]); 
   return Math.max(1, h2 - h1); 
+};
+
+const getBadgeEstadoTurno = (estado?: string) => {
+  switch (estado) {
+    case 'ESPERANDO':
+      return <Badge className="bg-slate-400 dark:bg-slate-600 text-white border-none">En espera</Badge>;
+    case 'EN_ATENCION':
+      return <Badge className="bg-blue-600 text-white border-none">En atención</Badge>;
+    case 'ATENDIDO':
+      return <Badge className="bg-emerald-500 text-white border-none">Atendido</Badge>;
+    case 'AUSENTE':
+      return <Badge className="bg-amber-500 text-white border-none">Justificado</Badge>;
+    case 'CANCELADO':
+      return <Badge className="bg-rose-600 text-white border-none">Cancelado</Badge>;
+    default:
+      return null;
+  }
 };
 
 export default function DocenteDashboardPage() {
@@ -159,12 +178,20 @@ export default function DocenteDashboardPage() {
     setError(null);
     try {
       const [horariosRes, ventanaRes, notifsRes] = await Promise.all([
-        apiGet<HorarioItem[]>(`/api/horarios`, { docenteId }),
+        apiGet<HorarioItem[]>(`/api/horarios`, { docenteId, estado: 'PUBLICADO' }),
         apiGet<VentanaAtencion>(`/api/ventanas-atencion/activa`, { docenteId }),
         apiGet<Notificacion[]>(`/api/notificaciones`, { limit: 30, usuarioId: user.id }),
       ]);
       setHorarios(horariosRes.data || []);
-      setVentana(ventanaRes.data || null);
+      
+      const activeVentana = ventanaRes.data || null;
+      setVentana(activeVentana);
+      if (activeVentana && activeVentana.tiempoRestanteSegundos !== undefined) {
+        setTimeLeft(activeVentana.tiempoRestanteSegundos);
+      } else {
+        setTimeLeft(900);
+      }
+      
       setNotificaciones(notifsRes.data || []);
     } catch (err) {
       setError(err instanceof ApiClientError ? err.message : 'Error al cargar los datos del dashboard');
@@ -175,6 +202,46 @@ export default function DocenteDashboardPage() {
 
   useEffect(() => {
     fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    let ws: WebSocket | null = null;
+    let reconnectTimeout: NodeJS.Timeout | null = null;
+
+    const connectWS = () => {
+      try {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}/api/websocket`);
+        
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.type === 'cola:actualizada' || msg.type === 'cola:cambio') {
+              fetchData();
+            }
+          } catch (err) {
+            console.error('Error procesando mensaje WebSocket:', err);
+          }
+        };
+
+        ws.onclose = () => {
+          reconnectTimeout = setTimeout(connectWS, 5000);
+        };
+
+        ws.onerror = () => {
+          ws?.close();
+        };
+      } catch (err) {
+        console.error('Error al conectar WebSocket:', err);
+      }
+    };
+
+    connectWS();
+
+    return () => {
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
   }, [fetchData]);
 
   useEffect(() => {
@@ -328,8 +395,8 @@ export default function DocenteDashboardPage() {
   });
 
   horarios.filter(h => {
-    // Validar que diaSemana esté en DIAS y no sea SÁBADO/DOMINGO
-    if (!DIAS.includes(h.diaSemana) || h.diaSemana === 'SABADO' || h.diaSemana === 'DOMINGO') {
+    // Validar que diaSemana esté en DIAS y no sea DOMINGO
+    if (!DIAS.includes(h.diaSemana) || h.diaSemana === 'DOMINGO') {
       return false;
     }
     return true;
@@ -467,6 +534,11 @@ export default function DocenteDashboardPage() {
       <div className="card min-h-[400px]">
         {activeTab === 'horario' && (
           <div className="p-8 space-y-6">
+             <div className="bg-blue-50 dark:bg-slate-700 border border-blue-200 dark:border-slate-600 text-blue-850 dark:text-blue-200 text-xs sm:text-sm font-semibold rounded-xl p-4 flex items-center gap-2.5 mb-6">
+                <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                <span>Solo se muestran horarios oficiales en estado <strong className="text-blue-900 dark:text-white uppercase">PUBLICADO</strong>. Los horarios en borrador o pendientes de validación por coordinación no son mostrados en este panel.</span>
+             </div>
+
              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 mb-8">
                 <PieChartCard title="Distribución de Horas" data={pieData} loading={loading} />
                 <BarChartCard title="Actividad Semanal" data={barData} xKey="dia" dataKey="sesiones" color="#c9a84c" loading={loading} />
@@ -612,7 +684,7 @@ export default function DocenteDashboardPage() {
                   <thead className="bg-slate-100 dark:bg-slate-800">
                     <tr>
                       <th className="p-4 text-[10px] uppercase font-black bg-slate-100 dark:bg-slate-800 text-slate-400">Hora</th>
-                      {DIAS.concat(['SABADO']).map(d => <th key={d} className="p-4 text-xs uppercase font-black text-slate-700 dark:text-white bg-slate-100 dark:bg-slate-800 tracking-widest">{d}</th>)}
+                      {DIAS.map(d => <th key={d} className="p-4 text-xs uppercase font-black text-slate-700 dark:text-white bg-slate-100 dark:bg-slate-800 tracking-widest">{DIAS_LABEL[d] || d}</th>)}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -621,7 +693,7 @@ export default function DocenteDashboardPage() {
                         <td className="bg-slate-50 dark:bg-slate-800 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                           {hora}
                         </td>
-                        {DIAS.concat(['SABADO']).map(dia => {
+                        {DIAS.map(dia => {
                           const isAvailable = localSlots.has(`${dia}-${hora}`);
                           return (
                             <td 
@@ -665,13 +737,15 @@ export default function DocenteDashboardPage() {
               </div>
             ) : (
               <div className="space-y-6 max-w-4xl mx-auto">
-                {ventana.posicionCola !== undefined && ventana.turnoActual !== undefined && ventana.posicionCola > ventana.turnoActual && (
+                {ventana.posicionCola !== undefined && 
+                 (ventana.posicionCola !== ventana.turnoActual || ventana.atencionEstado === 'AUSENTE') && (
                   <Card className="border-unt-blue/20 bg-blue-50/30 p-8">
                     <div className="flex flex-col md:flex-row gap-8 items-center">
                       <div className="flex-1 space-y-4">
                         <div className="flex items-center gap-3">
                           <h4 className="text-2xl font-black text-slate-900">{ventana.nombre}</h4>
                           <Badge className="bg-emerald-500 text-white animate-pulse border-none">ABIERTA</Badge>
+                          {getBadgeEstadoTurno(ventana.atencionEstado)}
                         </div>
                         <div className="grid grid-cols-2 gap-6">
                           <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-center">
@@ -683,25 +757,35 @@ export default function DocenteDashboardPage() {
                             <p className="text-4xl font-black text-slate-700">#{ventana.turnoActual}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                          <Clock className="h-5 w-5 text-amber-600" />
-                          <p className="text-sm font-bold text-amber-800">
-                            Estimación: Aprox. {(ventana.posicionCola - ventana.turnoActual) * 15} minutos para tu turno
-                          </p>
-                        </div>
+                        {ventana.atencionEstado !== 'AUSENTE' && (
+                          <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                            <Clock className="h-5 w-5 text-amber-600" />
+                            <p className="text-sm font-bold text-amber-800">
+                              Estimación: Aprox. {Math.max(0, ventana.posicionCola - (ventana.turnoActual || 0)) * 15} minutos para tu turno
+                            </p>
+                          </div>
+                        )}
                       </div>
                       <div className="w-full md:w-auto flex flex-col gap-3">
-                        <Boton 
-                          variant="outline" 
-                          className="border-amber-200 text-amber-700 hover:bg-amber-50"
-                          onClick={() => setShowJustifyModal(true)}
-                          disabled={justified}
-                        >
-                          {justified ? 'Ausencia justificada' : 'Justificar ausencia'}
-                        </Boton>
-                        <p className="text-[10px] text-center text-slate-500 max-w-[200px]">
-                          Mantente disponible, te notificaremos cuando sea tu turno
-                        </p>
+                        {ventana.atencionEstado === 'AUSENTE' ? (
+                          <div className="rounded-xl bg-amber-50 dark:bg-slate-700/50 border border-amber-200 dark:border-slate-600 p-4 text-xs font-bold text-amber-800 dark:text-amber-300 max-w-sm">
+                            Tu justificación fue registrada. El operador puede reprogramar tu turno.
+                          </div>
+                        ) : (
+                          <>
+                            <Boton 
+                              variant="outline" 
+                              className="border-amber-200 text-amber-700 hover:bg-amber-50"
+                              onClick={() => setShowJustifyModal(true)}
+                              disabled={justified}
+                            >
+                              {justified ? 'Ausencia justificada' : 'Justificar ausencia'}
+                            </Boton>
+                            <p className="text-[10px] text-center text-slate-500 max-w-[200px]">
+                              Mantente disponible, te notificaremos cuando sea tu turno
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </Card>
