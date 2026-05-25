@@ -33,8 +33,32 @@ export async function GET(
     const { searchParams } = new URL(request.url);
     const periodoId = searchParams.get('periodoId') ?? undefined;
     const registroId = searchParams.get('id') ?? undefined;
+    const fechaDesdeStr = searchParams.get('fechaDesde');
+    const fechaHastaStr = searchParams.get('fechaHasta');
 
-    const pdfBuffer = await servicio.generar(entidad, { periodoId, registroId });
+    const parseFecha = (v: string | null): Date | undefined => {
+      if (!v) return undefined;
+      const d = new Date(v);
+      return isNaN(d.getTime()) ? undefined : d;
+    };
+
+    const fechaDesde = parseFecha(fechaDesdeStr);
+    const fechaHasta = parseFecha(fechaHastaStr);
+
+    if (fechaDesde && fechaHasta && fechaDesde > fechaHasta) {
+      return createErrorResponse(
+        'VALIDATION_ERROR',
+        'La fecha "desde" debe ser anterior o igual a la fecha "hasta"',
+        400
+      );
+    }
+
+    const pdfBuffer = await servicio.generar(entidad, {
+      periodoId,
+      registroId,
+      fechaDesde,
+      fechaHasta,
+    });
 
     const sufijo = registroId ? `-${registroId}` : '-todos';
     const filename = `catalogo-${entidad}${sufijo}.pdf`;

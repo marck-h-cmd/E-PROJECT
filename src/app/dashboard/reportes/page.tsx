@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { FileDown, Loader2, Library } from 'lucide-react';
+import { FileDown, Loader2, Library, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { ErrorAlert } from '@/components/feedback/ErrorAlert';
@@ -106,6 +107,9 @@ export default function ReportesPage() {
   const periodoId = periodoSeleccionado?.id ?? '';
   const [downloading, setDownloading] = useState<string | null>(null);
   const [filtros, setFiltros] = useState<FiltrosCatalogo>(FILTROS_INICIALES);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
+  const rangoFechasInvalido = !!fechaDesde && !!fechaHasta && fechaDesde > fechaHasta;
   const [opciones, setOpciones] = useState<Record<EntidadCatalogo, Opt[]>>({
     docentes: [],
     cursos: [],
@@ -191,6 +195,8 @@ export default function ReportesPage() {
     const params: Record<string, string> = {};
     if (periodoId) params.periodoId = periodoId;
     if (!esTodos) params.id = seleccion;
+    if (fechaDesde) params.fechaDesde = fechaDesde;
+    if (fechaHasta) params.fechaHasta = fechaHasta;
 
     return downloadFile(
       `/api/reportes/catalogo/${cat.entidad}`,
@@ -303,17 +309,79 @@ export default function ReportesPage() {
 
         <div className="md:col-span-2">
           <div className="card">
-            <div className="card-header flex items-center gap-2">
-              <Library className="h-4 w-4 text-unt-blue dark:text-unt-gold-light" />
-              <h3 className="text-sm font-semibold text-unt-blue dark:text-unt-gold-light">
-                Catálogos administrativos
-              </h3>
+            <div className="card-header flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Library className="h-4 w-4 text-unt-blue dark:text-unt-gold-light" />
+                <h3 className="text-sm font-semibold text-unt-blue dark:text-unt-gold-light">
+                  Catálogos administrativos
+                </h3>
+              </div>
+              <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50/70 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/40 sm:flex-row sm:items-end">
+                <div className="flex items-center gap-1.5">
+                  <CalendarRange className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                    Rango de fechas (opcional)
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div className="flex flex-col">
+                    <Label htmlFor="rep-fecha-desde" className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Desde
+                    </Label>
+                    <Input
+                      id="rep-fecha-desde"
+                      type="date"
+                      value={fechaDesde}
+                      max={fechaHasta || undefined}
+                      onChange={(e) => setFechaDesde(e.target.value)}
+                      className="h-9 w-[150px] text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <Label htmlFor="rep-fecha-hasta" className="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                      Hasta
+                    </Label>
+                    <Input
+                      id="rep-fecha-hasta"
+                      type="date"
+                      value={fechaHasta}
+                      min={fechaDesde || undefined}
+                      onChange={(e) => setFechaHasta(e.target.value)}
+                      className="h-9 w-[150px] text-xs"
+                    />
+                  </div>
+                  {(fechaDesde || fechaHasta) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setFechaDesde('');
+                        setFechaHasta('');
+                      }}
+                      className="h-9 px-2 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                    >
+                      Limpiar
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
             <div className="card-body space-y-4">
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Elija <strong>todos los registros</strong> o un elemento específico antes de
                 generar cada PDF.
+                {(fechaDesde || fechaHasta) && (
+                  <>
+                    {' '}El rango filtrará los registros por <strong>fecha de creación</strong>.
+                  </>
+                )}
               </p>
+
+              {rangoFechasInvalido && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                  La fecha <strong>Desde</strong> debe ser anterior o igual a <strong>Hasta</strong>.
+                </div>
+              )}
 
               {errCatalogos && <ErrorAlert message={errCatalogos} />}
 
@@ -370,7 +438,7 @@ export default function ReportesPage() {
 
                         <Button
                           className="mt-auto w-full bg-unt-blue hover:bg-unt-blue/90 text-white"
-                          disabled={!!downloading || (!esTodos && !seleccion)}
+                          disabled={!!downloading || (!esTodos && !seleccion) || rangoFechasInvalido}
                           onClick={() =>
                             runDownload(
                               c.key,

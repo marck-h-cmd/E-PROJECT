@@ -47,7 +47,14 @@ export default function DocentesPage() {
 
   const [qInput, setQInput] = useState('');
   const [search, setSearch] = useState('');
-  const listParams = useMemo(() => ({ search: search || undefined }), [search]);
+  const [categoriaFiltro, setCategoriaFiltro] = useState<'' | CategoriaDocente>('');
+  const listParams = useMemo(
+    () => ({
+      search: search || undefined,
+      categoria: categoriaFiltro || undefined,
+    }),
+    [search, categoriaFiltro]
+  );
   const { data, meta, loading, error, page, setPage, refresh } = usePaginatedQuery<DocenteRow>(
     '/api/docentes',
     listParams
@@ -190,7 +197,7 @@ export default function DocentesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, setPage]);
+  }, [search, categoriaFiltro, setPage]);
 
   const columns: Column<DocenteRow>[] = [
     { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
@@ -278,15 +285,51 @@ export default function DocentesPage() {
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchBar
-          value={qInput}
-          onChange={setQInput}
-          placeholder="Buscar por nombre, correo o código…"
-          onSubmit={() => setSearch(qInput.trim())}
-        />
-        <Button type="button" variant="outline" onClick={() => setSearch(qInput.trim())}>
-          Buscar
-        </Button>
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchBar
+            value={qInput}
+            onChange={setQInput}
+            placeholder="Buscar por nombre, correo o código…"
+            onSubmit={() => setSearch(qInput.trim())}
+          />
+          <div className="flex items-center gap-2">
+            <Label htmlFor="filtro-categoria" className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Categoría
+            </Label>
+            <select
+              id="filtro-categoria"
+              value={categoriaFiltro}
+              onChange={(e) => setCategoriaFiltro(e.target.value as '' | CategoriaDocente)}
+              className="h-10 min-w-[180px] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
+            >
+              <option value="">Todas</option>
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {Formateadores.categoriaDocente(c)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => setSearch(qInput.trim())}>
+            Buscar
+          </Button>
+          {(search || categoriaFiltro) && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setQInput('');
+                setSearch('');
+                setCategoriaFiltro('');
+              }}
+              className="text-xs text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
+            >
+              Limpiar
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <ErrorAlert message={error} className="mb-4" onRetry={refresh} />}
