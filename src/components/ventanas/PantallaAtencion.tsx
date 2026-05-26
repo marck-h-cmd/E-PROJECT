@@ -194,6 +194,21 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
           const elapsed = Math.floor((Date.now() - savedTimer.startTime - savedTimer.totalPausedTime) / 1000);
           setTiempoVentana(elapsed > 0 ? elapsed : 0);
         }
+      } else if (nuevoEstado === 'activa') {
+        // Si la ventana ya está activa pero no hay temporizador guardado localmente
+        // (ej. se inició desde el panel general o se cambió de navegador/ventana),
+        // lo inicializamos en base a updatedAt de la ventana (que registra cuándo se abrió).
+        const startMs = new Date(dataVentana.data.updatedAt).getTime();
+        const newTimerData: TimerData = {
+          startTime: startMs,
+          pausedTime: 0,
+          isPaused: false,
+          totalPausedTime: 0,
+        };
+        setTimerData(newTimerData);
+        saveTimerData(ventanaId, newTimerData);
+        const elapsed = Math.floor((Date.now() - startMs) / 1000);
+        setTiempoVentana(elapsed > 0 ? elapsed : 0);
       } else if (nuevoEstado === 'finalizada') {
         clearTimerData(ventanaId);
       }

@@ -293,7 +293,7 @@ export default function DocenteDashboardPage() {
   }, [ventana, fetchData]);
 
   useEffect(() => {
-    const esTurno = ventana && ventana.posicionCola === ventana.turnoActual && ventana.estado === 'ABIERTA';
+    const esTurno = ventana && ventana.posicionCola === ventana.turnoActual && (ventana.estado === 'ABIERTA' || ventana.estado === 'EN_CURSO');
     
     if (esTurno && timeLeft > 0) {
       timerRef.current = setInterval(() => {
@@ -769,7 +769,7 @@ export default function DocenteDashboardPage() {
                   </Card>
                 )}
 
-                {ventana.posicionCola === ventana.turnoActual && ventana.estado === 'ABIERTA' && (
+                {ventana.posicionCola === ventana.turnoActual && (ventana.estado === 'ABIERTA' || ventana.estado === 'EN_CURSO') && (
                   <Card className="border-emerald-200 bg-emerald-50/50 p-8 ring-4 ring-emerald-500/20 animate-pulse">
                     <div className="text-center space-y-6">
                       <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-2">
