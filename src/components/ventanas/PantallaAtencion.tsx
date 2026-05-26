@@ -1414,65 +1414,21 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                           {HORAS_NUM.map((horaNum, rowIndex) => {
-                            /**
-                             * feat/alexis logic:
-                             * Determinar si esta fila completa está cubierta por un rowSpan
-                             * de una celda de hora que empezó en una fila anterior.
-                             * Usamos el PRIMER horario encontrado en cualquier día como referencia
-                             * para las celdas de HORA (izquierda y derecha), ya que esas columnas
-                             * son independientes de los días.
-                             *
-                             * Para las celdas de hora lateral, calculamos el rowSpan
-                             * basándonos en el bloque de mayor duración que empieza a esta hora
-                             * en cualquier día — así la celda de hora "ocupa" el mismo espacio visual.
-                             */
-
-                            // ¿Algún bloque (de cualquier día) que empezó antes cubre esta fila?
-                            const isCoveredByRowspan = allHorariosDocente.some((h: any) => {
-                              if (h.estado === 'CANCELADO') return false;
-                              const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-                              const fin = parseInt(h.horaFin.split(':')[0], 10);
-                              return inicio < horaNum && fin > horaNum;
-                            });
-
-                            // Duración máxima de clases que empiezan EXACTAMENTE a esta hora (en cualquier día)
-                            const maxDurationStartingHere = allHorariosDocente
-                              .filter((h: any) => {
-                                if (h.estado === 'CANCELADO') return false;
-                                return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
-                              })
-                              .reduce((max: number, h: any) => {
-                                const dur =
-                                  parseInt(h.horaFin.split(':')[0], 10) -
-                                  parseInt(h.horaInicio.split(':')[0], 10);
-                                return Math.max(max, dur);
-                              }, 1);
-
-                            // rowSpan de las celdas laterales de HORA
-                            const horaRowSpan = isCoveredByRowspan ? 0 : maxDurationStartingHere;
-
                             return (
                               <tr
                                 key={horaNum}
                                 className={rowIndex % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-slate-50/30 dark:bg-slate-700/30'}
                               >
                                 {/* HORA Izquierda */}
-                                {!isCoveredByRowspan && (
-                                  <td
-                                    rowSpan={horaRowSpan}
-                                    className="py-2.5 px-2 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
-                                  >
-                                    {`${horaNum.toString().padStart(2, '0')}:00`}
-                                    {horaRowSpan > 1 && (
-                                      <>
-                                        <br />
-                                        <span className="text-[10px] opacity-70">
-                                          {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
-                                        </span>
-                                      </>
-                                    )}
-                                  </td>
-                                )}
+                                <td
+                                  className="py-2.5 px-2 text-center border-r border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
+                                >
+                                  {`${horaNum.toString().padStart(2, '0')}:00`}
+                                  <br />
+                                  <span className="text-[10px] opacity-70">
+                                    {`${(horaNum + 1).toString().padStart(2, '0')}:00`}
+                                  </span>
+                                </td>
 
                                 {/* Celdas por día */}
                                 {DIAS.map((dia) => {
@@ -1659,22 +1615,15 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                 })}
 
                                 {/* HORA Derecha */}
-                                {!isCoveredByRowspan && (
-                                  <td
-                                    rowSpan={horaRowSpan}
-                                    className="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
-                                  >
-                                    {`${horaNum.toString().padStart(2, '0')}:00`}
-                                    {horaRowSpan > 1 && (
-                                      <>
-                                        <br />
-                                        <span className="text-[10px] opacity-70">
-                                          {`${(horaNum + horaRowSpan).toString().padStart(2, '0')}:00`}
-                                        </span>
-                                      </>
-                                    )}
-                                  </td>
-                                )}
+                                <td
+                                  className="py-2.5 px-2 text-center border-l border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-mono text-xs whitespace-nowrap"
+                                >
+                                  {`${horaNum.toString().padStart(2, '0')}:00`}
+                                  <br />
+                                  <span className="text-[10px] opacity-70">
+                                    {`${(horaNum + 1).toString().padStart(2, '0')}:00`}
+                                  </span>
+                                </td>
                               </tr>
                             );
                           })}

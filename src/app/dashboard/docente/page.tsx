@@ -409,30 +409,12 @@ export default function DocenteDashboardPage() {
     } 
   });
 
-  const horaGlobalmenteBloqueada = (hora: string): boolean => {
-    return DIAS.some(dia => horasBloqueadasPorDia[dia]?.has(hora));
-  };
-
-  const calcularRowSpanHora = (hora: string): number => {
-    let maxDuracion = 1;
-    DIAS.forEach(dia => {
-      const sesion = matriz[dia]?.[hora];
-      if (sesion) {
-        const inicio = parseInt(sesion.horaInicio.split(':')[0]);
-        const fin = parseInt(sesion.horaFin.split(':')[0]);
-        const duracion = fin - inicio;
-        if (duracion > maxDuracion) maxDuracion = duracion;
-      }
-    });
-    return maxDuracion;
-  };
-
   const HORAS_STRINGS = [
     '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00',
     '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
   ];
 
-  const horasARenderizar = HORAS_STRINGS.filter(hora => !horaGlobalmenteBloqueada(hora));
+  const horasARenderizar = HORAS_STRINGS;
 
   const horasConClase = HORAS_STRINGS.filter(h => DIAS.some(d => matriz[d]?.[h] || horasBloqueadasPorDia[d]?.has(h)));
   const cursosUnicos = Array.from(new Set(horarios.map(h => h.curso?.codigo)));
@@ -579,19 +561,15 @@ export default function DocenteDashboardPage() {
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {horasARenderizar.map(hora => { 
-                          const rowSpanHora = calcularRowSpanHora(hora);
                           return (
                           <tr key={hora} className="bg-white dark:bg-slate-800"> 
                             <td 
-                              rowSpan={rowSpanHora}
-                              className="bg-slate-100 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300"
+                              className="bg-slate-100 dark:bg-slate-700 p-4 text-center border-r border-slate-200 dark:border-slate-600 text-[11px] font-bold text-slate-500 dark:text-slate-300 whitespace-nowrap"
                             >
                               <div className="font-semibold">{hora}</div>
-                              {rowSpanHora > 1 && (
-                                <div className="text-[10px] opacity-60">
-                                  {`${(parseInt(hora.split(':')[0]) + rowSpanHora).toString().padStart(2,'0')}:00`}
-                                </div>
-                              )}
+                              <div className="text-[10px] opacity-60">
+                                {`${(parseInt(hora.split(':')[0]) + 1).toString().padStart(2,'0')}:00`}
+                              </div>
                             </td> 
                             {DIAS.map(dia => { 
                               if (horasBloqueadasPorDia[dia]?.has(hora)) return null; 

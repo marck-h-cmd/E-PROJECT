@@ -87,6 +87,7 @@ export class ValidadorHorario {
       ambienteId,
       horaInicio,
       horaFin,
+      grupoId,
       horarioIdExcluir
     );
 
@@ -416,6 +417,7 @@ export class ValidadorHorario {
     ambienteId: string,
     horaInicio: string,
     horaFin: string,
+    grupoId?: string,
     horarioIdExcluir?: string
   ) {
     const [curso, ambiente] = await Promise.all([
@@ -456,6 +458,7 @@ export class ValidadorHorario {
         docenteId,
         cursoId,
         estado: { not: 'CANCELADO' },
+        ...(grupoId ? { grupoId } : {}),
         ...(horarioIdExcluir ? { id: { not: horarioIdExcluir } } : {}),
         ambiente: {
           tipo: esLaboratorio ? 'LABORATORIO' : { not: 'LABORATORIO' },
@@ -505,7 +508,7 @@ export class ValidadorHorario {
       },
     });
 
-    if (!carga) return;
+    if (!carga || !carga.curso) return;
 
     const horasRequeridas =
       carga.horasAsignadas > 0

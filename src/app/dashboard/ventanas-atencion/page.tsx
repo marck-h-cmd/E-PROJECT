@@ -208,8 +208,8 @@ export default function VentanasAtencionPage() {
         periodoId,
         nombre: form.nombre,
         categoria: form.categoria,
-        fechaInicio: form.fechaInicio,
-        fechaFin: form.fechaFin,
+        fechaInicio: form.fechaInicio ? new Date(form.fechaInicio).toISOString() : '',
+        fechaFin: form.fechaFin ? new Date(form.fechaFin).toISOString() : '',
       });
       toast.success('Ventana creada');
       setDialogOpen(false);
@@ -238,6 +238,7 @@ export default function VentanasAtencionPage() {
           periodoId,
           date: addDayForm.date,
           type: addDayForm.type,
+          timezoneOffset: new Date().getTimezoneOffset(),
         }),
       });
       const resJson = await res.json();

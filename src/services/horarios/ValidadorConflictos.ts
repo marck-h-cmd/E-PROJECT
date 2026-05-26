@@ -292,10 +292,11 @@ export class ValidadorConflictos {
         caso = '(Solapamiento) ';
       }
 
+      const descAmbiente = `${this.traducirTipoAmbiente(tipoAmbiente)} ${hc.ambiente.codigo} - ${hc.ambiente.nombre}`;
       return {
         tipo: tipoConflicto,
         severidad: 'ERROR' as SeveridadConflicto,
-        mensaje: `${caso}El ambiente ${hc.ambiente.codigo} ya está ocupado por ${hc.curso.codigo} de ${hc.horaInicio} a ${hc.horaFin}`,
+        mensaje: `${caso}El ${descAmbiente} ya está ocupado por ${hc.curso.codigo} de ${hc.horaInicio} a ${hc.horaFin}`,
         horarioActual,
         horarioConflicto: {
           id: hc.id,
