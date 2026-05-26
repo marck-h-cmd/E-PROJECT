@@ -3,8 +3,246 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+// ==================== INFORMACIÓN DE HORARIOS VÁLIDOS ====================
+const rawSchedulesText = `IS-101	Introducción a la Programación	I	Marcelino Torres Villanueva	Posgrado A-307	LUNES	07:00	09:00	A	CONFIRMADO
+IS-101	Introducción a la Programación	I	Marcelino Torres Villanueva	Lab. 3	LUNES	14:00	16:00	A	CONFIRMADO
+IS-101	Introducción a la Programación	I	Marcelino Torres Villanueva	Lab. 3	LUNES	16:00	18:00	B	CONFIRMADO
+IS-102	Introducción a la Ing. de Sistemas	I	Alberto Mendoza de los Santos	Posgrado A-307	MARTES	7:00	10:00	A	CONFIRMADO
+EG-101	Introducción a la Programación (EG)	I	Paul Cotrina Castellanos	Lab. 4	JUEVES	09:00	11:00	A	CONFIRMADO
+EG-101	Introducción a la Programación (EG)	I	Paul Cotrina Castellanos	Lab. 4	JUEVES	11:00	13:00	B	CONFIRMADO
+EG-102	Desarrollo Personal	I	Bertha Urtecho Zavaleta	Taller Confecciones Ing. Industrial	VIERNES	9:00	13:00	A	CONFIRMADO
+EG-103	Desarrollo del Pensamiento Lógico Matemático	I	Jose Luis Ponte Bejarano	Posgrado A-307	MARTES	10:00	13:00	A	CONFIRMADO
+EG-103	Desarrollo del Pensamiento Lógico Matemático	I	Jose Luis Ponte Bejarano	Posgrado A-307	VIERNES	7:00	9:00	A	CONFIRMADO
+EG-104	Lectura Crítica y Redac. Textos Académicos	I	Jorge Luis Rios Gonzales	Posgrado A-303	JUEVES	2:00	6:00	A	CONFIRMADO
+EG-105	Introducción al Análisis Matemático	I	Segundo Guibar Obeso	Posgrado A-307	LUNES	09:00	11:00	A	CONFIRMADO
+EG-105	Introducción al Análisis Matemático	I	Segundo Guibar Obeso	Posgrado A-307	LUNES	11:00	13:00	A	CONFIRMADO
+EG-105	Introducción al Análisis Matemático	I	Segundo Guibar Obeso	Posgrado A-307	MARTES	16:00	18:00	A	CONFIRMADO
+EG-106	Estadística General	I	Miguel Ipanaque Zapata	Taller Confecciones Ing. Industrial	JUEVES	7:00	09:00	A	CONFIRMADO
+EG-106B	Estadística General	I	Martha Cardoso	Posgrado A-303	VIERNES	14:00	16:00	A	CONFIRMADO
+EG-106B	Estadística General	I	Martha Cardoso	Taller Confecciones Ing. Industrial	VIERNES	16:00	18:00	A	CONFIRMADO
+IS-301	Programación Orientada a Objetos II	III	Zoraida Vidal Melgarejo	Lab. 2	LUNES	9:00	13:00	A	CONFIRMADO
+IS-301	Programación Orientada a Objetos II	III	Zoraida Vidal Melgarejo	Lab. 4	VIERNES	9:00	13:00	B	CONFIRMADO
+IS-301	Programación Orientada a Objetos II	III	Zoraida Vidal Melgarejo	Lab. 2	MARTES	9:00	13:00	C	CONFIRMADO
+IS-301	Programación Orientada a Objetos II	III	Zoraida Vidal Melgarejo	I-4	MARTES	14:00	16:00	A	CONFIRMADO
+IS-302	Sistémica	III	Everson David Agreda Gamboa	Posgrado A-307	MIÉRCOLES	9:00	12:00	A	CONFIRMADO
+IS-302	Sistémica	III	Everson David Agreda Gamboa	Lab. 3	MIÉRCOLES	14:00	16:00	A	CONFIRMADO
+IS-302	Sistémica	III	Everson David Agreda Gamboa	Lab. 3	MIÉRCOLES	16:00	18:00	B	CONFIRMADO
+IS-302	Sistémica	III	Everson David Agreda Gamboa	Lab. 3	JUEVES	16:00	18:00	C	CONFIRMADO
+IS-303	Ingeniería Gráfica (e)	III	Juan Carlos Obando Roldán	Posgrado A-303	MIÉRCOLES	7:00	9:00	A	CONFIRMADO
+IS-303	Ingeniería Gráfica (e)	III	Juan Carlos Obando Roldán	Lab. 1	JUEVES	7:00	10:00	A	CONFIRMADO
+IS-303	Ingeniería Gráfica (e)	III	Juan Carlos Obando Roldán	Lab. 1	JUEVES	10:00	13:00	B	CONFIRMADO
+MAT-301	Matemática Aplicada	III	Marcos Ferrer Reyna	Posgrado A-303	MIÉRCOLES	18:00	21:00	A	CONFIRMADO
+MAT-301	Matemática Aplicada	III	Marcos Ferrer Reyna	Taller Confecciones Ing. Indust.	JUEVES	14:00	16:00	A	CONFIRMADO
+EST-301	Estadística Aplicada	III	Teresita Rojas Garcia	Posgrado A-303	MARTES	16:00	18:00	A	CONFIRMADO
+EST-301	Estadística Aplicada	III	Teresita Rojas Garcia	Taller Confecciones Ing. Indust.	JUEVES	18:00	21:00	A	CONFIRMADO
+EST-301	Estadística Aplicada	III	Teresita Rojas Garcia	Taller Confecciones Ing. Indust.	VIERNES	7:00	9:00	B	CONFIRMADO
+EST-301	Estadística Aplicada	III	Teresita Rojas Garcia	Posgrado A-303	VIERNES	16:00	18:00	C	CONFIRMADO
+ADM-301	Administración General	III	Juan Carrascal Cabanillas	Taller Confecciones - Ing. Indust.	LUNES	07:00	9:00	A	CONFIRMADO
+ADM-301	Administración General	III	Juan Carrascal Cabanillas	I I 2 (Pabellon Ing. Industrial)	MARTES	07:00	9:00	A	CONFIRMADO
+FIS-301	Física Electrónica	III	Vilma Mendez Gil	Posgrado A-303	MARTES	15:00	20:00	A	CONFIRMADO
+FIS-301	Física Electrónica	III	Vilma Mendez Gil	Lab. Fisica	JUEVES	7:00	9:00	A	CONFIRMADO
+FIS-301	Física Electrónica	III	Vilma Mendez Gil	Lab. Fisica	JUEVES	09:00	11:00	A	CONFIRMADO
+FIS-301	Física Electrónica	III	Vilma Mendez Gil	Lab. Fisica	MIÉRCOLES	14:00	16:00	B	CONFIRMADO
+FIS-301	Física Electrónica	III	Vilma Mendez Gil	Lab. Fisica	MIÉRCOLES	16:00	18:00	B	CONFIRMADO
+PSI-301	Psicología Organizacional (e)	III	Sheyla Laura Escobedo Rodriguez	Posgrado A-311	MARTES	18:00	20:00	A	CONFIRMADO
+PSI-301	Psicología Organizacional (e)	III	Sheyla Laura Escobedo Rodriguez	Posgrado A-311	VIERNES	18:00	20:00	A	CONFIRMADO
+IS-701	Ingeniería de Software I	VII	Juan Pedro Santos Fernández	Lab. 1	MARTES	7:00	10:00	C	CONFIRMADO
+IS-701	Ingeniería de Software I	VII	Juan Pedro Santos Fernández	Posgrado A-303	MARTES	10:00	13:00	A	CONFIRMADO
+IS-702	Redes y Comunicaciones I	VII	César Arellano Salazar	Lab. 2	LUNES	13:00	16:00	A	CONFIRMADO
+IS-702	Redes y Comunicaciones I	VII	César Arellano Salazar	Lab. 2	LUNES	16:00	19:00	B	CONFIRMADO
+IS-702	Redes y Comunicaciones I	VII	César Arellano Salazar	Lab. 3	LUNES	10:00	13:00	C	CONFIRMADO
+IS-702	Redes y Comunicaciones I	VII	César Arellano Salazar	Posgrado A-311	VIERNES	16:00	18:00	A	CONFIRMADO
+IS-701B	Ingeniería de Software I	VII	Robert Jerry Sánchez Ticona	Lab. 1	LUNES	7:00	10:00	A	CONFIRMADO
+IS-701B	Ingeniería de Software I	VII	Robert Jerry Sánchez Ticona	Lab. 1	LUNES	10:00	13:00	B	CONFIRMADO
+IS-704	Negocios Electrónicos (e)	VII	Everson David Agreda Gamboa	Posgrado A-311	MARTES	16:00	18:00	A	CONFIRMADO
+IS-705	Gestión de Servicios de TI	VII	Alberto Mendoza de los Santos	Lab. 1	VIERNES	10:00	12:00	A	CONFIRMADO
+IS-705	Gestión de Servicios de TI	VII	Alberto Mendoza de los Santos	Lab. 1	VIERNES	12:00	14:00	B	CONFIRMADO
+IS-705	Gestión de Servicios de TI	VII	Alberto Mendoza de los Santos	Posgrado A-303	VIERNES	7:00	10:00	A	CONFIRMADO
+IS-706	Metodología de la Investigación Científica	VII	Paul Cotrina Castellanos	Posgrado A-307	JUEVES	14:00	18:00	A	CONFIRMADO
+IS-707	Administración de Base de Datos	VII	Ricardo Mendoza Rivera	Posgrado A-307	JUEVES	7:00	9:00	A	CONFIRMADO
+IS-707	Administración de Base de Datos	VII	Ricardo Mendoza Rivera	Lab. 4	JUEVES	18:00	21:00	A	CONFIRMADO
+IS-707	Administración de Base de Datos	VII	Ricardo Mendoza Rivera	Lab. 2	VIERNES	18:00	21:00	B	CONFIRMADO
+IS-708	Planeamiento Estratégico de TI	VII	Oscar Romel Alcántara Moreno	Posgrado A-307	MARTES	13:00	16:00	A	CONFIRMADO
+IS-708	Planeamiento Estratégico de TI	VII	Oscar Romel Alcántara Moreno	Lab. 4	MIÉRCOLES	13:00	15:00	A	CONFIRMADO
+IS-708	Planeamiento Estratégico de TI	VII	Oscar Romel Alcántara Moreno	Lab. 4	MIÉRCOLES	15:00	17:00	B	CONFIRMADO
+IS-708	Planeamiento Estratégico de TI	VII	Oscar Romel Alcántara Moreno	Lab. 3	JUEVES	9:00	11:00	C	CONFIRMADO
+IS-708	Planeamiento Estratégico de TI	VII	Oscar Romel Alcántara Moreno	Audiovisuales	MIÉRCOLES	17:00	19:00	C	CONFIRMADO
+IS-704B	Negocios Electrónicos (e)	VII	Paul Cotrina Castellanos	Lab. 4	LUNES	14:00	16:00	A	CONFIRMADO
+IS-704B	Negocios Electrónicos (e)	VII	Paul Cotrina Castellanos	Lab. 4	LUNES	16:00	18:00	B	CONFIRMADO
+EP-701	Cadena de Suministros (e)	VII	Jhoe Gonzalez Vasquez	Lab. 4	MIÉRCOLES	7:00	11:00	A	CONFIRMADO`;
+
+// ==================== FUNCIONES AUXILIARES DE NORMALIZACIÓN ====================
+
+const cleanStringForMatch = (str: string): string => {
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quitar acentos
+    .replace(/[^a-z0-9]/g, "");     // quitar espacios y caracteres especiales
+};
+
+const normalizarAmbiente = (nombre: string): { codigo: string; nombre: string; tipo: TipoAmbiente } => {
+  const n = nombre.trim().replace(/\s+/g, ' ').replace(/"/g, '');
+  if (n.includes('Posgrado A-307')) return { codigo: 'A-307', nombre: 'Posgrado A-307', tipo: TipoAmbiente.AULA };
+  if (n.includes('Posgrado A-303')) return { codigo: 'A-303', nombre: 'Posgrado A-303', tipo: TipoAmbiente.AULA };
+  if (n.includes('Posgrado A-311')) return { codigo: 'A-311', nombre: 'Posgrado A-311', tipo: TipoAmbiente.AULA };
+  if (n.includes('Lab. 1')) return { codigo: 'Lab-1', nombre: 'Laboratorio 1', tipo: TipoAmbiente.LABORATORIO };
+  if (n.includes('Lab. 2')) return { codigo: 'Lab-2', nombre: 'Laboratorio 2', tipo: TipoAmbiente.LABORATORIO };
+  if (n.includes('Lab. 3')) return { codigo: 'Lab-3', nombre: 'Laboratorio 3', tipo: TipoAmbiente.LABORATORIO };
+  if (n.includes('Lab. 4')) return { codigo: 'Lab-4', nombre: 'Laboratorio 4', tipo: TipoAmbiente.LABORATORIO };
+  if (n.includes('Lab. Fisica')) return { codigo: 'Lab-Fisica', nombre: 'Laboratorio de Física', tipo: TipoAmbiente.LABORATORIO };
+  
+  // Unificador potente para Taller de Confecciones (Ing. Industrial) y similares
+  if (n.toLowerCase().includes('taller confecciones') || n.toLowerCase().includes('taller de confecciones')) {
+    return { codigo: 'Lab-Taller', nombre: 'Taller de Confecciones', tipo: TipoAmbiente.LABORATORIO };
+  }
+  
+  if (n.includes('I-4')) return { codigo: 'I-4', nombre: 'Aula I-4', tipo: TipoAmbiente.AULA };
+  
+  // Unificador para aulas II-2
+  if (
+    n.includes('I I - 2') || n.includes('II - 2') || n.includes('II-2') || 
+    n.includes('I I-2') || n.includes('I I 2') || n.includes('II 2')
+  ) {
+    return { codigo: 'II-2', nombre: 'Aula II-2 (Pabellón Ing. Industrial)', tipo: TipoAmbiente.AULA };
+  }
+  
+  if (n.includes('Audiovisuales')) return { codigo: 'AUD', nombre: 'Audiovisuales', tipo: TipoAmbiente.AUDITORIO };
+  
+  const cleanCode = n.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 10);
+  return { codigo: cleanCode, nombre: n, tipo: TipoAmbiente.AULA };
+};
+
+const mapCiclo = (ciclo: string): number => {
+  if (ciclo === 'I') return 1;
+  if (ciclo === 'III') return 3;
+  if (ciclo === 'VII') return 7;
+  return 1;
+};
+
+const mapDia = (dia: string): DiaSemana => {
+  const d = dia.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (d === 'MIERCOLES') return DiaSemana.MIERCOLES;
+  if (d === 'SABADO') return DiaSemana.SABADO;
+  return d as DiaSemana;
+};
+
+const mapHora = (hora: string): string => {
+  let [h, m] = hora.trim().split(':');
+  let hNum = parseInt(h, 10);
+  // Si la hora es menor a 7 (e.g. 2:00, 6:00), asumimos que es de la tarde y sumamos 12
+  if (hNum < 7) {
+    hNum += 12;
+  }
+  return `${hNum.toString().padStart(2, '0')}:${m}`;
+};
+
+const calcularHoras = (inicio: string, fin: string): number => {
+  const [hIni, mIni] = mapHora(inicio).split(':').map(Number);
+  const [hFin, mFin] = mapHora(fin).split(':').map(Number);
+  return (hFin * 60 + mFin - (hIni * 60 + mIni)) / 60;
+};
+
+const obtenerMetadatosCurso = (nombre: string): { creditos: number; horasTeoria: number; horasPractica: number; horasLaboratorio: number } => {
+  const n = cleanStringForMatch(nombre);
+  
+  if (n.includes('introduccionaprogramacion')) {
+    return { creditos: 4, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 2 };
+  }
+  if (n.includes('introduccionalaing') || n.includes('introduccionalaingdesistemas')) {
+    return { creditos: 2, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('desarrollopersonal')) {
+    return { creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('desarrollodelpensamientologicomatematico')) {
+    return { creditos: 4, horasTeoria: 1, horasPractica: 4, horasLaboratorio: 0 };
+  }
+  if (n.includes('lecturacritica')) {
+    return { creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('introduccionalanalisismatematico')) {
+    return { creditos: 5, horasTeoria: 2, horasPractica: 4, horasLaboratorio: 0 };
+  }
+  if (n.includes('estadisticageneral')) {
+    return { creditos: 4, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('programacionorientadaaobjetos')) {
+    return { creditos: 5, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 4 };
+  }
+  if (n.includes('sistemica')) {
+    return { creditos: 4, horasTeoria: 2, horasPractica: 1, horasLaboratorio: 2 };
+  }
+  if (n.includes('ingenieriagrafica')) {
+    return { creditos: 3, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 2 };
+  }
+  if (n.includes('matematicaaplicada')) {
+    return { creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2 };
+  }
+  if (n.includes('estadisticaaplicada')) {
+    return { creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2 };
+  }
+  if (n.includes('administraciongeneral')) {
+    return { creditos: 2, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('fisicaelectronica')) {
+    return { creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2 };
+  }
+  if (n.includes('psicologiaorganizacional')) {
+    return { creditos: 2, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('ingenieriadesoftware')) {
+    return { creditos: 4, horasTeoria: 2, horasPractica: 1, horasLaboratorio: 3 };
+  }
+  if (n.includes('redesycomunicaciones')) {
+    return { creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3 };
+  }
+  if (n.includes('negocioselectronicos')) {
+    return { creditos: 2, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 0 };
+  }
+  if (n.includes('gestiondeservicios')) {
+    return { creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2 };
+  }
+  if (n.includes('metodologiadelainvestigacion')) {
+    return { creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  if (n.includes('administraciondebasedatos')) {
+    return { creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3 };
+  }
+  if (n.includes('planeamientoestrategico')) {
+    return { creditos: 4, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2 };
+  }
+  if (n.includes('cadenadesuministros')) {
+    return { creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+  }
+  
+  return { creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0 };
+};
+
+// ==================== PROCEDIMIENTO PRINCIPAL ====================
+
 async function main() {
   console.log('🌱 Iniciando generación de datos semilla...');
+
+  // ==================== PARSEO DE TABLA ====================
+  const lines = rawSchedulesText.trim().split('\n');
+  const parsedSchedules = lines.map(line => {
+    const cols = line.split(/\t/);
+    return {
+      codigoCurso: cols[0].trim(),
+      curso: cols[1].trim(),
+      ciclo: cols[2].trim(),
+      docente: cols[3].trim(),
+      ambiente: cols[4].trim(),
+      dia: cols[5].trim(),
+      inicio: cols[6].trim(),
+      fin: cols[7].trim(),
+      grupo: cols[8].trim(),
+      estado: cols[9].trim()
+    };
+  });
+
+  console.log(`📊 Total registros de grilla analizados: ${parsedSchedules.length}`);
 
   // ==================== LIMPIEZA ====================
   await prisma.seleccionTemporal.deleteMany();
@@ -34,7 +272,7 @@ async function main() {
 
   console.log('✅ Datos anteriores limpiados');
 
-  // ==================== USUARIOS ====================
+  // ==================== USUARIOS ADMINISTRATIVOS ====================
   const passwordHash = await bcrypt.hash('unt123456', 12);
 
   const adminUser = await prisma.usuario.create({
@@ -50,9 +288,9 @@ async function main() {
     data: { email: 'monitor@unitru.edu.pe', password: passwordHash, nombre: 'Monitor', apellidos: 'Sistema', rol: Rol.MONITOR, verificado: true }
   });
 
-  console.log('✅ Usuarios creados');
+  console.log('✅ Usuarios administrativos creados');
 
-  // ==================== DOCENTES (según PDF) ====================
+  // ==================== DOCENTES ====================
   const docentesData = [
     // Ciclo I
     { email: 'marcelino.torres@unitru.edu.pe', nombre: 'Marcelino', apellidos: 'Torres Villanueva', codigo: 'DOC001', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Ing. de Sistemas' },
@@ -87,49 +325,20 @@ async function main() {
     { email: 'juan.santos@unitru.edu.pe', nombre: 'Juan Pedro', apellidos: 'Santos Fernández', codigo: 'DOC024', categoria: CategoriaDocente.PRINCIPAL, departamento: 'Ing. de Sistemas' },
     { email: 'ricardo.mendoza@unitru.edu.pe', nombre: 'Ricardo', apellidos: 'Mendoza Rivera', codigo: 'DOC025', categoria: CategoriaDocente.ASOCIADO, departamento: 'Ing. de Sistemas' },
     { email: 'oscar.alcantara@unitru.edu.pe', nombre: 'Óscar Romel', apellidos: 'Alcántara Moreno', codigo: 'DOC026', categoria: CategoriaDocente.AUXILIAR, departamento: 'Ing. de Sistemas' },
-    { email: 'jhoe.gonzalez@unitru.edu.pe', nombre: 'Jhon', apellidos: 'Gonzalez Vasquez', codigo: 'DOC027', categoria: CategoriaDocente.CONTRATADO, departamento: 'Ing. Industrial' },
+    { email: 'jhoe.gonzalez@unitru.edu.pe', nombre: 'Jhoe', apellidos: 'Gonzalez Vasquez', codigo: 'DOC027', categoria: CategoriaDocente.CONTRATADO, departamento: 'Ing. Industrial' },
 
     // Ciclo IX
     { email: 'jose.gomez@unitru.edu.pe', nombre: 'José', apellidos: 'Gómez Ávila', codigo: 'DOC028', categoria: CategoriaDocente.ASOCIADO, departamento: 'Ing. de Sistemas' },
   ];
 
-  // Tabla de fechas de ingreso variadas por categoría
   const fechasIngreso: Record<string, string> = {
-    // PRINCIPAL — antigüedad alta: 1990–2005
-    'DOC001': '1998-03-15',  // Marcelino Torres
-    'DOC005': '2001-08-20',  // José Luis Ponte
-    'DOC007': '1995-11-05',  // Segundo Guíbar
-    'DOC008': '2003-04-10',  // Miguel Ipanaque
-    'DOC011': '1999-07-01',  // Everson Agreda
-    'DOC015': '2000-02-28',  // Juan Carrascal
-    'DOC018': '2004-09-12',  // Luis Boy
-    'DOC020': '1997-06-18',  // César Arellano
-    'DOC022': '2002-12-03',  // Marcos Baca
-    'DOC024': '2005-03-22',  // Juan Santos
-
-    // ASOCIADO — antigüedad media: 2005–2015
-    'DOC002': '2008-04-05',  // Alberto Mendoza
-    'DOC003': '2012-08-14',  // Paul Cotrina
-    'DOC010': '2009-03-01',  // Zoraida Vidal
-    'DOC012': '2011-07-20',  // Juan Obando
-    'DOC013': '2007-10-15',  // Marcos Ferrer
-    'DOC016': '2010-01-10',  // Vilma Méndez
-    'DOC021': '2013-05-25',  // Camilo Suárez
-    'DOC023': '2014-02-18',  // Ana Cuadra
-    'DOC025': '2006-09-08',  // Ricardo Mendoza
-    'DOC028': '2015-11-30',  // José Gómez
-
-    // AUXILIAR — más recientes: 2013–2020
-    'DOC004': '2017-04-12',  // Bertha Urtecho
-    'DOC006': '2016-08-01',  // Jorge Luis Ríos
-    'DOC009': '2019-03-05',  // Martha Cardoso
-    'DOC014': '2015-06-20',  // Teresita Rojas
-    'DOC017': '2020-01-15',  // Sheyla Laura
-    'DOC019': '2018-09-10',  // Robert Sánchez
-    'DOC026': '2013-12-01',  // Óscar Alcántara
-
-    // CONTRATADO — reciente: 2021–2023
-    'DOC027': '2022-04-01',  // Jhon Gonzalez
+    'DOC001': '1998-03-15', 'DOC005': '2001-08-20', 'DOC007': '1995-11-05', 'DOC008': '2003-04-10',
+    'DOC011': '1999-07-01', 'DOC015': '2000-02-28', 'DOC018': '2004-09-12', 'DOC020': '1997-06-18',
+    'DOC022': '2002-12-03', 'DOC024': '2005-03-22', 'DOC002': '2008-04-05', 'DOC003': '2012-08-14',
+    'DOC010': '2009-03-01', 'DOC012': '2011-07-20', 'DOC013': '2007-10-15', 'DOC016': '2010-01-10',
+    'DOC021': '2013-05-25', 'DOC023': '2014-02-18', 'DOC025': '2006-09-08', 'DOC028': '2015-11-30',
+    'DOC004': '2017-04-12', 'DOC006': '2016-08-01', 'DOC009': '2019-03-05', 'DOC014': '2015-06-20',
+    'DOC017': '2020-01-15', 'DOC019': '2018-09-10', 'DOC026': '2013-12-01', 'DOC027': '2022-04-01'
   };
 
   const docentes: any[] = [];
@@ -173,82 +382,64 @@ async function main() {
 
   console.log(`✅ ${docentes.length} docentes creados`);
 
-  // ==================== CURSOS (según PDF por ciclo) ====================
+  // ==================== AMBIENTES DINÁMICOS ====================
+  const ambientesMap = new Map<string, { codigo: string; nombre: string; tipo: TipoAmbiente }>();
+  for (const item of parsedSchedules) {
+    const norm = normalizarAmbiente(item.ambiente);
+    if (!ambientesMap.has(norm.codigo)) {
+      ambientesMap.set(norm.codigo, norm);
+    }
+  }
 
-  // CICLO I
-  const ciclo1Cursos = [
-    { codigo: 'EE-102', nombre: 'Introducción a la Programación', creditos: 4, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 2, ciclo: 1 },
-    { codigo: 'EE-101', nombre: 'Introducción a la Ingeniería de Sistemas', creditos: 2, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 0, ciclo: 1 },
-    { codigo: 'EG-103', nombre: 'Desarrollo Personal', creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 1 },
-    { codigo: 'EG-101', nombre: 'Desarrollo del Pensamiento Lógico Matemático', creditos: 4, horasTeoria: 1, horasPractica: 4, horasLaboratorio: 0, ciclo: 1 },
-    { codigo: 'EG-102', nombre: 'Lectura Crítica y Redacción de Textos Académicos', creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 1 },
-    { codigo: 'EG-104', nombre: 'Introducción al Análisis Matemático', creditos: 5, horasTeoria: 2, horasPractica: 4, horasLaboratorio: 0, ciclo: 1 },
-    { codigo: 'EG-105', nombre: 'Estadística General', creditos: 4, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 1 },
-  ];
+  const ambientes: any[] = [];
+  for (const [_, envInfo] of ambientesMap) {
+    const ambiente = await prisma.ambiente.create({
+      data: {
+        codigo: envInfo.codigo,
+        nombre: envInfo.nombre,
+        tipo: envInfo.tipo,
+        capacidad: 40,
+        ubicacion: 'Campus Universitario UNT'
+      }
+    });
+    ambientes.push(ambiente);
+  }
 
-  // CICLO III
-  const ciclo3Cursos = [
-    { codigo: 'EE-302', nombre: 'Programación Orientada a Objetos II', creditos: 5, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 4, ciclo: 3 },
-    { codigo: 'EE-301', nombre: 'Sistémica', creditos: 4, horasTeoria: 2, horasPractica: 1, horasLaboratorio: 2, ciclo: 3 },
-    { codigo: 'EL-301', nombre: 'Ingeniería Gráfica', creditos: 3, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 2, ciclo: 3 },
-    { codigo: 'EP-303', nombre: 'Matemática Aplicada', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 3 },
-    { codigo: 'EP-302', nombre: 'Estadística Aplicada', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 3 },
-    { codigo: 'EP-301', nombre: 'Administración General', creditos: 2, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 3 },
-    { codigo: 'EP-304', nombre: 'Física Electrónica', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 3 },
-    { codigo: 'EL-302', nombre: 'Psicología Organizacional', creditos: 2, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 3 },
-  ];
+  console.log(`✅ ${ambientes.length} ambientes dinámicos creados`);
 
-  // CICLO V
-  const ciclo5Cursos = [
-    { codigo: 'EE-501', nombre: 'Ingeniería de Datos I', creditos: 4, horasTeoria: 2, horasPractica: 1, horasLaboratorio: 3, ciclo: 5 },
-    { codigo: 'EE-502', nombre: 'Sistemas de Información', creditos: 4, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EE-503', nombre: 'Transformación Digital', creditos: 3, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EE-504', nombre: 'Tecnología Web', creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EE-505', nombre: 'Arquitectura de Computadoras', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EE-506', nombre: 'Teleinformática', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EP-501', nombre: 'Investigación de Operaciones', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 5 },
-    { codigo: 'EP-502', nombre: 'Contabilidad Gerencial', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 5 },
-  ];
+  // ==================== CURSOS Y GRUPOS DINÁMICOS ====================
+  const cursosMap = new Map<string, { codigo: string; nombre: string; ciclo: number }>();
+  const uniqueGroupsMap = new Map<string, Set<string>>();
 
-  // CICLO VII
-  const ciclo7Cursos = [
-    { codigo: 'EE-701', nombre: 'Ingeniería de Software I', creditos: 4, horasTeoria: 2, horasPractica: 1, horasLaboratorio: 3, ciclo: 7 },
-    { codigo: 'EE-702', nombre: 'Redes y Comunicaciones I', creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3, ciclo: 7 },
-    { codigo: 'EE-703', nombre: 'Negocios Electrónicos', creditos: 2, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 0, ciclo: 7 },
-    { codigo: 'EE-704', nombre: 'Gestión de Servicios de TI', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 7 },
-    { codigo: 'EE-705', nombre: 'Metodología de la Investigación Científica', creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 7 },
-    { codigo: 'EE-706', nombre: 'Administración de Base de Datos', creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3, ciclo: 7 },
-    { codigo: 'EE-707', nombre: 'Planeamiento Estratégico de TI', creditos: 4, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 7 },
-    { codigo: 'EP-701', nombre: 'Cadena de Suministros', creditos: 3, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 0, ciclo: 7 },
-  ];
-
-  // CICLO IX
-  const ciclo9Cursos = [
-    { codigo: 'EE-901', nombre: 'Tesis I', creditos: 4, horasTeoria: 2, horasPractica: 2, horasLaboratorio: 2, ciclo: 9 },
-    { codigo: 'EE-902', nombre: 'Analítica de Negocios', creditos: 3, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 9 },
-    { codigo: 'EE-903', nombre: 'Auditoría Informática', creditos: 4, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 9 },
-    { codigo: 'EE-904', nombre: 'Gestión de Proyectos de TI', creditos: 4, horasTeoria: 1, horasPractica: 2, horasLaboratorio: 2, ciclo: 9 },
-    { codigo: 'EE-905', nombre: 'Emprendimiento Tecnológico', creditos: 3, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 2, ciclo: 9 },
-    { codigo: 'EE-906', nombre: 'Ingeniería Web', creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3, ciclo: 9 },
-    { codigo: 'EE-907', nombre: 'Computación en la Nube', creditos: 4, horasTeoria: 1, horasPractica: 1, horasLaboratorio: 3, ciclo: 9 },
-    { codigo: 'EL-901', nombre: 'Hackeo Ético', creditos: 3, horasTeoria: 2, horasPractica: 0, horasLaboratorio: 2, ciclo: 9 },
-  ];
-
-  const todosLosCursos = [...ciclo1Cursos, ...ciclo3Cursos, ...ciclo5Cursos, ...ciclo7Cursos, ...ciclo9Cursos];
+  for (const item of parsedSchedules) {
+    if (!cursosMap.has(item.codigoCurso)) {
+      cursosMap.set(item.codigoCurso, {
+        codigo: item.codigoCurso,
+        nombre: item.curso,
+        ciclo: mapCiclo(item.ciclo)
+      });
+    }
+    if (!uniqueGroupsMap.has(item.codigoCurso)) {
+      uniqueGroupsMap.set(item.codigoCurso, new Set());
+    }
+    uniqueGroupsMap.get(item.codigoCurso)!.add(item.grupo);
+  }
 
   const cursos: any[] = [];
-  for (const cursoData of todosLosCursos) {
-    const gruposData = [
-      { nombre: 'A', capacidad: 40 },
-      { nombre: 'B', capacidad: 40 },
-    ];
-    if (cursoData.nombre === 'Ingeniería de Datos I') {
-      gruposData.push({ nombre: 'C', capacidad: 40 });
-    }
-
+  for (const [codigo, cursoInfo] of cursosMap) {
+    const uniqueGroups = Array.from(uniqueGroupsMap.get(codigo) || new Set(['A']));
+    const gruposData = uniqueGroups.map(g => ({ nombre: g, capacidad: 40 }));
+    const metadatos = obtenerMetadatosCurso(cursoInfo.nombre);
+    
     const curso = await prisma.curso.create({
       data: {
-        ...cursoData,
+        codigo: cursoInfo.codigo,
+        nombre: cursoInfo.nombre,
+        ciclo: cursoInfo.ciclo,
+        creditos: metadatos.creditos,
+        horasTeoria: metadatos.horasTeoria,
+        horasPractica: metadatos.horasPractica,
+        horasLaboratorio: metadatos.horasLaboratorio,
         grupos: {
           create: gruposData
         }
@@ -260,111 +451,37 @@ async function main() {
     cursos.push(curso);
   }
 
-  console.log(`✅ ${cursos.length} cursos creados`);
+  console.log(`✅ ${cursos.length} cursos dinámicos creados`);
 
   // ==================== ASIGNACIONES CURSO-DOCENTE ====================
-
-  const asignaciones = [
-    // CICLO I
-    { cursoNombre: 'Introducción a la Programación', docenteNombre: 'Marcelino Torres Villanueva', horasAsignadas: 6 },
-    { cursoNombre: 'Introducción a la Programación', docenteNombre: 'Paul Cotrina Castellanos', horasAsignadas: 4 },
-    { cursoNombre: 'Introducción a la Ingeniería de Sistemas', docenteNombre: 'Alberto Mendoza de los Santos', horasAsignadas: 3 },
-    { cursoNombre: 'Desarrollo Personal', docenteNombre: 'Bertha Urtecho Zavaleta', horasAsignadas: 4 },
-    { cursoNombre: 'Desarrollo del Pensamiento Lógico Matemático', docenteNombre: 'José Luis Ponte Bejarano', horasAsignadas: 5 },
-    { cursoNombre: 'Lectura Crítica y Redacción de Textos Académicos', docenteNombre: 'Jorge Luis Ríos Gonzales', horasAsignadas: 4 },
-    { cursoNombre: 'Introducción al Análisis Matemático', docenteNombre: 'Segundo Guíbar Obeso', horasAsignadas: 6 },
-    { cursoNombre: 'Estadística General', docenteNombre: 'Miguel Ipanaque Zapata', horasAsignadas: 2 },
-    { cursoNombre: 'Estadística General', docenteNombre: 'Martha Cardoso', horasAsignadas: 4 },
-
-    // CICLO III
-    { cursoNombre: 'Programación Orientada a Objetos II', docenteNombre: 'Zoraida Vidal Melgarejo', horasAsignadas: 14 },
-    { cursoNombre: 'Sistémica', docenteNombre: 'Everson David Agreda Gamboa', horasAsignadas: 9 },
-    { cursoNombre: 'Ingeniería Gráfica', docenteNombre: 'Juan Carlos Obando Roldán', horasAsignadas: 8 },
-    { cursoNombre: 'Matemática Aplicada', docenteNombre: 'Marcos Ferrer Reyna', horasAsignadas: 5 },
-    { cursoNombre: 'Estadística Aplicada', docenteNombre: 'Teresita Rojas García', horasAsignadas: 9 },
-    { cursoNombre: 'Administración General', docenteNombre: 'Juan Carrascal Cabanillas', horasAsignadas: 4 },
-    { cursoNombre: 'Física Electrónica', docenteNombre: 'Vilma Méndez Gil', horasAsignadas: 5 },
-    { cursoNombre: 'Psicología Organizacional', docenteNombre: 'Sheyla Laura Escobedo Rodríguez', horasAsignadas: 4 },
-
-    // CICLO V
-    { cursoNombre: 'Ingeniería de Datos I', docenteNombre: 'Luis Boy Chavil', horasAsignadas: 12 },
-    { cursoNombre: 'Sistemas de Información', docenteNombre: 'Juan Carlos Obando Roldán', horasAsignadas: 10 },
-    { cursoNombre: 'Transformación Digital', docenteNombre: 'Everson David Agreda Gamboa', horasAsignadas: 6 },
-    { cursoNombre: 'Tecnología Web', docenteNombre: 'Robert Jerry Sánchez Ticona', horasAsignadas: 11 },
-    { cursoNombre: 'Arquitectura de Computadoras', docenteNombre: 'César Arellano Salazar', horasAsignadas: 9 },
-    { cursoNombre: 'Teleinformática', docenteNombre: 'Camilo Suárez Rebaza', horasAsignadas: 7 },
-    { cursoNombre: 'Investigación de Operaciones', docenteNombre: 'Marcos Baca López', horasAsignadas: 5 },
-    { cursoNombre: 'Contabilidad Gerencial', docenteNombre: 'Ana Cuadra Mitzuquray', horasAsignadas: 5 },
-
-    // CICLO VII
-    { cursoNombre: 'Ingeniería de Software I', docenteNombre: 'Juan Pedro Santos Fernández', horasAsignadas: 6 },
-    { cursoNombre: 'Ingeniería de Software I', docenteNombre: 'Robert Jerry Sánchez Ticona', horasAsignadas: 6 },
-    { cursoNombre: 'Redes y Comunicaciones I', docenteNombre: 'César Arellano Salazar', horasAsignadas: 11 },
-    { cursoNombre: 'Negocios Electrónicos', docenteNombre: 'Everson David Agreda Gamboa', horasAsignadas: 2 },
-    { cursoNombre: 'Gestión de Servicios de TI', docenteNombre: 'Alberto Mendoza de los Santos', horasAsignadas: 7 },
-    { cursoNombre: 'Metodología de la Investigación Científica', docenteNombre: 'Paul Cotrina Castellanos', horasAsignadas: 4 },
-    { cursoNombre: 'Administración de Base de Datos', docenteNombre: 'Ricardo Mendoza Rivera', horasAsignadas: 8 },
-    { cursoNombre: 'Planeamiento Estratégico de TI', docenteNombre: 'Óscar Romel Alcántara Moreno', horasAsignadas: 11 },
-    { cursoNombre: 'Cadena de Suministros', docenteNombre: 'Jhon Gonzalez Vasquez', horasAsignadas: 4 },
-
-    // CICLO IX
-    { cursoNombre: 'Tesis I', docenteNombre: 'Juan Pedro Santos Fernández', horasAsignadas: 6 },
-    { cursoNombre: 'Tesis I', docenteNombre: 'Ricardo Mendoza Rivera', horasAsignadas: 6 },
-    { cursoNombre: 'Analítica de Negocios', docenteNombre: 'Ricardo Mendoza Rivera', horasAsignadas: 5 },
-    { cursoNombre: 'Auditoría Informática', docenteNombre: 'Alberto Mendoza de los Santos', horasAsignadas: 7 },
-    { cursoNombre: 'Gestión de Proyectos de TI', docenteNombre: 'José Gómez Ávila', horasAsignadas: 9 },
-    { cursoNombre: 'Emprendimiento Tecnológico', docenteNombre: 'Óscar Romel Alcántara Moreno', horasAsignadas: 6 },
-    { cursoNombre: 'Ingeniería Web', docenteNombre: 'Marcelino Torres Villanueva', horasAsignadas: 8 },
-    { cursoNombre: 'Computación en la Nube', docenteNombre: 'José Gómez Ávila', horasAsignadas: 8 },
-    { cursoNombre: 'Hackeo Ético', docenteNombre: 'Camilo Suárez Rebaza', horasAsignadas: 6 },
-  ];
-
-  for (const asignacion of asignaciones) {
-    const curso = cursos.find(c => c.nombre === asignacion.cursoNombre);
-    const docente = docentes.find(d => `${d.nombre} ${d.apellidos}` === asignacion.docenteNombre);
-
+  const assignmentsMap = new Map<string, { cursoId: string; docenteId: string; horas: number }>();
+  for (const item of parsedSchedules) {
+    const curso = cursos.find(c => c.codigo === item.codigoCurso);
+    const docente = docentes.find(d => cleanStringForMatch(`${d.nombre} ${d.apellidos}`) === cleanStringForMatch(item.docente));
     if (curso && docente) {
-      await prisma.cursoDocente.create({
-        data: {
-          cursoId: curso.id,
-          docenteId: docente.id,
-          horasAsignadas: asignacion.horasAsignadas,
-        }
-      });
-    } else {
-      console.log(`⚠️ No se encontró: Curso="${asignacion.cursoNombre}", Docente="${asignacion.docenteNombre}"`);
+      const key = `${curso.id}_${docente.id}`;
+      const horas = calcularHoras(item.inicio, item.fin);
+      if (assignmentsMap.has(key)) {
+        assignmentsMap.get(key)!.horas += horas;
+      } else {
+        assignmentsMap.set(key, { cursoId: curso.id, docenteId: docente.id, horas });
+      }
     }
   }
 
-  console.log(`✅ Asignaciones curso-docente creadas`);
-
-  // ==================== AMBIENTES (según PDF) ====================
-  const ambientesData = [
-    // Aulas de Posgrado
-    { codigo: 'A-301', nombre: 'Posgrado A-301', tipo: TipoAmbiente.AULA, capacidad: 40 },
-    { codigo: 'A-303', nombre: 'Posgrado A-303', tipo: TipoAmbiente.AULA, capacidad: 40 },
-    { codigo: 'A-307', nombre: 'Posgrado A-307', tipo: TipoAmbiente.AULA, capacidad: 45 },
-    { codigo: 'A-311', nombre: 'Posgrado A-311', tipo: TipoAmbiente.AULA, capacidad: 40 },
-
-    // Laboratorios
-    { codigo: 'Lab-1', nombre: 'Laboratorio 1', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-    { codigo: 'Lab-2', nombre: 'Laboratorio 2', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-    { codigo: 'Lab-3', nombre: 'Laboratorio 3', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-    { codigo: 'Lab-4', nombre: 'Laboratorio 4', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-    { codigo: 'Lab-Fisica', nombre: 'Laboratorio de Física', tipo: TipoAmbiente.LABORATORIO, capacidad: 25 },
-    { codigo: 'Lab-Taller', nombre: 'Taller de Confecciones', tipo: TipoAmbiente.LABORATORIO, capacidad: 35 },
-    { codigo: 'Lab-I', nombre: 'Laboratorio I', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-    { codigo: 'Lab-II', nombre: 'Laboratorio II', tipo: TipoAmbiente.LABORATORIO, capacidad: 30 },
-
-    // Auditorio
-    { codigo: 'AUD', nombre: 'Audiovisuales', tipo: TipoAmbiente.AUDITORIO, capacidad: 80 },
-  ];
-
-  for (const ambienteData of ambientesData) {
-    await prisma.ambiente.create({ data: ambienteData });
+  let totalAssignments = 0;
+  for (const [_, val] of assignmentsMap) {
+    await prisma.cursoDocente.create({
+      data: {
+        cursoId: val.cursoId,
+        docenteId: val.docenteId,
+        horasAsignadas: val.horas || 4,
+      }
+    });
+    totalAssignments++;
   }
 
-  console.log(`✅ ${ambientesData.length} ambientes creados`);
+  console.log(`✅ ${totalAssignments} asignaciones curso-docente dinámicas creadas`);
 
   // ==================== PERÍODO ACADÉMICO ====================
   const periodo = await prisma.periodoAcademico.create({
@@ -388,9 +505,9 @@ async function main() {
   console.log('✅ Período académico 2026-I creado');
 
   // ==================== DISPONIBILIDAD DE DOCENTES ====================
-  const dias: DiaSemana[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+  const diasSemana: DiaSemana[] = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
   for (const docente of docentes) {
-    for (const dia of dias) {
+    for (const dia of diasSemana) {
       await prisma.disponibilidadDocente.create({
         data: {
           docenteId: docente.id,
@@ -405,7 +522,47 @@ async function main() {
 
   console.log('✅ Disponibilidad de docentes creada');
 
-  // ==================== ESTUDIANTES ====================
+  // ==================== HORARIOS REALES (ESTADO CONFIRMADO) ====================
+  let totalHorariosCreados = 0;
+  for (const item of parsedSchedules) {
+    const curso = cursos.find(c => c.codigo === item.codigoCurso);
+    const docente = docentes.find(d => cleanStringForMatch(`${d.nombre} ${d.apellidos}`) === cleanStringForMatch(item.docente));
+    const grupo = curso?.grupos.find((g: any) => g.nombre === item.grupo);
+    const normEnv = normalizarAmbiente(item.ambiente);
+    const ambiente = ambientes.find(a => a.codigo === normEnv.codigo);
+
+    if (!curso || !docente || !grupo || !ambiente) {
+      console.warn(`⚠️ Omisión de registro por inconsistencia en: Curso=${item.codigoCurso}, Docente=${item.docente}, Grupo=${item.grupo}, Ambiente=${item.ambiente}`);
+      continue;
+    }
+
+    try {
+      await prisma.horario.create({
+        data: {
+          periodoId: periodo.id,
+          cursoId: curso.id,
+          docenteId: docente.id,
+          grupoId: grupo.id,
+          ambienteId: ambiente.id,
+          diaSemana: mapDia(item.dia),
+          horaInicio: mapHora(item.inicio),
+          horaFin: mapHora(item.fin),
+          estado: EstadoHorario.CONFIRMADO,
+          publicado: true,
+          creadoPor: adminUser.id,
+          fechaConfirmacion: new Date(),
+          confirmadoPor: adminUser.id,
+        }
+      });
+      totalHorariosCreados++;
+    } catch (err: any) {
+      console.warn(`⚠️ Conflicto al crear horario para ${curso.codigo} (${item.dia} ${item.inicio}-${item.fin}): ${err.message}`);
+    }
+  }
+
+  console.log(`` + `✅ ${totalHorariosCreados} horarios reales registrados en estado CONFIRMADO`);
+
+  // ==================== ESTUDIANTES Y MATRÍCULAS ====================
   const estudiantesData = [
     { codigo: '1020100126', nombre: 'Carlos Alberto', apellidos: 'Sánchez Ruiz', email: 'csanchez@unitru.edu.pe', dni: '71234561', ciclo: 1 },
     { codigo: '1020100226', nombre: 'Ana Lucía', apellidos: 'Torres Paredes', email: 'atorres@unitru.edu.pe', dni: '71234562', ciclo: 1 },
@@ -427,9 +584,7 @@ async function main() {
     estudiantes.push(estudiante);
   }
 
-  console.log(`✅ ${estudiantes.length} estudiantes creados`);
-
-  // ==================== MATRÍCULAS ====================
+  let totalMatriculas = 0;
   for (const estudiante of estudiantes) {
     const cursosDelCiclo = cursos.filter(c => c.ciclo === estudiante.ciclo);
 
@@ -445,227 +600,20 @@ async function main() {
             estado: 'ACTIVO'
           }
         });
+        totalMatriculas++;
       }
     }
   }
 
-  console.log(`✅ Matrículas creadas`);
-
-  // ==================== HORARIOS CORREGIDOS (basados en grilla real del PDF) ====================
-  // Reglas aplicadas:
-  // - Ciclos I y III: SIN horarios asignados
-  // - Ciclos V, VII, IX: horarios en estado CONFIRMADO
-  // - Todos los bloques son de 2 horas (o 4 horas si son contiguos mismo ambiente)
-  // - Labs no contiguos = registros separados
-  // - Cursos con dos docentes paralelos: Grupo A y Grupo B diferenciados
-
-  const ambientes = await prisma.ambiente.findMany();
-  const am = new Map(ambientes.map(a => [a.codigo, a]));
-
-  const crearHorario = async (
-    cursoNombre: string,
-    docenteNombreCompleto: string,
-    dia: DiaSemana,
-    horaInicio: string,
-    horaFin: string,
-    ambienteCodigo: string,
-    grupoIndex: number = 0
-  ) => {
-    const curso = cursos.find(c => c.nombre === cursoNombre);
-    const docente = docentes.find(d => `${d.nombre} ${d.apellidos}` === docenteNombreCompleto);
-    const grupo = curso?.grupos[grupoIndex];
-    const ambiente = am.get(ambienteCodigo);
-
-    if (!curso) {
-      console.log(`⚠️ Curso no encontrado: "${cursoNombre}"`);
-      return;
-    }
-    if (!docente) {
-      console.log(`⚠️ Docente no encontrado: "${docenteNombreCompleto}"`);
-      return;
-    }
-    if (!grupo) {
-      console.log(`⚠️ Grupo índice ${grupoIndex} no encontrado para curso "${cursoNombre}"`);
-      return;
-    }
-    if (!ambiente) {
-      console.log(`⚠️ Ambiente no encontrado: "${ambienteCodigo}"`);
-      return;
-    }
-
-    await prisma.horario.create({
-      data: {
-        periodoId: periodo.id,
-        cursoId: curso.id,
-        docenteId: docente.id,
-        grupoId: grupo.id,
-        ambienteId: ambiente.id,
-        diaSemana: dia,
-        horaInicio,
-        horaFin,
-        estado: EstadoHorario.CONFIRMADO,
-        publicado: true,
-        creadoPor: adminUser.id,
-        fechaConfirmacion: new Date(),
-        confirmadoPor: adminUser.id,
-      }
-    });
-  };
-
-  // ════════════════════════════════════════════════════════
-  // CICLO I — SIN HORARIOS (queda para selección en ventana)
-  // ════════════════════════════════════════════════════════
-  console.log('⏭️  Ciclo I — horarios pendientes de asignación (sin seed)');
-
-  // ════════════════════════════════════════════════════════
-  // CICLO III — SIN HORARIOS (queda para selección en ventana)
-  // ════════════════════════════════════════════════════════
-  console.log('⏭️  Ciclo III — horarios pendientes de asignación (sin seed)');
-
-  // ════════════════════════════════════════════════════════
-  // CICLO V — leído del PDF página 3 (bloques de 2h)
-  // ════════════════════════════════════════════════════════
-
-  // 1. Luis Boy Chavil — Ingeniería de Datos I
-  // Grupos: A (Lunes), B (Martes), C (Jueves/Viernes)
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.LUNES,   '07:00', '09:00', 'A-303', 0);
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.LUNES,   '11:00', '13:00', 'Lab-4', 0);
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.MARTES,  '07:00', '09:00', 'Lab-4', 1);
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.MARTES,  '11:00', '13:00', 'Lab-4', 1);
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.JUEVES,  '07:00', '11:00', 'Lab-2', 2);  // 4h contiguas
-  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.VIERNES, '07:00', '09:00', 'Lab-2', 2);
-
-  // 2. Juan Carlos Obando — Sistemas de Información
-  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MARTES,    '10:00', '12:00', 'A-303', 0);
-  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MIERCOLES, '14:00', '18:00', 'Lab-1', 0);  // 4h
-  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-1', 1);  // 4h
-
-  // 3. Everson Agreda — Transformación Digital
-  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.LUNES,     '09:00', '11:00', 'A-307', 0);
-  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.MIERCOLES, '09:00', '11:00', 'A-307', 1);
-
-  // 4. Robert Sánchez — Tecnología Web
-  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MARTES,    '16:00', '18:00', 'A-303', 0);
-  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MIERCOLES, '08:00', '10:00', 'Lab-2', 1);
-
-  // 5. César Arellano — Arquitectura de Computadoras
-  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.MIERCOLES, '10:00', '12:00', 'A-307', 0);
-  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.JUEVES,    '10:00', '12:00', 'Lab-2', 1);
-
-  // 6. Camilo Suárez — Teleinformática
-  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.MIERCOLES, '14:00', '18:00', 'Lab-2', 0);  // 4h
-  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-2', 1);  // 4h
-
-  // 7. Marcos Baca — Investigación de Operaciones
-  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.LUNES,     '14:00', '18:00', 'A-307', 0);  // 4h
-  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.MIERCOLES, '14:00', '18:00', 'A-307', 0);  // 4h
-
-  // 8. Ana Cuadra — Contabilidad Gerencial
-  await crearHorario('Contabilidad Gerencial', 'Ana Cuadra Mitzuquray', DiaSemana.JUEVES,  '16:00', '18:00', 'A-307', 0);
-  await crearHorario('Contabilidad Gerencial', 'Ana Cuadra Mitzuquray', DiaSemana.VIERNES, '16:00', '18:00', 'A-307', 0);
-
-  // ════════════════════════════════════════════════════════
-  // CICLO VII — leído del PDF página 4 (bloques de 2h)
-  // ════════════════════════════════════════════════════════
-
-  // 1. Juan Santos — Ingeniería de Software I (Grupo A)
-  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.LUNES,     '07:00', '09:00', 'A-301', 0);
-  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.MIERCOLES, '15:00', '17:00', 'Lab-1', 0);
-  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.VIERNES,   '15:00', '17:00', 'Lab-2', 0);
-
-  // 1b. Robert Sánchez — Ingeniería de Software I (Grupo B)
-  await crearHorario('Ingeniería de Software I', 'Robert Jerry Sánchez Ticona', DiaSemana.MARTES, '07:00', '09:00', 'A-303', 1);
-  await crearHorario('Ingeniería de Software I', 'Robert Jerry Sánchez Ticona', DiaSemana.JUEVES, '15:00', '17:00', 'Lab-2', 1);
-
-  // 2. César Arellano — Redes y Comunicaciones I
-  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.LUNES,     '09:00', '11:00', 'Lab-4', 0);
-  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.MIERCOLES, '09:00', '11:00', 'Lab-3', 0);
-  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.VIERNES,   '09:00', '11:00', 'Lab-4', 0);
-
-  // 3. Paul Cotrina — Negocios Electrónicos (Grupo A)
-  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MARTES,     '09:00', '11:00', 'Lab-2', 0);
-  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MIERCOLES,  '09:00', '11:00', 'Lab-2', 0);
-  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.JUEVES,     '09:00', '11:00', 'A-311', 0);
-
-  // 3b. Everson Agreda — Negocios Electrónicos (Grupo B)
-  await crearHorario('Negocios Electrónicos', 'Everson David Agreda Gamboa', DiaSemana.MARTES, '16:00', '18:00', 'A-311', 1);
-
-  // 4. Alberto Mendoza — Gestión de Servicios de TI
-  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '07:00', '09:00', 'A-311', 0);
-  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.MIERCOLES, '07:00', '09:00', 'Lab-1', 0);
-  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.JUEVES,    '11:00', '13:00', 'A-303', 0);
-
-  // 5. Paul Cotrina — Metodología de la Investigación Científica
-  await crearHorario('Metodología de la Investigación Científica', 'Paul Cotrina Castellanos', DiaSemana.LUNES, '15:00', '17:00', 'A-303', 0);
-
-  // 6. Ricardo Mendoza — Administración de Base de Datos
-  await crearHorario('Administración de Base de Datos', 'Ricardo Mendoza Rivera', DiaSemana.MARTES, '11:00', '13:00', 'Lab-1', 0);
-  await crearHorario('Administración de Base de Datos', 'Ricardo Mendoza Rivera', DiaSemana.JUEVES, '11:00', '13:00', 'Lab-3', 0);
-
-  // 7. Óscar Alcántara — Planeamiento Estratégico de TI
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MARTES,    '16:00', '18:00', 'A-301', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '08:00', '10:00', 'A-301', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '15:00', '17:00', 'Lab-4', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '17:00', '19:00', 'AUD', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.JUEVES,    '08:00', '10:00', 'Lab-3', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.VIERNES,   '19:00', '21:00', 'Lab-4', 0);
-
-  // 8. Jhon Gonzalez — Cadena de Suministros
-  await crearHorario('Cadena de Suministros', 'Jhon Gonzalez Vasquez', DiaSemana.MIERCOLES, '07:00', '09:00', 'Lab-Taller', 0);
-
-  // ════════════════════════════════════════════════════════
-  // CICLO IX — leído del PDF página 5 (bloques de 2h)
-  // ════════════════════════════════════════════════════════
-
-  // 1. Ricardo Mendoza — Tesis I (Grupo A)
-  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '07:00', '09:00', 'A-307', 0);
-  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-4', 0);
-  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MIERCOLES, '07:00', '09:00', 'A-307', 0);
-
-  // 1b. Juan Santos — Tesis I (Grupo B)
-  await crearHorario('Tesis I', 'Juan Pedro Santos Fernández', DiaSemana.JUEVES, '19:00', '21:00', 'Lab-2', 1);
-
-  // 2. Alberto Mendoza — Ingeniería Web
-  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '10:00', '12:00', 'Lab-1', 0);
-  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MARTES,    '10:00', '12:00', 'Lab-1', 0);
-  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MIERCOLES, '16:00', '18:00', 'Lab-2', 0);
-
-  // 3. Óscar Alcántara — Computación en la Nube
-  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.LUNES,     '16:00', '18:00', 'Lab-2', 0);
-  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.JUEVES,    '16:00', '18:00', 'Lab-4', 0);
-  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '11:00', '13:00', 'Lab-3', 0);
-
-  // 4. Ricardo Mendoza — Analítica de Negocios
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '14:00', '16:00', 'Lab-3', 0);
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '14:00', '16:00', 'Lab-4', 0);
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MIERCOLES, '10:00', '12:00', 'Lab-2', 0);
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.JUEVES,    '14:00', '16:00', 'Lab-4', 0);
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.VIERNES,   '10:00', '12:00', 'Lab-2', 0);
-
-  // 5. Camilo Suárez — Hackeo Ético
-  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.LUNES,     '19:00', '21:00', 'Lab-4', 0);
-  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-3', 0);
-  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MIERCOLES, '19:00', '21:00', 'Lab-2', 0);
-
-  // 6. José Gómez — Emprendimiento Tecnológico
-  await crearHorario('Emprendimiento Tecnológico', 'José Gómez Ávila', DiaSemana.VIERNES, '14:00', '16:00', 'A-303', 0);
-
-  // 7. Marcelino Torres — Auditoría Informática
-  await crearHorario('Auditoría Informática', 'Marcelino Torres Villanueva', DiaSemana.JUEVES,  '16:00', '18:00', 'Lab-3', 0);
-  await crearHorario('Auditoría Informática', 'Marcelino Torres Villanueva', DiaSemana.VIERNES, '16:00', '18:00', 'Lab-4', 0);
-
-  // 8. José Gómez — Gestión de Proyectos de TI
-  await crearHorario('Gestión de Proyectos de TI', 'José Gómez Ávila', DiaSemana.JUEVES,  '10:00', '12:00', 'Lab-1', 0);
-  await crearHorario('Gestión de Proyectos de TI', 'José Gómez Ávila', DiaSemana.VIERNES, '10:00', '12:00', 'Lab-1', 0);
-
-  console.log('✅ Horarios ciclos V, VII y IX creados (CONFIRMADO). Ciclos I y III sin asignar.');
+  console.log(`✅ ${estudiantes.length} estudiantes registrados con ${totalMatriculas} matrículas`);
 
   // ==================== REPORTE FINAL ====================
   console.log('\n🎉 ========== DATOS SEMILLA GENERADOS ==========');
   console.log(`📊 Resumen:`);
   console.log(`   👨‍🏫 Docentes: ${docentes.length}`);
   console.log(`   📚 Cursos: ${cursos.length}`);
-  console.log(`   🏛️ Ambientes: ${ambientesData.length}`);
+  console.log(`   🏛️ Ambientes: ${ambientes.length}`);
+  console.log(`   📅 Horarios confirmados: ${totalHorariosCreados}`);
   console.log(`   👨‍🎓 Estudiantes: ${estudiantes.length}`);
   console.log(`   📅 Período: 2026-I (13 Abril - 08 Agosto 2026)`);
   console.log('=============================================\n');
