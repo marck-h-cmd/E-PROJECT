@@ -67,6 +67,40 @@ const getColorForCurso = (cursoId: string) => {
   return COLORES_CURSO[index];
 };
 
+interface TimerData {
+  startTime: number;
+  pausedTime: number;
+  isPaused: boolean;
+  totalPausedTime: number;
+}
+
+const getTimerKey = (ventanaId: string) => `ventana-timer:${ventanaId}`;
+
+const loadTimerData = (ventanaId: string): TimerData | null => {
+  try {
+    const data = localStorage.getItem(getTimerKey(ventanaId));
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
+const saveTimerData = (ventanaId: string, data: TimerData) => {
+  try {
+    localStorage.setItem(getTimerKey(ventanaId), JSON.stringify(data));
+  } catch {
+    console.error('Error saving timer data');
+  }
+};
+
+const clearTimerData = (ventanaId: string) => {
+  try {
+    localStorage.removeItem(getTimerKey(ventanaId));
+  } catch {
+    console.error('Error clearing timer data');
+  }
+};
+
 export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAtencionProps) {
   // Estados de carga y ventana
   const [loading, setLoading] = React.useState(true);
@@ -76,6 +110,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   const [notificaciones, setNotificaciones] = React.useState<any[]>([]);
   const [tiempoAtencion, setTiempoAtencion] = React.useState(0);
   const [tiempoVentana, setTiempoVentana] = React.useState(0);
+  const [timerData, setTimerData] = React.useState<TimerData | null>(null);
   const [todosLosHorarios, setTodosLosHorarios] = React.useState<any[]>([]);
 
   // Docente en atención y su carga/horarios
@@ -133,12 +168,35 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       const dataVentana = await resVentana.json();
       setVentana(dataVentana.data);
 
-      // Mapear estado
+      // Mapear estado y cargar timer
       const est = dataVentana.data.estado;
-      if (est === 'PROGRAMADA') setEstadoVentana('inactiva');
-      else if (est === 'ABIERTA' || est === 'EN_CURSO') setEstadoVentana('activa');
-      else if (est === 'CERRADA') setEstadoVentana('finalizada');
-      else if (est === 'CANCELADA') setEstadoVentana('finalizada');
+      let nuevoEstado: 'inactiva' | 'activa' | 'pausada' | 'finalizada';
+      if (est === 'PROGRAMADA') nuevoEstado = 'inactiva';
+      else if (est === 'ABIERTA' || est === 'EN_CURSO') nuevoEstado = 'activa';
+      else if (est === 'CERRADA') nuevoEstado = 'finalizada';
+      else if (est === 'CANCELADA') nuevoEstado = 'finalizada';
+      else nuevoEstado = 'inactiva';
+
+      setEstadoVentana(nuevoEstado);
+
+      // Cargar timer data
+      const savedTimer = loadTimerData(ventanaId);
+      if (savedTimer) {
+        setTimerData(savedTimer);
+        
+        // Calculate elapsed time
+        if (savedTimer.isPaused) {
+          setTiempoVentana(savedTimer.pausedTime);
+          if (nuevoEstado !== 'finalizada') {
+            setEstadoVentana('pausada');
+          }
+        } else {
+          const elapsed = Math.floor((Date.now() - savedTimer.startTime - savedTimer.totalPausedTime) / 1000);
+          setTiempoVentana(elapsed > 0 ? elapsed : 0);
+        }
+      } else if (nuevoEstado === 'finalizada') {
+        clearTimerData(ventanaId);
+      }
 
       // Cargar todos los horarios del periodo para la verificación de disponibilidad
       if (dataVentana.data.periodoId) {
@@ -285,10 +343,15 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   }, [docenteActual, estadoVentana]);
 
   React.useEffect(() => {
-    if (estadoVentana !== 'activa') return;
-    const intervalo = setInterval(() => setTiempoVentana((prev) => prev + 1), 1000);
+    if (estadoVentana !== 'activa' || !timerData) return;
+    
+    const intervalo = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - timerData.startTime - timerData.totalPausedTime) / 1000);
+      setTiempoVentana(elapsed > 0 ? elapsed : 0);
+    }, 1000);
+    
     return () => clearInterval(intervalo);
-  }, [estadoVentana]);
+  }, [estadoVentana, timerData]);
 
   // ── Acciones de ventana ──────────────────────────────────────────────────
   const handleIniciarVentana = async () => {
@@ -299,6 +362,15 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         body: JSON.stringify({ accion: 'abrir' }),
       });
       if (res.ok) {
+        const newTimerData: TimerData = {
+          startTime: Date.now(),
+          pausedTime: 0,
+          isPaused: false,
+          totalPausedTime: 0,
+        };
+        setTimerData(newTimerData);
+        saveTimerData(ventanaId, newTimerData);
+        setTiempoVentana(0);
         setEstadoVentana('activa');
         NotificacionToast.exito('Ventana de atención iniciada correctamente');
         cargarDatosVentana();
@@ -312,11 +384,31 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   };
 
   const handlePausarVentana = () => {
+    if (!timerData) return;
+    
+    const newTimerData: TimerData = {
+      ...timerData,
+      isPaused: true,
+      pausedTime: tiempoVentana,
+    };
+    setTimerData(newTimerData);
+    saveTimerData(ventanaId, newTimerData);
     setEstadoVentana('pausada');
     NotificacionToast.info('Ventana pausada');
   };
 
   const handleReanudarVentana = () => {
+    if (!timerData) return;
+    
+    const newTimerData: TimerData = {
+      ...timerData,
+      isPaused: false,
+      // When resuming, we adjust the startTime forward by the paused duration
+      // This way elapsed time calculation remains correct
+      startTime: Date.now() - timerData.pausedTime * 1000 - timerData.totalPausedTime,
+    };
+    setTimerData(newTimerData);
+    saveTimerData(ventanaId, newTimerData);
     setEstadoVentana('activa');
     NotificacionToast.info('Ventana reanudada');
   };
@@ -329,6 +421,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
         body: JSON.stringify({ accion: 'cerrar' }),
       });
       if (res.ok) {
+        clearTimerData(ventanaId);
+        setTimerData(null);
         setEstadoVentana('finalizada');
         NotificacionToast.exito('Ventana finalizada');
         cargarDatosVentana();
