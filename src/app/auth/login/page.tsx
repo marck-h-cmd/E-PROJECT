@@ -103,8 +103,8 @@ export default function LoginPage() {
       {/* TOAST */}
       <div
         className={`fixed left-1/2 top-6 z-50 -translate-x-1/2 transition-all duration-300 ${toast.visible
-            ? 'translate-y-0 opacity-100'
-            : 'pointer-events-none -translate-y-4 opacity-0'
+          ? 'translate-y-0 opacity-100'
+          : 'pointer-events-none -translate-y-4 opacity-0'
           }`}
       >
         <div className="login-toast">
@@ -745,7 +745,9 @@ export default function LoginPage() {
         }
 
         .login-card-wrap {
-          max-width: 720px;
+          width: min(100%, 660px);
+          max-width: 660px;
+          transform-origin: center;
         }
 
         .login-card {
@@ -770,11 +772,11 @@ export default function LoginPage() {
         }
 
         .login-card-inner {
-          padding: 32px 40px;
+          padding: 28px 36px;
         }
 
         .login-title {
-          font-size: 28px;
+          font-size: 26px;
           line-height: 1.1;
           letter-spacing: -0.035em;
           font-weight: 850;
@@ -786,9 +788,9 @@ export default function LoginPage() {
         }
 
         .login-subtitle {
-          margin-top: 8px;
-          font-size: 14px;
-          line-height: 1.55;
+          margin-top: 7px;
+          font-size: 13.5px;
+          line-height: 1.45;
           font-weight: 500;
           color: #64748b;
         }
@@ -831,7 +833,7 @@ export default function LoginPage() {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 14px;
+          padding: 12px;
           border-radius: 16px;
           border: 1px solid rgba(203, 213, 225, 0.85);
           background: rgba(248, 250, 252, 0.92);
@@ -872,13 +874,13 @@ export default function LoginPage() {
 
         .role-badge {
           display: flex;
-          height: 36px;
-          width: 36px;
+          height: 34px;
+          width: 34px;
           flex-shrink: 0;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
-          font-size: 10.5px;
+          border-radius: 11px;
+          font-size: 10px;
           font-weight: 850;
         }
 
@@ -886,7 +888,7 @@ export default function LoginPage() {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          font-size: 13.2px;
+          font-size: 12.6px;
           line-height: 1;
           font-weight: 850;
           color: #1e293b;
@@ -897,12 +899,12 @@ export default function LoginPage() {
         }
 
         .role-description {
-          margin-top: 6px;
+          margin-top: 5px;
           display: block;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          font-size: 10.7px;
+          font-size: 10.2px;
           line-height: 1;
           font-weight: 500;
           color: #64748b;
@@ -913,7 +915,7 @@ export default function LoginPage() {
         }
 
         .demo-alert {
-          margin-top: 16px;
+          margin-top: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -921,9 +923,9 @@ export default function LoginPage() {
           border-radius: 16px;
           border: 1px solid rgba(226, 232, 240, 0.95);
           background: rgba(248, 250, 252, 0.92);
-          padding: 13px 16px;
+          padding: 11px 14px;
           color: #475569;
-          font-size: 12px;
+          font-size: 11.4px;
           line-height: 1.25;
           font-weight: 550;
           box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
@@ -937,8 +939,8 @@ export default function LoginPage() {
 
         .login-label {
           display: block;
-          margin-bottom: 8px;
-          font-size: 12px;
+          margin-bottom: 7px;
+          font-size: 11.5px;
           font-weight: 850;
           letter-spacing: 0.08em;
           text-transform: uppercase;
@@ -950,13 +952,13 @@ export default function LoginPage() {
         }
 
         .login-input {
-          height: 50px !important;
+          height: 46px !important;
           border-radius: 13px !important;
           border: 1px solid #dbe4ef !important;
           background: #f8fafc !important;
           padding-left: 16px !important;
           padding-right: 16px !important;
-          font-size: 15px !important;
+          font-size: 14px !important;
           font-weight: 600 !important;
           color: #0f172a !important;
           transition: all 220ms ease !important;
@@ -1048,14 +1050,14 @@ export default function LoginPage() {
         .login-button {
           position: relative !important;
           margin-top: 6px !important;
-          height: 54px !important;
+          height: 49px !important;
           width: 100% !important;
           overflow: hidden !important;
           border-radius: 16px !important;
           gap: 12px !important;
           background: #0f2d55 !important;
           color: #ffffff !important;
-          font-size: 14.5px !important;
+          font-size: 13.5px !important;
           font-weight: 850 !important;
           text-transform: uppercase !important;
           letter-spacing: 0.08em !important;
@@ -1099,11 +1101,11 @@ export default function LoginPage() {
         }
 
         .login-footer {
-          margin-top: 20px;
+          margin-top: 16px;
           border-top: 1px solid rgba(226, 232, 240, 0.95);
-          padding-top: 16px;
+          padding-top: 13px;
           text-align: center;
-          font-size: 11.2px;
+          font-size: 10.5px;
           font-weight: 500;
           color: #64748b;
         }
@@ -1111,6 +1113,52 @@ export default function LoginPage() {
         .dark .login-footer {
           border-color: rgba(73, 92, 128, 0.7);
           color: #8290a6;
+        }
+
+        @media (min-width: 1024px) and (max-height: 850px) {
+          .login-card-wrap {
+            transform: scale(0.94);
+          }
+
+          .login-card-inner {
+            padding: 24px 34px;
+          }
+
+          .login-title {
+            font-size: 24px;
+          }
+
+          .login-subtitle {
+            font-size: 13px;
+          }
+
+          .role-card {
+            padding: 10.5px 12px;
+          }
+
+          .demo-alert {
+            margin-top: 12px;
+            padding: 10px 13px;
+          }
+
+          .login-input {
+            height: 44px !important;
+          }
+
+          .login-button {
+            height: 47px !important;
+          }
+
+          .login-footer {
+            margin-top: 14px;
+            padding-top: 12px;
+          }
+        }
+
+        @media (min-width: 1024px) and (min-height: 900px) {
+          .login-card-wrap {
+            transform: scale(0.96);
+          }
         }
 
         @media (max-width: 1023px) {
@@ -1123,7 +1171,9 @@ export default function LoginPage() {
           }
 
           .login-card-wrap {
+            width: min(100%, 620px);
             max-width: 620px;
+            transform: none;
           }
 
           .login-card-inner {
