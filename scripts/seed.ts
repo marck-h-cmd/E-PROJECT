@@ -93,7 +93,46 @@ async function main() {
     { email: 'jose.gomez@unitru.edu.pe', nombre: 'José', apellidos: 'Gómez Ávila', codigo: 'DOC028', categoria: CategoriaDocente.ASOCIADO, departamento: 'Ing. de Sistemas' },
   ];
 
-  const docentes = [];
+  // Tabla de fechas de ingreso variadas por categoría
+  const fechasIngreso: Record<string, string> = {
+    // PRINCIPAL — antigüedad alta: 1990–2005
+    'DOC001': '1998-03-15',  // Marcelino Torres
+    'DOC005': '2001-08-20',  // José Luis Ponte
+    'DOC007': '1995-11-05',  // Segundo Guíbar
+    'DOC008': '2003-04-10',  // Miguel Ipanaque
+    'DOC011': '1999-07-01',  // Everson Agreda
+    'DOC015': '2000-02-28',  // Juan Carrascal
+    'DOC018': '2004-09-12',  // Luis Boy
+    'DOC020': '1997-06-18',  // César Arellano
+    'DOC022': '2002-12-03',  // Marcos Baca
+    'DOC024': '2005-03-22',  // Juan Santos
+
+    // ASOCIADO — antigüedad media: 2005–2015
+    'DOC002': '2008-04-05',  // Alberto Mendoza
+    'DOC003': '2012-08-14',  // Paul Cotrina
+    'DOC010': '2009-03-01',  // Zoraida Vidal
+    'DOC012': '2011-07-20',  // Juan Obando
+    'DOC013': '2007-10-15',  // Marcos Ferrer
+    'DOC016': '2010-01-10',  // Vilma Méndez
+    'DOC021': '2013-05-25',  // Camilo Suárez
+    'DOC023': '2014-02-18',  // Ana Cuadra
+    'DOC025': '2006-09-08',  // Ricardo Mendoza
+    'DOC028': '2015-11-30',  // José Gómez
+
+    // AUXILIAR — más recientes: 2013–2020
+    'DOC004': '2017-04-12',  // Bertha Urtecho
+    'DOC006': '2016-08-01',  // Jorge Luis Ríos
+    'DOC009': '2019-03-05',  // Martha Cardoso
+    'DOC014': '2015-06-20',  // Teresita Rojas
+    'DOC017': '2020-01-15',  // Sheyla Laura
+    'DOC019': '2018-09-10',  // Robert Sánchez
+    'DOC026': '2013-12-01',  // Óscar Alcántara
+
+    // CONTRATADO — reciente: 2021–2023
+    'DOC027': '2022-04-01',  // Jhon Gonzalez
+  };
+
+  const docentes: any[] = [];
   for (const docenteData of docentesData) {
     const user = await prisma.usuario.create({
       data: {
@@ -113,7 +152,7 @@ async function main() {
         categoria: docenteData.categoria,
         departamento: docenteData.departamento,
         telefono: '999123456',
-        fechaIngreso: new Date('2010-01-01'),
+        fechaIngreso: new Date(fechasIngreso[docenteData.codigo] ?? '2015-01-01'),
         preferenciasNotificacion: {
           create: {
             correoActivo: true,
@@ -197,7 +236,7 @@ async function main() {
 
   const todosLosCursos = [...ciclo1Cursos, ...ciclo3Cursos, ...ciclo5Cursos, ...ciclo7Cursos, ...ciclo9Cursos];
 
-  const cursos = [];
+  const cursos: any[] = [];
   for (const cursoData of todosLosCursos) {
     const curso = await prisma.curso.create({
       data: {
@@ -375,7 +414,7 @@ async function main() {
     { codigo: '1020101026', nombre: 'Camila', apellidos: 'Nuñez Rojas', email: 'cnunez@unitru.edu.pe', dni: '71234570', ciclo: 9 },
   ];
 
-  const estudiantes = [];
+  const estudiantes: any[] = [];
   for (const est of estudiantesData) {
     const estudiante = await prisma.estudiante.create({
       data: est
@@ -387,7 +426,6 @@ async function main() {
 
   // ==================== MATRÍCULAS ====================
   for (const estudiante of estudiantes) {
-    // Matricular al estudiante en cursos de su ciclo
     const cursosDelCiclo = cursos.filter(c => c.ciclo === estudiante.ciclo);
 
     for (const curso of cursosDelCiclo) {
@@ -408,46 +446,214 @@ async function main() {
 
   console.log(`✅ Matrículas creadas`);
 
-  // ==================== HORARIOS BASE (opcional, para tener datos de ejemplo) ====================
-  // Nota: Los horarios completos se generarían desde la interfaz de selección temporal
-  // Aquí creamos algunos horarios de ejemplo para el ciclo I
+  // ==================== HORARIOS CORREGIDOS (basados en grilla real del PDF) ====================
+  // Reglas aplicadas:
+  // - Ciclos I y III: SIN horarios asignados
+  // - Ciclos V, VII, IX: horarios en estado CONFIRMADO
+  // - Todos los bloques son de 2 horas (o 4 horas si son contiguos mismo ambiente)
+  // - Labs no contiguos = registros separados
+  // - Cursos con dos docentes paralelos: Grupo A y Grupo B diferenciados
 
   const ambientes = await prisma.ambiente.findMany();
-  const ambientesMap = new Map(ambientes.map(a => [a.nombre, a]));
+  const am = new Map(ambientes.map(a => [a.codigo, a]));
 
-  // Ejemplo: Crear algunos horarios para el ciclo I - Lunes
-  const cursosCiclo1 = cursos.filter(c => c.ciclo === 1);
-  const docentesCiclo1 = docentes.filter(d =>
-    ['Marcelino Torres Villanueva', 'Alberto Mendoza de los Santos', 'Paul Cotrina Castellanos',
-      'Bertha Urtecho Zavaleta', 'José Luis Ponte Bejarano'].includes(`${d.nombre} ${d.apellidos}`)
-  );
+  const crearHorario = async (
+    cursoNombre: string,
+    docenteNombreCompleto: string,
+    dia: DiaSemana,
+    horaInicio: string,
+    horaFin: string,
+    ambienteCodigo: string,
+    grupoIndex: number = 0
+  ) => {
+    const curso = cursos.find(c => c.nombre === cursoNombre);
+    const docente = docentes.find(d => `${d.nombre} ${d.apellidos}` === docenteNombreCompleto);
+    const grupo = curso?.grupos[grupoIndex];
+    const ambiente = am.get(ambienteCodigo);
 
-  // Horario de muestra: Introducción a la Programación - Lunes 7-8am
-  const cursoProgramacion = cursosCiclo1.find(c => c.nombre === 'Introducción a la Programación');
-  const docenteMarcelino = docentesCiclo1.find(d => `${d.nombre} ${d.apellidos}` === 'Marcelino Torres Villanueva');
-  const grupoA = cursoProgramacion?.grupos[0];
-  const aula307 = ambientesMap.get('Posgrado A-307');
+    if (!curso) {
+      console.log(`⚠️ Curso no encontrado: "${cursoNombre}"`);
+      return;
+    }
+    if (!docente) {
+      console.log(`⚠️ Docente no encontrado: "${docenteNombreCompleto}"`);
+      return;
+    }
+    if (!grupo) {
+      console.log(`⚠️ Grupo índice ${grupoIndex} no encontrado para curso "${cursoNombre}"`);
+      return;
+    }
+    if (!ambiente) {
+      console.log(`⚠️ Ambiente no encontrado: "${ambienteCodigo}"`);
+      return;
+    }
 
-  if (cursoProgramacion && docenteMarcelino && grupoA && aula307) {
     await prisma.horario.create({
       data: {
         periodoId: periodo.id,
-        cursoId: cursoProgramacion.id,
-        docenteId: docenteMarcelino.id,
-        grupoId: grupoA.id,
-        ambienteId: aula307.id,
-        diaSemana: DiaSemana.LUNES,
-        horaInicio: '07:00',
-        horaFin: '09:00',
-        estado: EstadoHorario.PUBLICADO,
+        cursoId: curso.id,
+        docenteId: docente.id,
+        grupoId: grupo.id,
+        ambienteId: ambiente.id,
+        diaSemana: dia,
+        horaInicio,
+        horaFin,
+        estado: EstadoHorario.CONFIRMADO,
         publicado: true,
         creadoPor: adminUser.id,
         fechaConfirmacion: new Date(),
-        confirmadoPor: adminUser.id
+        confirmadoPor: adminUser.id,
       }
     });
-    console.log('✅ Horario de ejemplo creado');
-  }
+  };
+
+  // ════════════════════════════════════════════════════════
+  // CICLO I — SIN HORARIOS (queda para selección en ventana)
+  // ════════════════════════════════════════════════════════
+  console.log('⏭️  Ciclo I — horarios pendientes de asignación (sin seed)');
+
+  // ════════════════════════════════════════════════════════
+  // CICLO III — SIN HORARIOS (queda para selección en ventana)
+  // ════════════════════════════════════════════════════════
+  console.log('⏭️  Ciclo III — horarios pendientes de asignación (sin seed)');
+
+  // ════════════════════════════════════════════════════════
+  // CICLO V — leído del PDF página 3 (bloques de 2h)
+  // ════════════════════════════════════════════════════════
+
+  // 1. Luis Boy Chavil — Ingeniería de Datos I
+  // Grupos: A (Lunes), B (Martes), C (Jueves/Viernes)
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.LUNES,   '07:00', '09:00', 'A-303', 0);
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.LUNES,   '11:00', '13:00', 'Lab-4', 0);
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.MARTES,  '07:00', '09:00', 'Lab-4', 1);
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.MARTES,  '11:00', '13:00', 'Lab-4', 1);
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.JUEVES,  '07:00', '11:00', 'Lab-2', 2);  // 4h contiguas
+  await crearHorario('Ingeniería de Datos I', 'Luis Boy Chavil', DiaSemana.VIERNES, '07:00', '09:00', 'Lab-2', 2);
+
+  // 2. Juan Carlos Obando — Sistemas de Información
+  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MARTES,    '10:00', '12:00', 'A-303', 0);
+  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'Lab-1', 0);  // 4h
+  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-1', 1);  // 4h
+
+  // 3. Everson Agreda — Transformación Digital
+  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.LUNES,     '09:00', '11:00', 'A-307', 0);
+  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.MIÉRCOLES, '09:00', '11:00', 'A-307', 1);
+
+  // 4. Robert Sánchez — Tecnología Web
+  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MARTES,    '16:00', '18:00', 'A-303', 0);
+  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MIÉRCOLES, '08:00', '10:00', 'Lab-2', 1);
+
+  // 5. César Arellano — Arquitectura de Computadoras
+  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.MIÉRCOLES, '10:00', '12:00', 'A-307', 0);
+  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.JUEVES,    '10:00', '12:00', 'Lab-2', 1);
+
+  // 6. Camilo Suárez — Teleinformática
+  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'Lab-2', 0);  // 4h
+  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-2', 1);  // 4h
+
+  // 7. Marcos Baca — Investigación de Operaciones
+  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.LUNES,     '14:00', '18:00', 'A-307', 0);  // 4h
+  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'A-307', 0);  // 4h
+
+  // 8. Ana Cuadra — Contabilidad Gerencial
+  await crearHorario('Contabilidad Gerencial', 'Ana Cuadra Mitzuquray', DiaSemana.JUEVES,  '16:00', '18:00', 'A-307', 0);
+  await crearHorario('Contabilidad Gerencial', 'Ana Cuadra Mitzuquray', DiaSemana.VIERNES, '16:00', '18:00', 'A-307', 0);
+
+  // ════════════════════════════════════════════════════════
+  // CICLO VII — leído del PDF página 4 (bloques de 2h)
+  // ════════════════════════════════════════════════════════
+
+  // 1. Juan Santos — Ingeniería de Software I (Grupo A)
+  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.LUNES,     '07:00', '09:00', 'A-303', 0);
+  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.MIÉRCOLES, '15:00', '17:00', 'Lab-1', 0);
+  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.VIERNES,   '15:00', '17:00', 'Lab-2', 0);
+
+  // 1b. Robert Sánchez — Ingeniería de Software I (Grupo B)
+  await crearHorario('Ingeniería de Software I', 'Robert Jerry Sánchez Ticona', DiaSemana.MARTES, '07:00', '09:00', 'A-303', 1);
+  await crearHorario('Ingeniería de Software I', 'Robert Jerry Sánchez Ticona', DiaSemana.JUEVES, '15:00', '17:00', 'Lab-2', 1);
+
+  // 2. César Arellano — Redes y Comunicaciones I
+  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.LUNES,     '09:00', '11:00', 'Lab-4', 0);
+  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.MIÉRCOLES, '09:00', '11:00', 'Lab-3', 0);
+  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.VIERNES,   '09:00', '11:00', 'Lab-4', 0);
+
+  // 3. Paul Cotrina — Negocios Electrónicos (Grupo A)
+  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MARTES,     '09:00', '11:00', 'Lab-2', 0);
+  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MIÉRCOLES,  '09:00', '11:00', 'Lab-2', 0);
+  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.JUEVES,     '09:00', '11:00', 'A-311', 0);
+
+  // 3b. Everson Agreda — Negocios Electrónicos (Grupo B)
+  await crearHorario('Negocios Electrónicos', 'Everson David Agreda Gamboa', DiaSemana.MARTES, '16:00', '18:00', 'A-311', 1);
+
+  // 4. Alberto Mendoza — Gestión de Servicios de TI
+  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '07:00', '09:00', 'A-311', 0);
+  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'Lab-1', 0);
+  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.JUEVES,    '11:00', '13:00', 'A-303', 0);
+
+  // 5. Paul Cotrina — Metodología de la Investigación Científica
+  await crearHorario('Metodología de la Investigación Científica', 'Paul Cotrina Castellanos', DiaSemana.LUNES, '15:00', '17:00', 'A-303', 0);
+
+  // 6. Ricardo Mendoza — Administración de Base de Datos
+  await crearHorario('Administración de Base de Datos', 'Ricardo Mendoza Rivera', DiaSemana.MARTES, '11:00', '13:00', 'Lab-1', 0);
+  await crearHorario('Administración de Base de Datos', 'Ricardo Mendoza Rivera', DiaSemana.JUEVES, '11:00', '13:00', 'Lab-3', 0);
+
+  // 7. Óscar Alcántara — Planeamiento Estratégico de TI
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MARTES,    '16:00', '18:00', 'A-301', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '08:00', '10:00', 'A-301', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '15:00', '17:00', 'Lab-4', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '17:00', '19:00', 'AUD', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.JUEVES,    '08:00', '10:00', 'Lab-3', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.VIERNES,   '19:00', '21:00', 'Lab-4', 0);
+
+  // 8. Jhon Gonzalez — Cadena de Suministros
+  await crearHorario('Cadena de Suministros', 'Jhon Gonzalez Vasquez', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'Lab-Taller', 0);
+
+  // ════════════════════════════════════════════════════════
+  // CICLO IX — leído del PDF página 5 (bloques de 2h)
+  // ════════════════════════════════════════════════════════
+
+  // 1. Ricardo Mendoza — Tesis I (Grupo A)
+  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '07:00', '09:00', 'A-303', 0);
+  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-4', 0);
+  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'A-303', 0);
+
+  // 1b. Juan Santos — Tesis I (Grupo B)
+  await crearHorario('Tesis I', 'Juan Pedro Santos Fernández', DiaSemana.JUEVES, '19:00', '21:00', 'Lab-2', 1);
+
+  // 2. Alberto Mendoza — Ingeniería Web
+  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '10:00', '12:00', 'Lab-1', 0);
+  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MARTES,    '10:00', '12:00', 'Lab-1', 0);
+  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MIÉRCOLES, '16:00', '18:00', 'Lab-2', 0);
+
+  // 3. Óscar Alcántara — Computación en la Nube
+  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.LUNES,     '16:00', '18:00', 'Lab-2', 0);
+  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MARTES,    '16:00', '18:00', 'Lab-4', 0);
+  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '14:00', '16:00', 'Lab-3', 0);
+
+  // 4. Ricardo Mendoza — Analítica de Negocios
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '14:00', '16:00', 'Lab-3', 0);
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '14:00', '16:00', 'Lab-4', 0);
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MIÉRCOLES, '10:00', '12:00', 'Lab-2', 0);
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.JUEVES,    '14:00', '16:00', 'Lab-4', 0);
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.VIERNES,   '10:00', '12:00', 'Lab-2', 0);
+
+  // 5. Camilo Suárez — Hackeo Ético
+  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.LUNES,     '19:00', '21:00', 'Lab-4', 0);
+  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-3', 0);
+  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MIÉRCOLES, '19:00', '21:00', 'Lab-2', 0);
+
+  // 6. José Gómez — Emprendimiento Tecnológico
+  await crearHorario('Emprendimiento Tecnológico', 'José Gómez Ávila', DiaSemana.VIERNES, '14:00', '16:00', 'A-303', 0);
+
+  // 7. Marcelino Torres — Auditoría Informática
+  await crearHorario('Auditoría Informática', 'Marcelino Torres Villanueva', DiaSemana.JUEVES,  '16:00', '18:00', 'Lab-3', 0);
+  await crearHorario('Auditoría Informática', 'Marcelino Torres Villanueva', DiaSemana.VIERNES, '16:00', '18:00', 'Lab-4', 0);
+
+  // 8. José Gómez — Gestión de Proyectos de TI
+  await crearHorario('Gestión de Proyectos de TI', 'José Gómez Ávila', DiaSemana.JUEVES,  '10:00', '12:00', 'Lab-1', 0);
+  await crearHorario('Gestión de Proyectos de TI', 'José Gómez Ávila', DiaSemana.VIERNES, '10:00', '12:00', 'Lab-1', 0);
+
+  console.log('✅ Horarios ciclos V, VII y IX creados (CONFIRMADO). Ciclos I y III sin asignar.');
 
   // ==================== REPORTE FINAL ====================
   console.log('\n🎉 ========== DATOS SEMILLA GENERADOS ==========');

@@ -199,6 +199,7 @@ export default function HorariosPage() {
 
   const [diaResaltado, setDiaResaltado] = useState<string | null>(null);
   const [estadoFiltro, setEstadoFiltro] = useState<string>('Todos');
+  const [grupoFiltro, setGrupoFiltro] = useState<string>('Todos');
   const [vistaTipo, setVistaTipo] = useState<'General' | 'Por Docente' | 'Por Aula'>('General');
 
   const fetchHorarios = useCallback(async () => {
@@ -606,9 +607,12 @@ export default function HorariosPage() {
       if (estadoFiltro !== 'Todos' && h.estado !== estadoFiltro) {
         if (h.estado) return h.estado === estadoFiltro;
       }
+      if (grupoFiltro !== 'Todos') {
+        return h.grupo?.nombre === grupoFiltro;
+      }
       return true;
     });
-  }, [horarios, estadoFiltro]);
+  }, [horarios, estadoFiltro, grupoFiltro]);
 
   const getTotalHoras = (dia: string) => {
     return horariosFiltrados
@@ -734,7 +738,11 @@ export default function HorariosPage() {
                   key={v}
                   onClick={() => {
                     setVistaTipo(v as any);
-                    if (v === 'General') limpiarFiltros();
+                    if (v === 'General') {
+                      limpiarFiltros();
+                      setEstadoFiltro('Todos');
+                      setGrupoFiltro('Todos');
+                    }
                   }}
                   className={cn(
                     "px-3 py-1.5 text-sm font-medium rounded-md transition-all",
@@ -798,7 +806,11 @@ export default function HorariosPage() {
             </div>
             
             <button 
-              onClick={limpiarFiltros} 
+              onClick={() => {
+                limpiarFiltros();
+                setEstadoFiltro('Todos');
+                setGrupoFiltro('Todos');
+              }} 
               className="text-sm font-medium text-[#1a365d] hover:underline whitespace-nowrap"
             >
               Limpiar filtros
@@ -806,7 +818,7 @@ export default function HorariosPage() {
           </div>
         </div>
 
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Día:</span>
             {DIAS.map(d => (
@@ -825,22 +837,42 @@ export default function HorariosPage() {
             ))}
           </div>
           
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Estado:</span>
-            {['Todos', 'CONFIRMADO', 'PUBLICADO', 'BORRADOR'].map(est => (
-              <button
-                key={est}
-                onClick={() => setEstadoFiltro(est)}
-                className={cn(
-                  "px-3 py-1 text-xs font-semibold rounded-full transition-colors border",
-                  estadoFiltro === est
-                    ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700"
-                    : "bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
-                )}
-              >
-                {est}
-              </button>
-            ))}
+          <div className="flex flex-wrap gap-6 items-center">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Estado:</span>
+              {['Todos', 'CONFIRMADO', 'PUBLICADO', 'BORRADOR'].map(est => (
+                <button
+                  key={est}
+                  onClick={() => setEstadoFiltro(est)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded-full transition-colors border",
+                    estadoFiltro === est
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700"
+                      : "bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
+                  )}
+                >
+                  {est}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-slate-500 dark:text-slate-400 mr-2">Grupo:</span>
+              {['Todos', 'A', 'B', 'C'].map(grp => (
+                <button
+                  key={grp}
+                  onClick={() => setGrupoFiltro(grp)}
+                  className={cn(
+                    "px-3 py-1 text-xs font-semibold rounded-full transition-colors border",
+                    grupoFiltro === grp
+                      ? "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-700"
+                      : "bg-white dark:bg-slate-700 text-slate-500 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600"
+                  )}
+                >
+                  {grp === 'Todos' ? 'Todos' : `Grupo ${grp}`}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
