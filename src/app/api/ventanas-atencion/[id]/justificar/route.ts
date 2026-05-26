@@ -68,12 +68,12 @@ export async function POST(
     // Calcular hora estimada de inicio del turno
     const gestorVentanas = new GestorVentanasAtencion();
     const horaInicioEstimada = await gestorVentanas.calcularHoraEstimadaTurno(params.id, atencion.posicion);
-    const limiteTiempo = 4 * 60 * 60 * 1000; // 4 horas en milisegundos
+    const limiteTiempo = 2 * 60 * 60 * 1000; // 2 horas en milisegundos
 
     if (horaInicioEstimada.getTime() - Date.now() < limiteTiempo) {
       return createErrorResponse(
         'VALIDATION_ERROR',
-        `No es posible justificar la ausencia. El plazo permitido ha vencido (debe realizarse al menos 4 horas antes del inicio estimado de su turno, el cual es a las ${horaInicioEstimada.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}).`,
+        `No es posible justificar la ausencia. El plazo permitido ha vencido (debe realizarse al menos 2 horas antes del inicio estimado de su turno, el cual es a las ${horaInicioEstimada.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}).`,
         400
       );
     }

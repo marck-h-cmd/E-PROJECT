@@ -899,6 +899,17 @@ export default function DocenteDashboardPage() {
             <ModalDescription className="text-slate-500 dark:text-slate-400 text-sm mt-1">Si no puedes asistir a seleccionar tu horario, registra tu justificación.</ModalDescription>
           </ModalHeader>
           <div className="space-y-4 py-4">
+            <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-200">
+                  Importante: Límite de 2 horas
+                </p>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Debes justificar tu ausencia al menos 2 horas antes del inicio estimado de tu turno.
+                </p>
+              </div>
+            </div>
             <div className="space-y-2">
               <label className="text-slate-600 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">Tipo de ausencia</label>
               <select 
