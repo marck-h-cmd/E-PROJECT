@@ -17,6 +17,25 @@ const nextConfig = {
     }
     return config;
   },
+  async redirects() {
+    return [
+      { source: '/docentes', destination: '/dashboard/docentes', permanent: false },
+      { source: '/cursos', destination: '/dashboard/cursos', permanent: false },
+      { source: '/aulas', destination: '/dashboard/ambientes', permanent: false },
+      {
+        source: '/laboratorios',
+        destination: '/dashboard/ambientes?tipo=LABORATORIO',
+        permanent: false,
+      },
+      { source: '/horarios', destination: '/dashboard/horarios', permanent: false },
+      { source: '/reportes', destination: '/dashboard/reportes', permanent: false },
+      {
+        source: '/notificaciones',
+        destination: '/dashboard/notificaciones',
+        permanent: false,
+      },
+    ];
+  },
   async headers() {
     return [
       {

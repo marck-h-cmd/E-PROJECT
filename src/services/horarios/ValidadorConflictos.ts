@@ -283,10 +283,20 @@ export class ValidadorConflictos {
       const tipoConflicto: TipoConflicto = 
         tipoAmbiente === 'LABORATORIO' ? 'CRUCE_LABORATORIO' : 'CRUCE_AULA';
 
+      let caso = '';
+      if (horaInicio === hc.horaInicio && horaFin === hc.horaFin) {
+        caso = '(Duplicado exacto) ';
+      } else if ((horaInicio <= hc.horaInicio && horaFin >= hc.horaFin) || (hc.horaInicio <= horaInicio && hc.horaFin >= horaFin)) {
+        caso = '(Contención) ';
+      } else {
+        caso = '(Solapamiento) ';
+      }
+
+      const descAmbiente = `${this.traducirTipoAmbiente(tipoAmbiente)} ${hc.ambiente.codigo} - ${hc.ambiente.nombre}`;
       return {
         tipo: tipoConflicto,
         severidad: 'ERROR' as SeveridadConflicto,
-        mensaje: `El ${this.traducirTipoAmbiente(tipoAmbiente)} "${hc.ambiente.codigo} - ${hc.ambiente.nombre}" ya está ocupado el día ${this.traducirDia(diaSemana)} de ${hc.horaInicio} a ${hc.horaFin} por el curso "${hc.curso.nombre}" con el docente ${hc.docente.usuario.nombre} ${hc.docente.usuario.apellidos}.`,
+        mensaje: `${caso}El ${descAmbiente} ya está ocupado por ${hc.curso.codigo} de ${hc.horaInicio} a ${hc.horaFin}`,
         horarioActual,
         horarioConflicto: {
           id: hc.id,

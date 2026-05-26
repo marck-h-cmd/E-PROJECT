@@ -3,6 +3,7 @@ import { ReporteAulaService } from '@/services/reportes/ReporteAulaService';
 import { ReporteDocenteService } from '@/services/reportes/ReporteDocenteService';
 import { ReporteGestionService } from '@/services/reportes/ReporteGestionService';
 import { ReporteConflictosService } from '@/services/reportes/ReporteConflictosService';
+import { ReporteLaboratorioService } from '@/services/reportes/ReporteLaboratorioService';
 import { createErrorResponse } from '@/lib/respuestas';
 import { z } from 'zod';
 
@@ -10,9 +11,10 @@ const reporteAulaService = new ReporteAulaService();
 const reporteDocenteService = new ReporteDocenteService();
 const reporteGestionService = new ReporteGestionService();
 const reporteConflictosService = new ReporteConflictosService();
+const reporteLaboratorioService = new ReporteLaboratorioService();
 
 const generarSchema = z.object({
-  tipo: z.enum(['aula', 'docente', 'gestion', 'conflictos']),
+  tipo: z.enum(['aula', 'docente', 'gestion', 'conflictos', 'laboratorio']),
   periodoId: z.string().uuid(),
   ambienteId: z.string().uuid().optional(),
   docenteId: z.string().uuid().optional(),
@@ -57,6 +59,11 @@ export async function POST(request: NextRequest) {
       case 'conflictos':
         pdfBuffer = await reporteConflictosService.generar(periodoId);
         nombreArchivo = `reporte-conflictos-${periodoId}.pdf`;
+        break;
+
+      case 'laboratorio':
+        pdfBuffer = await reporteLaboratorioService.generar(periodoId);
+        nombreArchivo = `reporte-laboratorios-${periodoId}.pdf`;
         break;
 
       default:

@@ -134,8 +134,8 @@ export default function CargaAcademicaPage() {
       header: 'Curso',
       cell: (r) => (
         <div>
-          <div className="font-mono text-sm">{r.curso.codigo}</div>
-          <div className="text-sm text-gray-700">{r.curso.nombre}</div>
+          <div className="font-mono text-sm dark:text-slate-200">{r.curso.codigo}</div>
+          <div className="text-sm text-gray-700 dark:text-slate-300">{r.curso.nombre}</div>
         </div>
       ),
     },
@@ -210,7 +210,7 @@ export default function CargaAcademicaPage() {
             <div>
               <Label>Curso</Label>
               <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
                 value={selCurso}
                 onChange={(e) => setSelCurso(e.target.value)}
               >
@@ -224,7 +224,7 @@ export default function CargaAcademicaPage() {
             <div>
               <Label>Docente</Label>
               <select
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
                 value={selDocente}
                 onChange={(e) => setSelDocente(e.target.value)}
               >

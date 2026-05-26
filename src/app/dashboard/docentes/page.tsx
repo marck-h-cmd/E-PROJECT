@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -35,6 +36,7 @@ interface DocenteRow {
   categoria: string;
   departamento: string | null;
   usuario: UsuarioDocente;
+  fechaIngreso?: string | null;
 }
 
 const CATEGORIAS = Object.values(CategoriaDocente);
@@ -45,7 +47,14 @@ export default function DocentesPage() {
 
   const [qInput, setQInput] = useState('');
   const [search, setSearch] = useState('');
-  const listParams = useMemo(() => ({ search: search || undefined }), [search]);
+  const [categoriaFiltro, setCategoriaFiltro] = useState<'' | CategoriaDocente>('');
+  const listParams = useMemo(
+    () => ({
+      search: search || undefined,
+      categoria: categoriaFiltro || undefined,
+    }),
+    [search, categoriaFiltro]
+  );
   const { data, meta, loading, error, page, setPage, refresh } = usePaginatedQuery<DocenteRow>(
     '/api/docentes',
     listParams
@@ -64,6 +73,7 @@ export default function DocentesPage() {
     telefono: string;
     whatsapp: string;
     activo: boolean;
+    fechaIngreso: string;
   }>({
     email: '',
     nombre: '',
@@ -74,6 +84,7 @@ export default function DocentesPage() {
     telefono: '',
     whatsapp: '',
     activo: true,
+    fechaIngreso: '',
   });
 
   const resetForm = () => {
@@ -87,6 +98,7 @@ export default function DocentesPage() {
       telefono: '',
       whatsapp: '',
       activo: true,
+      fechaIngreso: '',
     });
     setEditing(null);
   };
@@ -115,6 +127,9 @@ export default function DocentesPage() {
         telefono: d.telefono ?? '',
         whatsapp: d.whatsapp ?? '',
         activo: d.usuario?.activo ?? row.usuario.activo,
+        fechaIngreso: d.fechaIngreso 
+          ? new Date(d.fechaIngreso).toISOString().split('T')[0] 
+          : '',
       });
       setDialogOpen(true);
     } catch (e) {
@@ -136,6 +151,7 @@ export default function DocentesPage() {
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
           activo: form.activo,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente actualizado');
       } else {
@@ -148,6 +164,7 @@ export default function DocentesPage() {
           departamento: form.departamento || undefined,
           telefono: form.telefono || undefined,
           whatsapp: form.whatsapp || undefined,
+          fechaIngreso: form.fechaIngreso || undefined,
         });
         toast.success('Docente creado');
       }
@@ -180,7 +197,7 @@ export default function DocentesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, setPage]);
+  }, [search, categoriaFiltro, setPage]);
 
   const columns: Column<DocenteRow>[] = [
     { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
@@ -189,10 +206,10 @@ export default function DocentesPage() {
       header: 'Usuario',
       cell: (r) => (
         <div>
-          <div className="font-medium text-gray-900">
+          <div className="font-medium text-gray-900 dark:text-slate-100">
             {Formateadores.nombreUsuario({ nombre: r.usuario.nombre, apellidos: r.usuario.apellidos })}
           </div>
-          <div className="text-xs text-gray-500">{r.usuario.email}</div>
+          <div className="text-xs text-gray-500 dark:text-slate-400">{r.usuario.email}</div>
         </div>
       ),
     },
@@ -202,6 +219,18 @@ export default function DocentesPage() {
       cell: (r) => Formateadores.categoriaDocente(r.categoria),
     },
     { key: 'depto', header: 'Departamento', cell: (r) => r.departamento || '—' },
+    {
+      key: 'antiguedad',
+      header: 'Antigüedad',
+      cell: (r) => {
+        if (!r.fechaIngreso) return '—';
+        const años = Math.floor(
+          (new Date().getTime() - new Date(r.fechaIngreso).getTime())
+          / (1000 * 60 * 60 * 24 * 365.25)
+        );
+        return `${años} año${años !== 1 ? 's' : ''}`;
+      }
+    },
     {
       key: 'activo',
       header: 'Activo',
@@ -243,26 +272,64 @@ export default function DocentesPage() {
         title="Docentes"
         description="Gestión del personal académico."
         actions={
-          <Button
-            onClick={openCreate}
-            className="bg-unt-blue hover:bg-unt-blue/90 text-white"
-          >
-            <Plus className="h-4 w-4" />
-            Nuevo docente
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={openCreate}
+              className="bg-unt-blue hover:bg-unt-blue/90 text-white"
+            >
+              <Plus className="h-4 w-4" />
+              Nuevo docente
+            </Button>
+          </div>
         }
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <SearchBar
-          value={qInput}
-          onChange={setQInput}
-          placeholder="Buscar por nombre, correo o código…"
-          onSubmit={() => setSearch(qInput.trim())}
-        />
-        <Button type="button" variant="outline" onClick={() => setSearch(qInput.trim())}>
-          Buscar
-        </Button>
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+          <SearchBar
+            value={qInput}
+            onChange={setQInput}
+            placeholder="Buscar por nombre, correo o código…"
+            onSubmit={() => setSearch(qInput.trim())}
+          />
+          <div className="flex items-center gap-2">
+            <Label htmlFor="filtro-categoria" className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Categoría
+            </Label>
+            <select
+              id="filtro-categoria"
+              value={categoriaFiltro}
+              onChange={(e) => setCategoriaFiltro(e.target.value as '' | CategoriaDocente)}
+              className="h-10 min-w-[180px] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
+            >
+              <option value="">Todas</option>
+              {CATEGORIAS.map((c) => (
+                <option key={c} value={c}>
+                  {Formateadores.categoriaDocente(c)}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => setSearch(qInput.trim())}>
+            Buscar
+          </Button>
+          {(search || categoriaFiltro) && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setQInput('');
+                setSearch('');
+                setCategoriaFiltro('');
+              }}
+              className="text-xs text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
+            >
+              Limpiar
+            </Button>
+          )}
+        </div>
       </div>
 
       {error && <ErrorAlert message={error} className="mb-4" onRetry={refresh} />}
@@ -275,7 +342,11 @@ export default function DocentesPage() {
         emptyTitle="No hay docentes"
         emptyDescription="Ajuste la búsqueda o registre un nuevo docente."
         emptyAction={
-          <Button type="button" onClick={openCreate} className="bg-unt-blue text-white hover:bg-primary-700">
+          <Button
+            type="button"
+            onClick={openCreate}
+            className="bg-unt-blue text-white hover:bg-primary-700"
+          >
             <Plus className="h-4 w-4" />
             Registrar docente
           </Button>
@@ -340,7 +411,7 @@ export default function DocentesPage() {
                 <Label htmlFor="categoria">Categoría</Label>
                 <select
                   id="categoria"
-                  className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                  className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
                   value={form.categoria}
                   onChange={(e) =>
                     setForm((f) => ({ ...f, categoria: e.target.value as CategoriaDocente }))
@@ -361,6 +432,18 @@ export default function DocentesPage() {
                 value={form.departamento}
                 onChange={(e) => setForm((f) => ({ ...f, departamento: e.target.value }))}
               />
+            </div>
+            <div>
+              <Label htmlFor="fechaIngreso">Fecha de ingreso</Label>
+              <Input
+                id="fechaIngreso"
+                type="date"
+                value={form.fechaIngreso}
+                onChange={(e) => setForm((f) => ({ ...f, fechaIngreso: e.target.value }))}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Determina el orden de antigüedad en ventanas de atención
+              </p>
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>

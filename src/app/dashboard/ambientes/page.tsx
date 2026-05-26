@@ -34,7 +34,6 @@ interface AmbienteRow {
   nombre: string;
   tipo: string;
   capacidad: number;
-  ubicacion?: string | null;
   activo?: boolean;
 }
 
@@ -64,14 +63,12 @@ export default function AmbientesPage() {
     nombre: string;
     tipo: TipoAmbiente;
     capacidad: number;
-    ubicacion: string;
     activo: boolean;
   }>({
     codigo: '',
     nombre: '',
     tipo: TipoAmbiente.AULA,
     capacidad: 40,
-    ubicacion: '',
     activo: true,
   });
 
@@ -81,7 +78,6 @@ export default function AmbientesPage() {
       nombre: '',
       tipo: tab === 'LABORATORIO' ? TipoAmbiente.LABORATORIO : TipoAmbiente.AULA,
       capacidad: 40,
-      ubicacion: '',
       activo: true,
     });
     setEditing(null);
@@ -108,7 +104,6 @@ export default function AmbientesPage() {
         nombre: a.nombre,
         tipo: a.tipo as TipoAmbiente,
         capacidad: a.capacidad,
-        ubicacion: a.ubicacion ?? '',
         activo: a.activo !== false,
       });
       setDialogOpen(true);
@@ -128,7 +123,6 @@ export default function AmbientesPage() {
           nombre: form.nombre,
           tipo: form.tipo,
           capacidad: form.capacidad,
-          ubicacion: form.ubicacion || undefined,
           activo: form.activo,
         });
         toast.success('Ambiente actualizado');
@@ -138,7 +132,6 @@ export default function AmbientesPage() {
           nombre: form.nombre,
           tipo: form.tipo,
           capacidad: form.capacidad,
-          ubicacion: form.ubicacion || undefined,
         });
         toast.success('Ambiente creado');
       }
@@ -183,7 +176,6 @@ export default function AmbientesPage() {
       header: 'Capacidad',
       cell: (r) => Formateadores.capacidad(r.capacidad),
     },
-    { key: 'ubi', header: 'Ubicación', cell: (r) => r.ubicacion || '—' },
     {
       key: 'activo',
       header: 'Activo',
@@ -238,7 +230,7 @@ export default function AmbientesPage() {
               'rounded-md border px-4 py-2 text-sm font-medium transition-colors',
               tab === t
                 ? 'border-unt-blue bg-unt-blue text-white'
-                : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                : 'border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-600'
             )}
           >
             {t === 'AULA' ? 'Aulas' : 'Laboratorios'}
@@ -306,7 +298,7 @@ export default function AmbientesPage() {
               <Label htmlFor="tipo">Tipo</Label>
               <select
                 id="tipo"
-                className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm"
+                className="flex h-10 w-full rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 dark:text-slate-100 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
                 value={form.tipo}
                 onChange={(e) => setForm((f) => ({ ...f, tipo: e.target.value as TipoAmbiente }))}
               >
@@ -316,14 +308,6 @@ export default function AmbientesPage() {
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <Label htmlFor="ubi">Ubicación</Label>
-              <Input
-                id="ubi"
-                value={form.ubicacion}
-                onChange={(e) => setForm((f) => ({ ...f, ubicacion: e.target.value }))}
-              />
             </div>
             {editing && (
               <div className="flex items-center gap-2">

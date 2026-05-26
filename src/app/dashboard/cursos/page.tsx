@@ -174,7 +174,7 @@ export default function CursosPage() {
 
   const columns: Column<CursoRow>[] = [
     { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
-    { key: 'nombre', header: 'Nombre', cell: (r) => <span className="font-medium text-gray-900">{r.nombre}</span> },
+    { key: 'nombre', header: 'Nombre', cell: (r) => <span className="font-medium text-gray-900 dark:text-slate-100">{r.nombre}</span> },
     { key: 'ciclo', header: 'Ciclo', cell: (r) => Formateadores.ciclo(r.ciclo) },
     {
       key: 'creditos',
@@ -197,7 +197,7 @@ export default function CursosPage() {
       cell: (r) => (
         <Link
           href={`/dashboard/grupos?cursoId=${r.id}`}
-          className="inline-flex items-center gap-1 text-sm font-medium text-unt-blue hover:underline"
+          className="inline-flex items-center gap-1 text-sm font-medium text-unt-blue dark:text-unt-gold-light hover:underline"
         >
           <Users className="h-3.5 w-3.5" />
           Ver grupos

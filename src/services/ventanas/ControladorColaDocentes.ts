@@ -15,6 +15,7 @@ export interface DocenteEnCola {
   estado: EstadoAtencion;
   horaInicio: Date | null;
   horaFin: Date | null;
+  fechaIngreso?: string | null;
 }
 
 export class ControladorColaDocentes {
@@ -181,18 +182,37 @@ export class ControladorColaDocentes {
     atendidos: number;
     ausentes: number;
   }> {
+    const ORDEN_CATEGORIA: Record<string, number> = {
+      PRINCIPAL: 1,
+      ASOCIADO: 2,
+      AUXILIAR: 3,
+      CONTRATADO: 4,
+      INVITADO: 5,
+    };
+
     const atenciones = await prisma.atencionVentana.findMany({
       where: { ventanaId },
       include: {
         docente: {
           include: {
-            usuario: {
-              select: { nombre: true, apellidos: true, email: true },
-            },
+            usuario: true,
           },
         },
       },
-      orderBy: { posicion: 'asc' },
+    });
+
+    atenciones.sort((a: any, b: any) => {
+      const catA = ORDEN_CATEGORIA[a.docente.categoria] ?? 99;
+      const catB = ORDEN_CATEGORIA[b.docente.categoria] ?? 99;
+      if (catA !== catB) return catA - catB;
+
+      const fechaA = a.docente.fechaIngreso
+        ? new Date(a.docente.fechaIngreso).getTime()
+        : Infinity;
+      const fechaB = b.docente.fechaIngreso
+        ? new Date(b.docente.fechaIngreso).getTime()
+        : Infinity;
+      return fechaA - fechaB;
     });
 
     const enEspera: DocenteEnCola[] = [];
@@ -200,10 +220,11 @@ export class ControladorColaDocentes {
     let atendidos = 0;
     let ausentes = 0;
 
-    for (const atencion of atenciones) {
+    for (let i = 0; i < atenciones.length; i++) {
+      const atencion = atenciones[i];
       const docenteEnCola: DocenteEnCola = {
         atencionId: atencion.id,
-        posicion: atencion.posicion,
+        posicion: i + 1,
         docenteId: atencion.docenteId,
         codigo: atencion.docente.codigo,
         nombre: atencion.docente.usuario.nombre,
@@ -213,6 +234,7 @@ export class ControladorColaDocentes {
         estado: atencion.estado,
         horaInicio: atencion.horaInicio,
         horaFin: atencion.horaFin,
+        fechaIngreso: atencion.docente.fechaIngreso?.toISOString(),
       };
 
       switch (atencion.estado) {
@@ -239,5 +261,87 @@ export class ControladorColaDocentes {
       atendidos,
       ausentes,
     };
+  }
+
+  /**
+   * Reprograma el turno de un docente ausente o justificado colocándolo al final de la cola activa de espera
+   * @param ventanaId ID de la ventana de atención
+   * @param docenteId ID del docente a reprogramar
+   */
+  async reprogramarTurno(ventanaId: string, docenteId: string): Promise<void> {
+    const atencion = await prisma.atencionVentana.findFirst({
+      where: {
+        ventanaId,
+        docenteId,
+      },
+    });
+
+    if (!atencion) {
+      throw new AppError('Registro de atención no encontrado para el docente', 404, 'ATENCION_NOT_FOUND');
+    }
+
+    if (atencion.estado !== 'AUSENTE') {
+      throw new AppError('Solo se pueden reprogramar docentes con estado AUSENTE o JUSTIFICADO', 400, 'DOCENTE_NO_AUSENTE');
+    }
+
+    // Obtener la posición máxima actual entre docentes con estado ESPERANDO
+    const maxAtencion = await prisma.atencionVentana.findFirst({
+      where: {
+        ventanaId,
+        estado: 'ESPERANDO',
+      },
+      orderBy: {
+        posicion: 'desc',
+      },
+    });
+
+    const maxPosicion = maxAtencion?.posicion || 0;
+    const nuevaPosicion = maxPosicion + 1;
+
+    // Desplazar docentes desde la posición indicada para evitar colisión de posiciones
+    await prisma.atencionVentana.updateMany({
+      where: {
+        ventanaId,
+        posicion: { gte: nuevaPosicion },
+      },
+      data: {
+        posicion: { increment: 1 },
+      },
+    });
+
+    // Actualizar posición y cambiar estado a ESPERANDO
+    await prisma.atencionVentana.update({
+      where: { id: atencion.id },
+      data: {
+        posicion: nuevaPosicion,
+        estado: 'ESPERANDO',
+        horaInicio: null,
+        horaFin: null,
+      },
+    });
+
+    // Registrar log de auditoría
+    await prisma.registroAuditoria.create({
+      data: {
+        accion: 'REPROGRAMAR_TURNO',
+        entidad: 'AtencionVentana',
+        entidadId: atencion.id,
+        datos: {
+          docenteId,
+          ventanaId,
+          posicionAnterior: atencion.posicion,
+          posicionNueva: nuevaPosicion,
+          motivo: 'Docente reprogramado después de ausencia/justificación',
+        },
+      },
+    });
+
+    // Emitir evento WebSocket "cola:actualizada"
+    await redis.publish('ws:ventanas', JSON.stringify({
+      type: 'cola:actualizada',
+      channel: `ventana:${ventanaId}`,
+      data: { ventanaId, docenteId, posicionAnterior: atencion.posicion, posicionNueva: nuevaPosicion },
+      timestamp: new Date().toISOString(),
+    }));
   }
 }
