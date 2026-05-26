@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
     const periodoId = searchParams.get('periodoId') || undefined;
     const estado = searchParams.get('estado') as any || undefined;
 
+    // Sincronizar automáticamente ventanas por fecha/hora
+    await gestorVentanas.autoProcesarVentanas();
+
     const ventanas = await gestorVentanas.listarVentanas(periodoId, estado);
 
     return createSuccessResponse(ventanas);

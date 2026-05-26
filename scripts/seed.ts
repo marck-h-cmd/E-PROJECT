@@ -238,14 +238,19 @@ async function main() {
 
   const cursos: any[] = [];
   for (const cursoData of todosLosCursos) {
+    const gruposData = [
+      { nombre: 'A', capacidad: 40 },
+      { nombre: 'B', capacidad: 40 },
+    ];
+    if (cursoData.nombre === 'Ingeniería de Datos I') {
+      gruposData.push({ nombre: 'C', capacidad: 40 });
+    }
+
     const curso = await prisma.curso.create({
       data: {
         ...cursoData,
         grupos: {
-          create: [
-            { nombre: 'A', capacidad: 40 },
-            { nombre: 'B', capacidad: 40 },
-          ]
+          create: gruposData
         }
       },
       include: {
@@ -532,28 +537,28 @@ async function main() {
 
   // 2. Juan Carlos Obando — Sistemas de Información
   await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MARTES,    '10:00', '12:00', 'A-303', 0);
-  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'Lab-1', 0);  // 4h
+  await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.MIERCOLES, '14:00', '18:00', 'Lab-1', 0);  // 4h
   await crearHorario('Sistemas de Información', 'Juan Carlos Obando Roldán', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-1', 1);  // 4h
 
   // 3. Everson Agreda — Transformación Digital
   await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.LUNES,     '09:00', '11:00', 'A-307', 0);
-  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.MIÉRCOLES, '09:00', '11:00', 'A-307', 1);
+  await crearHorario('Transformación Digital', 'Everson David Agreda Gamboa', DiaSemana.MIERCOLES, '09:00', '11:00', 'A-307', 1);
 
   // 4. Robert Sánchez — Tecnología Web
   await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MARTES,    '16:00', '18:00', 'A-303', 0);
-  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MIÉRCOLES, '08:00', '10:00', 'Lab-2', 1);
+  await crearHorario('Tecnología Web', 'Robert Jerry Sánchez Ticona', DiaSemana.MIERCOLES, '08:00', '10:00', 'Lab-2', 1);
 
   // 5. César Arellano — Arquitectura de Computadoras
-  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.MIÉRCOLES, '10:00', '12:00', 'A-307', 0);
+  await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.MIERCOLES, '10:00', '12:00', 'A-307', 0);
   await crearHorario('Arquitectura de Computadoras', 'César Arellano Salazar', DiaSemana.JUEVES,    '10:00', '12:00', 'Lab-2', 1);
 
   // 6. Camilo Suárez — Teleinformática
-  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'Lab-2', 0);  // 4h
+  await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.MIERCOLES, '14:00', '18:00', 'Lab-2', 0);  // 4h
   await crearHorario('Teleinformática', 'Camilo Suárez Rebaza', DiaSemana.JUEVES,    '14:00', '18:00', 'Lab-2', 1);  // 4h
 
   // 7. Marcos Baca — Investigación de Operaciones
   await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.LUNES,     '14:00', '18:00', 'A-307', 0);  // 4h
-  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.MIÉRCOLES, '14:00', '18:00', 'A-307', 0);  // 4h
+  await crearHorario('Investigación de Operaciones', 'Marcos Baca López', DiaSemana.MIERCOLES, '14:00', '18:00', 'A-307', 0);  // 4h
 
   // 8. Ana Cuadra — Contabilidad Gerencial
   await crearHorario('Contabilidad Gerencial', 'Ana Cuadra Mitzuquray', DiaSemana.JUEVES,  '16:00', '18:00', 'A-307', 0);
@@ -564,8 +569,8 @@ async function main() {
   // ════════════════════════════════════════════════════════
 
   // 1. Juan Santos — Ingeniería de Software I (Grupo A)
-  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.LUNES,     '07:00', '09:00', 'A-303', 0);
-  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.MIÉRCOLES, '15:00', '17:00', 'Lab-1', 0);
+  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.LUNES,     '07:00', '09:00', 'A-301', 0);
+  await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.MIERCOLES, '15:00', '17:00', 'Lab-1', 0);
   await crearHorario('Ingeniería de Software I', 'Juan Pedro Santos Fernández', DiaSemana.VIERNES,   '15:00', '17:00', 'Lab-2', 0);
 
   // 1b. Robert Sánchez — Ingeniería de Software I (Grupo B)
@@ -574,12 +579,12 @@ async function main() {
 
   // 2. César Arellano — Redes y Comunicaciones I
   await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.LUNES,     '09:00', '11:00', 'Lab-4', 0);
-  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.MIÉRCOLES, '09:00', '11:00', 'Lab-3', 0);
+  await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.MIERCOLES, '09:00', '11:00', 'Lab-3', 0);
   await crearHorario('Redes y Comunicaciones I', 'César Arellano Salazar', DiaSemana.VIERNES,   '09:00', '11:00', 'Lab-4', 0);
 
   // 3. Paul Cotrina — Negocios Electrónicos (Grupo A)
   await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MARTES,     '09:00', '11:00', 'Lab-2', 0);
-  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MIÉRCOLES,  '09:00', '11:00', 'Lab-2', 0);
+  await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.MIERCOLES,  '09:00', '11:00', 'Lab-2', 0);
   await crearHorario('Negocios Electrónicos', 'Paul Cotrina Castellanos', DiaSemana.JUEVES,     '09:00', '11:00', 'A-311', 0);
 
   // 3b. Everson Agreda — Negocios Electrónicos (Grupo B)
@@ -587,7 +592,7 @@ async function main() {
 
   // 4. Alberto Mendoza — Gestión de Servicios de TI
   await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '07:00', '09:00', 'A-311', 0);
-  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'Lab-1', 0);
+  await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.MIERCOLES, '07:00', '09:00', 'Lab-1', 0);
   await crearHorario('Gestión de Servicios de TI', 'Alberto Mendoza de los Santos', DiaSemana.JUEVES,    '11:00', '13:00', 'A-303', 0);
 
   // 5. Paul Cotrina — Metodología de la Investigación Científica
@@ -599,23 +604,23 @@ async function main() {
 
   // 7. Óscar Alcántara — Planeamiento Estratégico de TI
   await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MARTES,    '16:00', '18:00', 'A-301', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '08:00', '10:00', 'A-301', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '15:00', '17:00', 'Lab-4', 0);
-  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '17:00', '19:00', 'AUD', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '08:00', '10:00', 'A-301', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '15:00', '17:00', 'Lab-4', 0);
+  await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '17:00', '19:00', 'AUD', 0);
   await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.JUEVES,    '08:00', '10:00', 'Lab-3', 0);
   await crearHorario('Planeamiento Estratégico de TI', 'Óscar Romel Alcántara Moreno', DiaSemana.VIERNES,   '19:00', '21:00', 'Lab-4', 0);
 
   // 8. Jhon Gonzalez — Cadena de Suministros
-  await crearHorario('Cadena de Suministros', 'Jhon Gonzalez Vasquez', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'Lab-Taller', 0);
+  await crearHorario('Cadena de Suministros', 'Jhon Gonzalez Vasquez', DiaSemana.MIERCOLES, '07:00', '09:00', 'Lab-Taller', 0);
 
   // ════════════════════════════════════════════════════════
   // CICLO IX — leído del PDF página 5 (bloques de 2h)
   // ════════════════════════════════════════════════════════
 
   // 1. Ricardo Mendoza — Tesis I (Grupo A)
-  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '07:00', '09:00', 'A-303', 0);
+  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '07:00', '09:00', 'A-307', 0);
   await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-4', 0);
-  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MIÉRCOLES, '07:00', '09:00', 'A-303', 0);
+  await crearHorario('Tesis I', 'Ricardo Mendoza Rivera', DiaSemana.MIERCOLES, '07:00', '09:00', 'A-307', 0);
 
   // 1b. Juan Santos — Tesis I (Grupo B)
   await crearHorario('Tesis I', 'Juan Pedro Santos Fernández', DiaSemana.JUEVES, '19:00', '21:00', 'Lab-2', 1);
@@ -623,24 +628,24 @@ async function main() {
   // 2. Alberto Mendoza — Ingeniería Web
   await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.LUNES,     '10:00', '12:00', 'Lab-1', 0);
   await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MARTES,    '10:00', '12:00', 'Lab-1', 0);
-  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MIÉRCOLES, '16:00', '18:00', 'Lab-2', 0);
+  await crearHorario('Ingeniería Web', 'Alberto Mendoza de los Santos', DiaSemana.MIERCOLES, '16:00', '18:00', 'Lab-2', 0);
 
   // 3. Óscar Alcántara — Computación en la Nube
   await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.LUNES,     '16:00', '18:00', 'Lab-2', 0);
-  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MARTES,    '16:00', '18:00', 'Lab-4', 0);
-  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MIÉRCOLES, '14:00', '16:00', 'Lab-3', 0);
+  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.JUEVES,    '16:00', '18:00', 'Lab-4', 0);
+  await crearHorario('Computación en la Nube', 'Óscar Romel Alcántara Moreno', DiaSemana.MIERCOLES, '11:00', '13:00', 'Lab-3', 0);
 
   // 4. Ricardo Mendoza — Analítica de Negocios
   await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.LUNES,     '14:00', '16:00', 'Lab-3', 0);
   await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MARTES,    '14:00', '16:00', 'Lab-4', 0);
-  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MIÉRCOLES, '10:00', '12:00', 'Lab-2', 0);
+  await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.MIERCOLES, '10:00', '12:00', 'Lab-2', 0);
   await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.JUEVES,    '14:00', '16:00', 'Lab-4', 0);
   await crearHorario('Analítica de Negocios', 'Ricardo Mendoza Rivera', DiaSemana.VIERNES,   '10:00', '12:00', 'Lab-2', 0);
 
   // 5. Camilo Suárez — Hackeo Ético
   await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.LUNES,     '19:00', '21:00', 'Lab-4', 0);
   await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MARTES,    '19:00', '21:00', 'Lab-3', 0);
-  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MIÉRCOLES, '19:00', '21:00', 'Lab-2', 0);
+  await crearHorario('Hackeo Ético', 'Camilo Suárez Rebaza', DiaSemana.MIERCOLES, '19:00', '21:00', 'Lab-2', 0);
 
   // 6. José Gómez — Emprendimiento Tecnológico
   await crearHorario('Emprendimiento Tecnológico', 'José Gómez Ávila', DiaSemana.VIERNES, '14:00', '16:00', 'A-303', 0);

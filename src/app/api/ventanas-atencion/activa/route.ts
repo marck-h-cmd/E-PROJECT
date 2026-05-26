@@ -2,11 +2,17 @@ import { createSuccessResponse, createErrorResponse } from '@/lib/respuestas';
 import { prisma } from '@/lib/prisma';
 import { NextRequest } from 'next/server';
 import { TemporizadorService } from '@/services/ventanas/TemporizadorService';
+import { GestorVentanasAtencion } from '@/services/ventanas/GestorVentanasAtencion';
+
+const gestorVentanas = new GestorVentanasAtencion();
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const docenteId = searchParams.get('docenteId');
+
+    // Sincronizar automáticamente ventanas por fecha/hora
+    await gestorVentanas.autoProcesarVentanas();
 
     const ventana = await prisma.ventanaAtencion.findFirst({
       where: {

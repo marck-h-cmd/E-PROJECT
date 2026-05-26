@@ -100,14 +100,16 @@ export default function VentanasAtencionPage() {
     return tomorrow.toISOString().split('T')[0];
   });
 
-  const load = async () => {
+  const load = async (silent = false) => {
     if (!periodoId) {
       setData([]);
       setReporte([]);
       return;
     }
-    setLoading(true);
-    setLoadingReporte(true);
+    if (!silent) {
+      setLoading(true);
+      setLoadingReporte(true);
+    }
     setError(null);
     try {
       const res = await apiGet<VentanaRow[]>('/api/ventanas-atencion', { periodoId });
@@ -122,13 +124,21 @@ export default function VentanasAtencionPage() {
       setError(e instanceof ApiClientError ? e.message : 'Error al cargar ventanas');
       setData([]);
     } finally {
-      setLoading(false);
-      setLoadingReporte(false);
+      if (!silent) {
+        setLoading(false);
+        setLoadingReporte(false);
+      }
     }
   };
 
   useEffect(() => {
     load();
+
+    const interval = setInterval(() => {
+      load(true);
+    }, 15000); // Polling cada 15 segundos
+
+    return () => clearInterval(interval);
   }, [periodoId]);
 
   // Agrupar ventanas por día en Configuración
@@ -539,13 +549,40 @@ export default function VentanasAtencionPage() {
                                   </Button>
                                 )}
                                 {(w.estado === 'ABIERTA' || w.estado === 'EN_CURSO') && (
-                                  <Button
-                                    size="sm"
-                                    onClick={() => setSelectedVentanaId(w.id)}
-                                    className="bg-unt-blue hover:bg-unt-blue/90 text-white font-semibold text-xs py-1 px-3"
-                                  >
-                                    Atender
-                                  </Button>
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => setSelectedVentanaId(w.id)}
+                                      className="bg-unt-blue hover:bg-unt-blue/90 text-white font-semibold text-xs py-1 px-3"
+                                    >
+                                      Atender
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={async () => {
+                                        if (!confirm('¿Está seguro de finalizar esta ventana de atención?')) return;
+                                        try {
+                                          const res = await fetch(`/api/ventanas-atencion/${w.id}/estado`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ accion: 'cerrar' }),
+                                          });
+                                          if (res.ok) {
+                                            toast.success('Ventana de atención finalizada');
+                                            load();
+                                          } else {
+                                            const err = await res.json();
+                                            throw new Error(err.message || 'Error al finalizar');
+                                          }
+                                        } catch (err: any) {
+                                          toast.error(err.message);
+                                        }
+                                      }}
+                                      className="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-1 px-3"
+                                    >
+                                      Finalizar
+                                    </Button>
+                                  </>
                                 )}
                                 {w.estado === 'PROGRAMADA' && (
                                   <button

@@ -46,6 +46,44 @@ export class GestorVentanasAtencion {
     return ventanas;
   }
 
+  async autoProcesarVentanas() {
+    const ahora = new Date();
+
+    // 1. Abrir ventanas PROGRAMADAS cuya fechaInicio ya pasó
+    const programadas = await prisma.ventanaAtencion.findMany({
+      where: {
+        estado: 'PROGRAMADA',
+        fechaInicio: { lte: ahora },
+      },
+    });
+
+    for (const v of programadas) {
+      try {
+        console.log(`[Auto-Open] Abriendo ventana ${v.nombre} (${v.id})...`);
+        await this.abrirVentana(v.id);
+      } catch (err) {
+        console.error(`Error abriendo ventana automáticamente (${v.id}):`, err);
+      }
+    }
+
+    // 2. Cerrar ventanas ABIERTAS o EN_CURSO cuya fechaFin ya pasó
+    const activas = await prisma.ventanaAtencion.findMany({
+      where: {
+        estado: { in: ['ABIERTA', 'EN_CURSO'] },
+        fechaFin: { lte: ahora },
+      },
+    });
+
+    for (const v of activas) {
+      try {
+        console.log(`[Auto-Close] Cerrando ventana ${v.nombre} (${v.id})...`);
+        await this.cerrarVentana(v.id);
+      } catch (err) {
+        console.error(`Error cerrando ventana automáticamente (${v.id}):`, err);
+      }
+    }
+  }
+
   async obtenerVentana(id: string) {
     const ventana = await prisma.ventanaAtencion.findUnique({
       where: { id },
