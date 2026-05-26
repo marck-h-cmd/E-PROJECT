@@ -20,6 +20,12 @@ export interface OpcionesCatalogoPDF {
   registroId?: string;
   fechaDesde?: Date;
   fechaHasta?: Date;
+  // filtros específicos por entidad
+  categoria?: string;     // docentes
+  departamento?: string;  // docentes
+  ciclo?: number;         // cursos
+  cursoId?: string;       // grupos, carga-academica
+  docenteId?: string;     // carga-academica
 }
 
 const TITULOS: Record<EntidadCatalogo, string> = {
@@ -35,7 +41,7 @@ export class ReporteCatalogoService {
   private generadorPDF = new GeneradorPDF();
 
   async generar(entidad: EntidadCatalogo, opciones?: OpcionesCatalogoPDF): Promise<Buffer> {
-    const { periodoId, registroId, fechaDesde, fechaHasta } = opciones ?? {};
+    const { periodoId, registroId, fechaDesde, fechaHasta, categoria, departamento, ciclo, cursoId, docenteId } = opciones ?? {};
 
     const periodo = periodoId
       ? await prisma.periodoAcademico.findUnique({ where: { id: periodoId } })
@@ -46,13 +52,13 @@ export class ReporteCatalogoService {
 
     switch (entidad) {
       case 'docentes': {
-        const r = await this.contenidoDocentes(registroId, fechaDesde, fechaHasta);
+        const r = await this.contenidoDocentes(registroId, fechaDesde, fechaHasta, categoria, departamento);
         contenido = r.html;
         subtituloDetalle = r.subtitulo;
         break;
       }
       case 'cursos': {
-        const r = await this.contenidoCursos(registroId, fechaDesde, fechaHasta);
+        const r = await this.contenidoCursos(registroId, fechaDesde, fechaHasta, ciclo);
         contenido = r.html;
         subtituloDetalle = r.subtitulo;
         break;
@@ -70,13 +76,13 @@ export class ReporteCatalogoService {
         break;
       }
       case 'grupos': {
-        const r = await this.contenidoGrupos(registroId, fechaDesde, fechaHasta);
+        const r = await this.contenidoGrupos(registroId, fechaDesde, fechaHasta, cursoId, periodoId);
         contenido = r.html;
         subtituloDetalle = r.subtitulo;
         break;
       }
       case 'carga-academica': {
-        const r = await this.contenidoCargaAcademica(registroId, fechaDesde, fechaHasta);
+        const r = await this.contenidoCargaAcademica(registroId, fechaDesde, fechaHasta, docenteId, cursoId);
         contenido = r.html;
         subtituloDetalle = r.subtitulo;
         break;
@@ -122,11 +128,13 @@ export class ReporteCatalogoService {
     return filtro;
   }
 
-  private async contenidoDocentes(registroId?: string, fechaDesde?: Date, fechaHasta?: Date) {
+  private async contenidoDocentes(registroId?: string, fechaDesde?: Date, fechaHasta?: Date, categoria?: string, departamento?: string) {
     const createdAt = this.rangoFechas(fechaDesde, fechaHasta);
     const where: Record<string, unknown> = {};
     if (registroId) where.id = registroId;
     if (createdAt) where.createdAt = createdAt;
+    if (categoria) where.categoria = categoria;
+    if (departamento) where.departamento = { contains: departamento, mode: 'insensitive' };
     const docentes = await prisma.docente.findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
       include: {
@@ -138,9 +146,12 @@ export class ReporteCatalogoService {
     this.validarEncontrado(docentes, registroId, 'Docente');
 
     const activos = docentes.filter((d) => d.usuario.activo).length;
-    const subtitulo = registroId
-      ? `${docentes[0].codigo} — ${Formateadores.nombreUsuario(docentes[0].usuario)}`
-      : `Listado completo (${docentes.length} docentes)`;
+    const partes: string[] = [];
+    if (registroId) partes.push(`${docentes[0]?.codigo} — ${Formateadores.nombreUsuario(docentes[0]?.usuario)}`);
+    else partes.push(`Listado (${docentes.length} docentes)`);
+    if (categoria) partes.push(`Categoría: ${Formateadores.categoriaDocente(categoria)}`);
+    if (departamento) partes.push(`Depto: ${departamento}`);
+    const subtitulo = partes.join(' · ');
 
     const kpis = generarKpiGrid([
       { label: 'Registros', value: docentes.length },
@@ -170,11 +181,12 @@ export class ReporteCatalogoService {
     };
   }
 
-  private async contenidoCursos(registroId?: string, fechaDesde?: Date, fechaHasta?: Date) {
+  private async contenidoCursos(registroId?: string, fechaDesde?: Date, fechaHasta?: Date, ciclo?: number) {
     const createdAt = this.rangoFechas(fechaDesde, fechaHasta);
     const where: Record<string, unknown> = {};
     if (registroId) where.id = registroId;
     if (createdAt) where.createdAt = createdAt;
+    if (ciclo && ciclo > 0) where.ciclo = ciclo;
     const cursos = await prisma.curso.findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
       include: { _count: { select: { grupos: true, cursosDocente: true } } },
@@ -184,9 +196,11 @@ export class ReporteCatalogoService {
 
     const activos = cursos.filter((c) => c.activo).length;
     const totalCreditos = cursos.reduce((s, c) => s + c.creditos, 0);
-    const subtitulo = registroId
-      ? `${cursos[0].codigo} — ${cursos[0].nombre}`
-      : `Listado completo (${cursos.length} cursos)`;
+    const partes: string[] = [];
+    if (registroId) partes.push(`${cursos[0]?.codigo} — ${cursos[0]?.nombre}`);
+    else partes.push(`Listado (${cursos.length} cursos)`);
+    if (ciclo && ciclo > 0) partes.push(`Ciclo ${ciclo}`);
+    const subtitulo = partes.join(' · ');
 
     const kpis = generarKpiGrid([
       { label: 'Registros', value: cursos.length },
@@ -311,11 +325,13 @@ export class ReporteCatalogoService {
     };
   }
 
-  private async contenidoGrupos(registroId?: string, fechaDesde?: Date, fechaHasta?: Date) {
+  private async contenidoGrupos(registroId?: string, fechaDesde?: Date, fechaHasta?: Date, cursoId?: string, periodoId?: string) {
     const createdAt = this.rangoFechas(fechaDesde, fechaHasta);
     const where: Record<string, unknown> = {};
     if (registroId) where.id = registroId;
     if (createdAt) where.createdAt = createdAt;
+    if (cursoId) where.cursoId = cursoId;
+    if (periodoId) where.horarios = { some: { periodoId } };
     const grupos = await prisma.grupo.findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
       include: {
@@ -327,9 +343,11 @@ export class ReporteCatalogoService {
     this.validarEncontrado(grupos, registroId, 'Grupo');
 
     const activos = grupos.filter((g) => g.activo).length;
-    const subtitulo = registroId
-      ? `${grupos[0].curso.codigo} — Grupo ${grupos[0].nombre}`
-      : `Listado completo (${grupos.length} grupos)`;
+    const partes: string[] = [];
+    if (registroId) partes.push(`${grupos[0]?.curso.codigo} — Grupo ${grupos[0]?.nombre}`);
+    else partes.push(`Listado (${grupos.length} grupos)`);
+    if (cursoId && grupos.length > 0) partes.push(`Curso: ${grupos[0].curso.nombre}`);
+    const subtitulo = partes.join(' · ');
 
     const kpis = generarKpiGrid([
       { label: 'Registros', value: grupos.length },
@@ -363,11 +381,13 @@ export class ReporteCatalogoService {
     };
   }
 
-  private async contenidoCargaAcademica(registroId?: string, fechaDesde?: Date, fechaHasta?: Date) {
+  private async contenidoCargaAcademica(registroId?: string, fechaDesde?: Date, fechaHasta?: Date, docenteId?: string, cursoId?: string) {
     const createdAt = this.rangoFechas(fechaDesde, fechaHasta);
     const where: Record<string, unknown> = {};
     if (registroId) where.id = registroId;
     if (createdAt) where.createdAt = createdAt;
+    if (docenteId) where.docenteId = docenteId;
+    if (cursoId) where.cursoId = cursoId;
     const asignaciones = await prisma.cursoDocente.findMany({
       where: Object.keys(where).length > 0 ? where : undefined,
       include: {
@@ -385,9 +405,12 @@ export class ReporteCatalogoService {
 
     const activas = asignaciones.filter((a) => a.activo).length;
     const totalHoras = asignaciones.reduce((s, a) => s + a.horasAsignadas, 0);
-    const subtitulo = registroId
-      ? `${asignaciones[0].docente.codigo} → ${asignaciones[0].curso.codigo}`
-      : `Listado completo (${asignaciones.length} asignaciones)`;
+    const partes: string[] = [];
+    if (registroId) partes.push(`${asignaciones[0]?.docente.codigo} → ${asignaciones[0]?.curso.codigo}`);
+    else partes.push(`Listado (${asignaciones.length} asignaciones)`);
+    if (docenteId && asignaciones.length > 0) partes.push(`Docente: ${Formateadores.nombreUsuario(asignaciones[0].docente.usuario)}`);
+    if (cursoId && asignaciones.length > 0) partes.push(`Curso: ${asignaciones[0].curso.nombre}`);
+    const subtitulo = partes.join(' · ');
 
     const kpis = generarKpiGrid([
       { label: 'Registros', value: asignaciones.length },

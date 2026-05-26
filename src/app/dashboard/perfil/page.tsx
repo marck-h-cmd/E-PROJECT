@@ -191,35 +191,75 @@ export default function PerfilPage() {
         description="Gestiona tu información personal, datos de contacto y la seguridad de tu cuenta."
       />
 
-      {/* Cabecera de Perfil Resumen */}
+      {/* Cabecera de Perfil — Banner + Avatar */}
       <div className="card overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-unt-blue to-unt-blue/80 dark:from-slate-800 dark:to-slate-800/80" />
-        <div className="relative px-6 pb-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:gap-5 -mt-10">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-4 border-white bg-unt-gold text-2xl font-bold text-unt-blue shadow-md dark:border-slate-800">
-              {iniciales}
+        {/* Banner con gradiente y patrón decorativo */}
+        <div className="relative h-32 bg-gradient-to-r from-unt-blue via-unt-blue/90 to-slate-700 dark:from-slate-900 dark:via-slate-800 dark:to-slate-700">
+          {/* Círculos decorativos */}
+          <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/5" />
+          <div className="absolute -right-2 bottom-0 h-24 w-24 rounded-full bg-unt-gold/10" />
+          <div className="absolute left-1/3 -top-4 h-20 w-20 rounded-full bg-white/5" />
+          {/* Franja dorada inferior */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-unt-gold/60 via-unt-gold to-unt-gold/60" />
+        </div>
+
+        {/* Sección avatar + datos */}
+        <div className="relative px-6 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:gap-5 -mt-12">
+            {/* Avatar con anillo dorado */}
+            <div className="relative shrink-0">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-unt-gold text-3xl font-bold text-unt-blue shadow-lg dark:border-slate-800 dark:shadow-black/40">
+                {iniciales}
+              </div>
+              {/* Indicador de estado activo */}
+              <span className="absolute bottom-1 right-1 h-4 w-4 rounded-full border-2 border-white bg-emerald-500 dark:border-slate-800" title="Activo" />
             </div>
-            <div className="mt-4 min-w-0 flex-1 sm:mt-0">
-              <h2 className="text-xl font-bold tracking-tight">
+
+            {/* Nombre, email y rol */}
+            <div className="mt-4 min-w-0 flex-1 sm:mt-0 sm:pb-1">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                 {perfil?.nombre} {perfil?.apellidos}
               </h2>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <Mail className="h-3.5 w-3.5 shrink-0" />
                 <span>{perfil?.email}</span>
-                <span className="h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <span className="hidden sm:inline h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                 <span className="badge badge-accent">
                   {perfil ? Formateadores.rolUsuario(perfil.rol) : ''}
                 </span>
               </div>
             </div>
           </div>
+
+          {/* Chips informativos del docente (si aplica) */}
+          {perfil?.docente && (
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                <UserCheck className="h-3.5 w-3.5" />
+                Código: {perfil.docente.codigo}
+              </span>
+              {perfil.docente.categoria && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-unt-blue/10 px-3 py-1 text-xs font-medium text-unt-blue dark:bg-unt-gold/10 dark:text-unt-gold-light">
+                  {Formateadores.categoriaDocente(perfil.docente.categoria)}
+                </span>
+              )}
+              {perfil.docente.departamento && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                  {perfil.docente.departamento}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Panel Izquierdo: Información Personal */}
         <div className="card lg:col-span-2">
-          <div className="card-header flex items-center gap-2">
-            <User className="h-5 w-5 text-unt-gold" />
+          <div className="card-header flex items-center gap-2 bg-slate-50/60 dark:bg-slate-800/60">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-unt-blue/10 dark:bg-unt-gold/10">
+              <User className="h-4 w-4 text-unt-blue dark:text-unt-gold" />
+            </div>
             <h3 className="section-title">Información Personal</h3>
           </div>
           <form onSubmit={handleUpdateInfo} className="card-body space-y-4">
@@ -368,8 +408,10 @@ export default function PerfilPage() {
 
         {/* Panel Derecho: Seguridad y Cambio de Contraseña */}
         <div className="card">
-          <div className="card-header flex items-center gap-2">
-            <Key className="h-5 w-5 text-unt-gold" />
+          <div className="card-header flex items-center gap-2 bg-slate-50/60 dark:bg-slate-800/60">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-unt-blue/10 dark:bg-unt-gold/10">
+              <Key className="h-4 w-4 text-unt-blue dark:text-unt-gold" />
+            </div>
             <h3 className="section-title">Seguridad</h3>
           </div>
           <form onSubmit={handleChangePassword} className="card-body space-y-4">
