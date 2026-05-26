@@ -35,6 +35,13 @@ export async function GET(
     const registroId = searchParams.get('id') ?? undefined;
     const fechaDesdeStr = searchParams.get('fechaDesde');
     const fechaHastaStr = searchParams.get('fechaHasta');
+    // filtros adicionales por entidad
+    const categoria = searchParams.get('categoria') ?? undefined;
+    const departamento = searchParams.get('departamento') ?? undefined;
+    const cicloStr = searchParams.get('ciclo');
+    const ciclo = cicloStr ? parseInt(cicloStr, 10) : undefined;
+    const cursoId = searchParams.get('cursoId') ?? undefined;
+    const docenteId = searchParams.get('docenteId') ?? undefined;
 
     const parseFecha = (v: string | null): Date | undefined => {
       if (!v) return undefined;
@@ -58,6 +65,11 @@ export async function GET(
       registroId,
       fechaDesde,
       fechaHasta,
+      categoria,
+      departamento,
+      ciclo: ciclo && !isNaN(ciclo) && ciclo > 0 ? ciclo : undefined,
+      cursoId,
+      docenteId,
     });
 
     const sufijo = registroId ? `-${registroId}` : '-todos';
