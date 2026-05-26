@@ -634,6 +634,55 @@ export default function HorariosPage() {
     return Array.from(map.values());
   }, [horariosFiltrados]);
 
+  // Agrupar clases por carriles (lanes) para cada día
+  const lanesPorDia = useMemo(() => {
+    const res: Record<string, HorarioCell[][]> = {};
+    const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
+    
+    DIAS.forEach(dia => {
+      const dayClasses = horariosFiltrados.filter(h => h.diaSemana === dia);
+      const lanes: HorarioCell[][] = [];
+      const sortedClasses = [...dayClasses].sort((a, b) => parseTime(a.horaInicio) - parseTime(b.horaInicio));
+
+      sortedClasses.forEach(c => {
+        const start = parseTime(c.horaInicio);
+        const end = parseTime(c.horaFin);
+
+        let placed = false;
+        for (let i = 0; i < lanes.length; i++) {
+          const hasOverlap = lanes[i].some(existing => {
+            const estart = parseTime(existing.horaInicio);
+            const eend = parseTime(existing.horaFin);
+            return Math.max(start, estart) < Math.min(end, eend);
+          });
+          if (!hasOverlap) {
+            lanes[i].push(c);
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          lanes.push([c]);
+        }
+      });
+
+      if (lanes.length === 0) {
+        lanes.push([]);
+      }
+      res[dia] = lanes;
+    });
+    return res;
+  }, [horariosFiltrados]);
+
+  const totalLanes = useMemo(() => {
+    return DIAS.reduce((sum, d) => sum + (lanesPorDia[d]?.length || 1), 0);
+  }, [lanesPorDia]);
+
+  const minTableWidth = useMemo(() => {
+    return Math.max(1000, totalLanes * 100 + 160); // 100px por carril, más 80px por cada columna de hora lateral
+  }, [totalLanes]);
+
+
   if (authLoading || periodoLoading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
@@ -904,21 +953,29 @@ export default function HorariosPage() {
               <Loader2 className="h-8 w-8 animate-spin text-[#1a365d]" />
             </div>
           ) : (
-            <table className="w-full text-sm text-left border-collapse min-w-[1000px] table-fixed">
+            <table 
+              style={{ minWidth: `${minTableWidth}px` }}
+              className="w-full text-sm text-left border-collapse table-fixed"
+            >
               <thead className="bg-[#1a365d] text-white">
                 <tr>
                   <th className="py-3 px-4 text-center font-semibold w-24 border-b border-slate-700">HORA</th>
-                  {DIAS.map(d => (
-                    <th 
-                      key={d} 
-                      className={cn(
-                        "py-3 px-2 text-center font-bold tracking-wider border-b border-slate-700",
-                        diaResaltado === d && "bg-blue-800"
-                      )}
-                    >
-                      {DIA_LABEL[d]}
-                    </th>
-                  ))}
+                  {DIAS.map(d => {
+                    const lanesCount = lanesPorDia[d]?.length || 1;
+                    const percentWidth = (lanesCount / totalLanes) * 100;
+                    return (
+                      <th 
+                        key={d} 
+                        style={{ width: `${percentWidth}%` }}
+                        className={cn(
+                          "py-3 px-2 text-center font-bold tracking-wider border-b border-slate-700",
+                          diaResaltado === d && "bg-blue-800"
+                        )}
+                      >
+                        {DIA_LABEL[d]}
+                      </th>
+                    );
+                  })}
                   <th className="py-3 px-4 text-center font-semibold w-24 border-b border-slate-700">HORA</th>
                 </tr>
               </thead>
@@ -942,48 +999,16 @@ export default function HorariosPage() {
                     {DIAS.map(dia => {
                       if (rowIndex > 0) return null; // Solo renderizar el TD en la primera fila (rowSpan={14})
 
-                      // Encontrar todos los horarios para este día
                       const dayClasses = horariosFiltrados.filter(h => h.diaSemana === dia);
-
-                      // Agrupar en lanes (sub-columnas) que no se crucen entre sí
-                      const lanes: typeof dayClasses[] = [];
+                      const lanes = lanesPorDia[dia] || [[]];
                       const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
-                      
-                      const sortedClasses = [...dayClasses].sort((a, b) => parseTime(a.horaInicio) - parseTime(b.horaInicio));
-
-                      sortedClasses.forEach(c => {
-                        const start = parseTime(c.horaInicio);
-                        const end = parseTime(c.horaFin);
-
-                        let placed = false;
-                        for (let i = 0; i < lanes.length; i++) {
-                          const hasOverlap = lanes[i].some(existing => {
-                            const estart = parseTime(existing.horaInicio);
-                            const eend = parseTime(existing.horaFin);
-                            return Math.max(start, estart) < Math.min(end, eend);
-                          });
-                          if (!hasOverlap) {
-                            lanes[i].push(c);
-                            placed = true;
-                            break;
-                          }
-                        }
-                        if (!placed) {
-                          lanes.push([c]);
-                        }
-                      });
-
-                      // Si no hay clases, mostrar una lane vacía
-                      if (lanes.length === 0) {
-                        lanes.push([]);
-                      }
 
                       return (
                         <td 
                           key={dia} 
                           rowSpan={14}
                           className={cn(
-                            "p-0 border-r border-b border-slate-200 align-top transition-colors relative h-full min-h-[600px]",
+                            "p-0 border-r border-b border-slate-200 align-top transition-colors relative h-full min-h-[600px] overflow-hidden",
                             diaResaltado === dia && "bg-blue-50/30"
                           )}
                         >
@@ -1035,8 +1060,9 @@ export default function HorariosPage() {
                               return (
                                 <div 
                                   key={laneIdx} 
-                                  className="flex flex-col flex-1 h-full justify-between items-stretch"
+                                  className="flex flex-col flex-1 min-w-0 h-full justify-between items-stretch"
                                 >
+
                                   {laneItems.map((item, itemIdx) => {
                                     if (item.type === 'class') {
                                       const h = item.class!;
