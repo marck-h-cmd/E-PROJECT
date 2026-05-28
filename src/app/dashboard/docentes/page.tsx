@@ -48,12 +48,15 @@ export default function DocentesPage() {
   const [qInput, setQInput] = useState('');
   const [search, setSearch] = useState('');
   const [categoriaFiltro, setCategoriaFiltro] = useState<'' | CategoriaDocente>('');
+  const [ordenarAntiguedad, setOrdenarAntiguedad] = useState<'none' | 'asc' | 'desc'>('none');
   const listParams = useMemo(
     () => ({
       search: search || undefined,
       categoria: categoriaFiltro || undefined,
+      sortBy: ordenarAntiguedad !== 'none' ? 'fechaIngreso' : undefined,
+      sortOrder: ordenarAntiguedad !== 'none' ? ordenarAntiguedad : undefined,
     }),
-    [search, categoriaFiltro]
+    [search, categoriaFiltro, ordenarAntiguedad]
   );
   const { data, meta, loading, error, page, setPage, refresh } = usePaginatedQuery<DocenteRow>(
     '/api/docentes',
@@ -197,7 +200,7 @@ export default function DocentesPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, categoriaFiltro, setPage]);
+  }, [search, categoriaFiltro, ordenarAntiguedad, setPage]);
 
   const columns: Column<DocenteRow>[] = [
     { key: 'codigo', header: 'Código', cell: (r) => <span className="font-mono text-sm">{r.codigo}</span> },
@@ -285,7 +288,7 @@ export default function DocentesPage() {
       />
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center flex-wrap">
           <SearchBar
             value={qInput}
             onChange={setQInput}
@@ -300,7 +303,7 @@ export default function DocentesPage() {
               id="filtro-categoria"
               value={categoriaFiltro}
               onChange={(e) => setCategoriaFiltro(e.target.value as '' | CategoriaDocente)}
-              className="h-10 min-w-[180px] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
+              className="h-10 min-w-[150px] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
             >
               <option value="">Todas</option>
               {CATEGORIAS.map((c) => (
@@ -310,12 +313,27 @@ export default function DocentesPage() {
               ))}
             </select>
           </div>
+          <div className="flex items-center gap-2">
+            <Label htmlFor="ordenar-antiguedad" className="whitespace-nowrap text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Orden
+            </Label>
+            <select
+              id="ordenar-antiguedad"
+              value={ordenarAntiguedad}
+              onChange={(e) => setOrdenarAntiguedad(e.target.value as 'none' | 'asc' | 'desc')}
+              className="h-10 min-w-[170px] rounded-md border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-unt-blue/20"
+            >
+              <option value="none">Por defecto</option>
+              <option value="asc">Antigüedad (Mayor a menor)</option>
+              <option value="desc">Antigüedad (Menor a mayor)</option>
+            </select>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button type="button" variant="outline" onClick={() => setSearch(qInput.trim())}>
             Buscar
           </Button>
-          {(search || categoriaFiltro) && (
+          {(search || categoriaFiltro || ordenarAntiguedad !== 'none') && (
             <Button
               type="button"
               variant="ghost"
@@ -323,6 +341,7 @@ export default function DocentesPage() {
                 setQInput('');
                 setSearch('');
                 setCategoriaFiltro('');
+                setOrdenarAntiguedad('none');
               }}
               className="text-xs text-gray-500 hover:text-gray-900 dark:text-slate-400 dark:hover:text-white"
             >
