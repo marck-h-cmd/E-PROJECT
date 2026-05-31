@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -112,7 +112,7 @@ function GruposInner() {
     setDialogOpen(true);
   };
 
-  const openEdit = async (row: GrupoRow) => {
+  const openEdit = useCallback(async (row: GrupoRow) => {
     setEditing(row);
     setSaving(true);
     try {
@@ -131,7 +131,7 @@ function GruposInner() {
     } finally {
       setSaving(false);
     }
-  };
+  }, []);
 
   const handleSave = async () => {
     if (!form.cursoId) {
@@ -170,7 +170,7 @@ function GruposInner() {
     }
   };
 
-  const handleDelete = async (row: GrupoRow) => {
+  const handleDelete = useCallback(async (row: GrupoRow) => {
     const ok = await confirm({
       title: 'Desactivar grupo',
       message: `¿Desactivar el grupo "${row.nombre}" del curso ${row.curso.codigo}?`,
@@ -185,21 +185,21 @@ function GruposInner() {
     } catch (e) {
       toast.error(e instanceof ApiClientError ? e.message : 'Error al eliminar grupo');
     }
-  };
+  }, [confirm, refresh]);
 
   useEffect(() => setPage(1), [search, cursoIdFiltro, cicloFiltro, setPage]);
 
   const columns: Column<GrupoRow>[] = useMemo(
     () => [
-      { key: 'nombre', header: 'Grupo', cell: (r) => <span className="font-medium text-gray-900">{r.nombre}</span> },
+      { key: 'nombre', header: 'Grupo', cell: (r) => <span className="font-medium text-gray-900 dark:text-slate-100">{r.nombre}</span> },
       { key: 'capacidad', header: 'Capacidad', cell: (r) => r.capacidad },
       {
         key: 'curso',
         header: 'Curso',
         cell: (r) => (
           <div className="flex flex-col">
-            <span className="font-medium text-gray-900">{r.curso.nombre}</span>
-            <span className="text-xs text-gray-500 font-mono">
+            <span className="font-medium text-gray-900 dark:text-slate-100 truncate max-w-[220px] block">{r.curso.nombre}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400 font-mono">
               {r.curso.codigo} {r.curso.ciclo ? `• Ciclo ${Formateadores.ciclo(r.curso.ciclo)}` : ''}
             </span>
           </div>
@@ -236,7 +236,7 @@ function GruposInner() {
         ),
       },
     ],
-    []
+    [handleDelete, openEdit]
   );
 
   if (authLoading) {

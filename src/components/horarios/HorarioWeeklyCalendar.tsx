@@ -15,10 +15,11 @@ export interface HorarioCalendarItem {
   horaInicio: string;
   horaFin: string;
   diaSemana: string;
-  curso: { codigo: string; nombre: string; ciclo: number };
+  curso: { codigo: string; fontColor?: string; nombre: string; ciclo: number };
   docente: { usuario: { nombre: string; apellidos: string } };
-  ambiente: { codigo: string };
+  ambiente: { codigo: string; tipo?: string };
   grupo?: { nombre: string } | null;
+  estado?: string;
 }
 
 interface HorarioConColumna extends HorarioCalendarItem {
@@ -46,37 +47,68 @@ function asignarColumnas(horariosDelDia: HorarioCalendarItem[]): HorarioConColum
   // Ordenar por hora de inicio
   const ordenados = [...horariosDelDia].sort((a, b) => decimalHour(a.horaInicio) - decimalHour(b.horaInicio));
   
-  const columnas: HorarioCalendarItem[][] = [];
+  const result: HorarioConColumna[] = [];
+  
+  // Agrupar en grupos de solapamiento (clusters/cliques)
+  const clusters: HorarioCalendarItem[][] = [];
+  let currentCluster: HorarioCalendarItem[] = [];
+  let maxEndHour = 0;
   
   ordenados.forEach(horario => {
-    let colocada = false;
-    for (let i = 0; i < columnas.length; i++) {
-      const col = columnas[i];
-      const ultimo = col[col.length - 1];
-      if (decimalHour(ultimo.horaFin) <= decimalHour(horario.horaInicio)) {
-        col.push(horario);
-        colocada = true;
-        break;
+    const start = decimalHour(horario.horaInicio);
+    const end = decimalHour(horario.horaFin);
+    
+    if (currentCluster.length === 0) {
+      currentCluster.push(horario);
+      maxEndHour = end;
+    } else if (start < maxEndHour) {
+      currentCluster.push(horario);
+      if (end > maxEndHour) {
+        maxEndHour = end;
       }
-    }
-    if (!colocada) {
-      columnas.push([horario]);
+    } else {
+      clusters.push(currentCluster);
+      currentCluster = [horario];
+      maxEndHour = end;
     }
   });
-
-  const result: HorarioConColumna[] = [];
-  ordenados.forEach(horario => {
-    let colIndex = 0;
-    for (let i = 0; i < columnas.length; i++) {
-      if (columnas[i].find(h => h.id === horario.id)) {
-        colIndex = i;
-        break;
+  if (currentCluster.length > 0) {
+    clusters.push(currentCluster);
+  }
+  
+  // Asignar columnas dentro de cada cluster
+  clusters.forEach(cluster => {
+    const columnas: HorarioCalendarItem[][] = [];
+    
+    cluster.forEach(horario => {
+      let colocada = false;
+      for (let i = 0; i < columnas.length; i++) {
+        const col = columnas[i];
+        const ultimo = col[col.length - 1];
+        if (decimalHour(ultimo.horaFin) <= decimalHour(horario.horaInicio)) {
+          col.push(horario);
+          colocada = true;
+          break;
+        }
       }
-    }
-    result.push({
-      ...horario,
-      columna: colIndex,
-      totalColumnas: columnas.length
+      if (!colocada) {
+        columnas.push([horario]);
+      }
+    });
+    
+    cluster.forEach(horario => {
+      let colIndex = 0;
+      for (let i = 0; i < columnas.length; i++) {
+        if (columnas[i].find(h => h.id === horario.id)) {
+          colIndex = i;
+          break;
+        }
+      }
+      result.push({
+        ...horario,
+        columna: colIndex,
+        totalColumnas: columnas.length
+      });
     });
   });
 
@@ -138,81 +170,75 @@ export function HorarioWeeklyCalendar({
           ))}
         </div>
 
-        <div className="flex border rounded-lg bg-slate-50 overflow-x-auto min-w-[720px]">
-          {/* Eje Y de horas */}
-          <div className="w-[60px] flex-shrink-0 bg-slate-100 border-r relative" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
-            {horas.map(h => (
-              <div 
-                key={h} 
-                className="absolute w-full border-b text-xs text-slate-500 text-right pr-2 font-mono"
-                style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }}
-              >
-                {h}:00
-              </div>
-            ))}
-          </div>
+        <div className="overflow-x-auto w-full rounded-lg border bg-slate-50 dark:border-slate-700 dark:bg-slate-900">
+          <div className="flex min-w-[720px]">
+            {/* Eje Y de horas */}
+            <div className="relative w-[60px] flex-shrink-0 border-r bg-slate-100 dark:border-slate-700 dark:bg-slate-800" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
+              {horas.map(h => (
+                <div 
+                  key={h} 
+                  className="absolute w-full border-b pr-2 text-right font-mono text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400"
+                  style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }}
+                >
+                  {h}:00
+                </div>
+              ))}
+            </div>
 
-          {/* Días */}
-          {dias.map((d) => {
-            const list = horariosPorDia.get(d) ?? [];
-            return (
-              <div key={d} className="flex-1 min-w-[120px] relative border-r last:border-r-0" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
-                {horas.map(h => (
-                   <div key={h} className="absolute w-full border-b border-slate-200" style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }} />
-                ))}
-                
-                {list.map((x) => {
-                  const style = colorForCourseKey(x.curso.codigo);
-                  const startHour = decimalHour(x.horaInicio);
-                  const endHour = decimalHour(x.horaFin);
-                  const top = (startHour - HORA_INICIO_BASE) * PIXELES_POR_HORA;
-                  const height = Math.max((endHour - startHour) * PIXELES_POR_HORA, 40); // min height 40px
+            {/* Días */}
+            {dias.map((d) => {
+              const list = horariosPorDia.get(d) ?? [];
+              return (
+                <div key={d} className="relative min-w-[120px] flex-1 border-r last:border-r-0 dark:border-slate-700" style={{ height: `${horas.length * PIXELES_POR_HORA}px` }}>
+                  {horas.map(h => (
+                     <div key={h} className="absolute w-full border-b border-slate-200 dark:border-slate-700" style={{ top: `${(h - HORA_INICIO_BASE) * PIXELES_POR_HORA}px`, height: `${PIXELES_POR_HORA}px` }} />
+                  ))}
                   
-                  const maxCols = Math.min(x.totalColumnas, 3);
-                  const isExtra = x.totalColumnas > 3 && x.columna >= 2;
-                  const colToUse = isExtra ? 2 : x.columna;
+                  {list.map((x) => {
+                    const style = colorForCourseKey(x.curso.codigo);
+                    const startHour = decimalHour(x.horaInicio);
+                    const endHour = decimalHour(x.horaFin);
+                    const top = (startHour - HORA_INICIO_BASE) * PIXELES_POR_HORA;
+                    const height = Math.max((endHour - startHour) * PIXELES_POR_HORA, 40); // min height 40px
+                    
+                    const maxCols = x.totalColumnas;
+                    const colToUse = x.columna;
+                    
+                    const width = `calc(${100 / maxCols}% - 2px)`;
+                    const left = `calc(${(100 / maxCols) * colToUse}% + 1px)`;
 
-                  if (x.columna > 2) return null; // Ocultar si hay demasiados (simplificación, se podría hacer mejor)
-                  
-                  const width = `calc(${100 / maxCols}% - 2px)`;
-                  const left = `calc(${(100 / maxCols) * colToUse}% + 1px)`;
-
-                  return (
-                    <div
-                      key={x.id}
-                      className={cn(
-                        'absolute rounded border px-1.5 py-1 shadow-sm transition-all duration-200 overflow-hidden text-[10px] leading-tight z-10 hover:z-50 hover:shadow-md cursor-pointer hover:h-auto hover:min-h-fit',
-                        style.bg,
-                        style.border
-                      )}
-                      style={{ top, height, left, width }}
-                      title={`${x.curso.nombre} - ${x.docente.usuario.nombre} ${x.docente.usuario.apellidos}\nAmbiente: ${x.ambiente.codigo}\nHora: ${x.horaInicio.slice(0,5)} - ${x.horaFin.slice(0,5)}`}
-                    >
-                      <div className={cn('font-bold truncate', style.title)}>
-                        [C-{CICLO_ROMANO[x.curso.ciclo] || x.curso.ciclo}] {x.curso.codigo}
-                      </div>
-                      <div className={cn('truncate font-medium mt-0.5', style.subtitle)}>
-                        {x.ambiente.codigo}
-                      </div>
-                      <div className="truncate opacity-80 mt-0.5">
-                         {x.horaInicio.slice(0, 5)}–{x.horaFin.slice(0, 5)}
-                      </div>
-                      {isExtra && (
-                        <div className="absolute bottom-0 right-0 bg-black/50 text-white text-[8px] px-1 rounded-tl">
-                          +{x.totalColumnas - 2}
+                    return (
+                      <div
+                        key={x.id}
+                        className={cn(
+                          'absolute rounded border px-1.5 py-1 shadow-sm transition-all duration-200 overflow-hidden text-[10px] leading-tight z-10 hover:z-50 hover:shadow-md cursor-pointer hover:!h-auto hover:!min-h-fit group',
+                          style.bg,
+                          style.border
+                        )}
+                        style={{ top, height, left, width }}
+                        title={`${x.curso.nombre} - ${x.docente.usuario.nombre} ${x.docente.usuario.apellidos}\nAmbiente: ${x.ambiente.codigo}\nHora: ${x.horaInicio.slice(0,5)} - ${x.horaFin.slice(0,5)}`}
+                      >
+                        <div className={cn('font-bold truncate group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words', style.title)}>
+                          [C-{CICLO_ROMANO[x.curso.ciclo] || x.curso.ciclo}] {x.curso.codigo}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            );
-          })}
+                        <div className={cn('truncate font-medium mt-0.5 group-hover:whitespace-normal group-hover:overflow-visible group-hover:break-words', style.subtitle)}>
+                          {x.ambiente.codigo}
+                        </div>
+                        <div className="mt-0.5 truncate opacity-80 dark:text-slate-200 group-hover:whitespace-normal group-hover:overflow-visible">
+                           {x.horaInicio.slice(0, 5)}–{x.horaFin.slice(0, 5)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {leyenda.length > 0 && (
-          <div className="border-t border-slate-100 pt-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <div className="border-t border-slate-100 pt-3 dark:border-slate-700">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
               Leyenda de cursos
             </p>
             <div className="flex flex-wrap gap-3">

@@ -48,6 +48,7 @@
     "exceljs": "^4.4.0",
     "express-rate-limit": "^7.3.0",
     "file-saver": "^2.0.5",
+    "framer-motion": "^12.40.0",
     "handlebars": "^4.7.8",
     "helmet": "^7.1.0",
     "hpp": "^0.2.3",
