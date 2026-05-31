@@ -43,13 +43,14 @@ export async function exportarHorarioPDF(
   doc.setFont('helvetica', 'normal');
   doc.text(subtitulo, 148, 18, { align: 'center' });
 
-  const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES'];
+  const dias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
   const diasLabel: Record<string, string> = {
     LUNES: 'LUNES',
     MARTES: 'MARTES',
     MIERCOLES: 'MIÉRCOLES',
     JUEVES: 'JUEVES',
-    VIERNES: 'VIERNES'
+    VIERNES: 'VIERNES',
+    SABADO: 'SÁBADO'
   };
 
   const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
@@ -144,13 +145,14 @@ export async function exportarHorarioPDF(
           }
         }
 
-        const isLab = startingClass.ambiente.codigo.toUpperCase().includes('LAB');
+        const isLab = startingClass.ambiente ? startingClass.ambiente.codigo.toUpperCase().includes('LAB') : false;
         const docName = startingClass.docente?.usuario 
           ? `${startingClass.docente.usuario.nombre} ${startingClass.docente.usuario.apellidos.charAt(0)}.`
           : '';
+        const ambCodigo = startingClass.ambiente ? startingClass.ambiente.codigo : 'No asignado';
 
         grid[r][colIdx] = {
-          content: `${startingClass.curso.codigo}\n${startingClass.curso.nombre}\n[${isLab ? 'LAB' : 'TEORÍA'}]\nAmb: ${startingClass.ambiente.codigo}\n${docName}${startingClass.grupo?.nombre ? ` (Gr. ${startingClass.grupo.nombre})` : ''}`,
+          content: `${startingClass.curso.codigo}\n${startingClass.curso.nombre}\n[${isLab ? 'LAB' : 'TEORÍA'}]\nAmb: ${ambCodigo}\n${docName}${startingClass.grupo?.nombre ? ` (Gr. ${startingClass.grupo.nombre})` : ''}`,
           rowSpan: duration,
           styles: {
             fillColor: colScheme.bg,
