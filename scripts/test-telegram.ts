@@ -127,6 +127,7 @@ async function main() {
           usuarioId: usuario.id,
           codigo: 'TELE-TEST',
           categoria: 'PRINCIPAL',
+          dedicacion: 'TIEMPO_COMPLETO_40H',
           departamento: 'Sistemas',
           telefono: '999999999',
           whatsapp: '999999999',

@@ -290,7 +290,7 @@ export class ServicioHorario {
         usuarioId: horarioConfirmado.docente.usuarioId,
         tipo: 'CONFIRMACION_HORARIO',
         titulo: 'Horario Confirmado',
-        mensaje: `Se ha confirmado tu horario para el curso ${horarioConfirmado.curso.nombre} el día ${horarioConfirmado.diaSemana} de ${horarioConfirmado.horaInicio} a ${horarioConfirmado.horaFin} en el ambiente ${horarioConfirmado.ambiente.nombre}.`,
+        mensaje: `Se ha confirmado tu horario para el curso ${horarioConfirmado.curso.nombre} el día ${horarioConfirmado.diaSemana || 'Desconocido'} de ${horarioConfirmado.horaInicio || '--:--'} a ${horarioConfirmado.horaFin || '--:--'} en el ambiente ${horarioConfirmado.ambiente ? horarioConfirmado.ambiente.nombre : 'Sin ambiente'}.`,
         prioridad: 'ALTA',
         canal: 'SISTEMA',
         metadata: {

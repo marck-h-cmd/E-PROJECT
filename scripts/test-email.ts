@@ -44,6 +44,7 @@ async function main() {
         usuarioId: usuario.id,
         codigo: 'TEST-MARCK',
         categoria: 'PRINCIPAL',
+        dedicacion: 'TIEMPO_COMPLETO_40H',
         departamento: 'Ingeniería de Sistemas',
         preferenciasNotificacion: {
           create: {

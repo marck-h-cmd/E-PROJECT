@@ -366,6 +366,7 @@ export default function DocenteDashboardPage() {
   const horasPorDia: Record<string, number> = {}; 
   DIAS.forEach(dia => { horasPorDia[dia] = 0; }); 
   horarios.forEach(h => { 
+    if (!h.diaSemana || !h.horaInicio || !h.horaFin) return;
     const inicio = parseInt(h.horaInicio.split(':')[0]); 
     const fin = parseInt(h.horaFin.split(':')[0]); 
     horasPorDia[h.diaSemana] = (horasPorDia[h.diaSemana] || 0) + (fin - inicio); 
@@ -374,7 +375,8 @@ export default function DocenteDashboardPage() {
 
   // Calcular horas por tipo
   const horasTeoria = horarios.reduce((acc, h) => {
-    if (h.ambiente.tipo !== 'LABORATORIO') {
+    if (!h.horaInicio || !h.horaFin) return acc;
+    if (!h.ambiente || h.ambiente.tipo !== 'LABORATORIO') {
       const inicio = parseInt(h.horaInicio.split(':')[0]);
       const fin = parseInt(h.horaFin.split(':')[0]);
       return acc + (fin - inicio);
@@ -396,11 +398,12 @@ export default function DocenteDashboardPage() {
 
   horarios.filter(h => {
     // Validar que diaSemana esté en DIAS y no sea DOMINGO
-    if (!DIAS.includes(h.diaSemana) || h.diaSemana === 'DOMINGO') {
+    if (!h.diaSemana || !DIAS.includes(h.diaSemana) || h.diaSemana === 'DOMINGO') {
       return false;
     }
     return true;
   }).forEach(h => { 
+    if (!h.horaInicio || !h.horaFin) return;
     const inicio = parseInt(h.horaInicio.split(':')[0]); 
     const fin = parseInt(h.horaFin.split(':')[0]); 
     matriz[h.diaSemana][h.horaInicio] = h;
@@ -425,7 +428,7 @@ export default function DocenteDashboardPage() {
 
   const pieData = cursosUnicos.map(codigo => ({
     name: codigo,
-    value: horarios.filter(h => h.curso?.codigo === codigo).reduce((acc, h) => {
+    value: horarios.filter(h => h.curso?.codigo === codigo && h.horaInicio && h.horaFin).reduce((acc, h) => {
       const inicio = parseInt(h.horaInicio.split(':')[0]);
       const fin = parseInt(h.horaFin.split(':')[0]);
       return acc + (fin - inicio);
@@ -577,7 +580,7 @@ export default function DocenteDashboardPage() {
                               const duracion = sesion ? calcDuracion(sesion.horaInicio, sesion.horaFin) : 1; 
                               if (!sesion) return <td key={dia} className="p-1 border-l border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900" />;
                               const colors = cursoColorMap[sesion.curso.codigo];
-                              const esLab = sesion.ambiente.tipo === 'LABORATORIO';
+                              const esLab = sesion.ambiente?.tipo === 'LABORATORIO';
                               return ( 
                                 <td key={dia} rowSpan={duracion} className="p-1.5 border-l border-slate-100 dark:border-slate-800"> 
                                   <div className={cn("rounded-xl border-l-4 p-3 shadow-sm", 
@@ -589,7 +592,7 @@ export default function DocenteDashboardPage() {
                                       <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black text-white", 
                                         esLab ? "bg-emerald-500" : "bg-indigo-500"
                                       )}>
-                                        {sesion.ambiente.tipo}
+                                        {sesion.ambiente?.tipo || 'TEORIA'}
                                       </span>
                                       <span className="text-[9px] font-bold opacity-60">{sesion.horaInicio}-{sesion.horaFin}</span>
                                     </div>
@@ -610,7 +613,7 @@ export default function DocenteDashboardPage() {
                                         ? "text-emerald-600 dark:text-slate-400" 
                                         : "text-indigo-600 dark:text-slate-400"
                                     )}>
-                                      <MapPin className="h-3 w-3" /> {sesion.ambiente.codigo}
+                                      <MapPin className="h-3 w-3" /> {sesion.ambiente?.codigo || 'Sin aula'}
                                     </div>
                                   </div>
                                 </td> 

@@ -616,10 +616,10 @@ export default function HorariosPage() {
 
   const getTotalHoras = (dia: string) => {
     return horariosFiltrados
-      .filter((h) => h.diaSemana === dia)
+      .filter((h) => h.diaSemana === dia && h.horaInicio && h.horaFin)
       .reduce((acc, h) => {
-        const inicio = parseInt(h.horaInicio.split(':')[0], 10);
-        const fin = parseInt(h.horaFin.split(':')[0], 10);
+        const inicio = parseInt(h.horaInicio!.split(':')[0], 10);
+        const fin = parseInt(h.horaFin!.split(':')[0], 10);
         return acc + (fin - inicio);
       }, 0);
   };
@@ -640,9 +640,9 @@ export default function HorariosPage() {
     const parseTime = (t: string) => parseInt(t.split(':')[0], 10);
     
     DIAS.forEach(dia => {
-      const dayClasses = horariosFiltrados.filter(h => h.diaSemana === dia);
+      const dayClasses = horariosFiltrados.filter(h => h.diaSemana === dia && h.horaInicio && h.horaFin);
       const lanes: HorarioCell[][] = [];
-      const sortedClasses = [...dayClasses].sort((a, b) => parseTime(a.horaInicio) - parseTime(b.horaInicio));
+      const sortedClasses = [...dayClasses].sort((a, b) => parseTime(a.horaInicio!) - parseTime(b.horaInicio!));
 
       sortedClasses.forEach(c => {
         const start = parseTime(c.horaInicio);

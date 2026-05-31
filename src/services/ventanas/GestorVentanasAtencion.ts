@@ -8,10 +8,9 @@ import { GestorNotificaciones } from '../notificaciones/GestorNotificaciones';
 export interface CrearVentanaDTO {
   periodoId: string;
   nombre: string;
-  categoria: CategoriaDocente;
+  categorias: string[];
   fechaInicio: Date | string;
   fechaFin: Date | string;
-  ordenAtencion: string[];
 }
 
 export interface ConfigurarVentanaDTO {
@@ -123,18 +122,23 @@ export class GestorVentanasAtencion {
       throw new AppError('Período no encontrado', 404, 'PERIODO_NOT_FOUND');
     }
 
-    // Verificar que no haya otra ventana activa para la misma categoría
-    const ventanaActiva = await prisma.ventanaAtencion.findFirst({
+    // Verificar que no haya otra ventana activa para alguna de las categorías
+    const ventanasActivas = await prisma.ventanaAtencion.findMany({
       where: {
         periodoId: datos.periodoId,
-        categoria: datos.categoria,
         estado: { in: ['PROGRAMADA', 'ABIERTA', 'EN_CURSO'] },
       },
     });
 
-    if (ventanaActiva) {
+    const catSet = new Set(datos.categorias);
+    const overlapping = ventanasActivas.some(v => {
+      const vCats = v.categorias as string[];
+      return vCats.some(c => catSet.has(c));
+    });
+
+    if (overlapping) {
       throw new AppError(
-        'Ya existe una ventana activa para esta categoría',
+        'Ya existe una ventana activa para alguna de estas categorías',
         409,
         'VENTANA_DUPLICADA'
       );
@@ -144,10 +148,9 @@ export class GestorVentanasAtencion {
       data: {
         periodoId: datos.periodoId,
         nombre: datos.nombre,
-        categoria: datos.categoria,
+        categorias: datos.categorias,
         fechaInicio: new Date(datos.fechaInicio),
         fechaFin: new Date(datos.fechaFin),
-        ordenAtencion: datos.ordenAtencion || ['PRINCIPAL', 'ASOCIADO', 'AUXILIAR', 'CONTRATADO', 'INVITADO'],
       },
       include: {
         periodo: true,
@@ -458,13 +461,22 @@ export class GestorVentanasAtencion {
   private async generarColaDocentes(ventanaId: string) {
     const ventana = await this.obtenerVentana(ventanaId);
 
-    // Obtener docentes de la categoría de la ventana
+    const cats = ventana.categorias as CategoriaDocente[];
+    // Obtener docentes de las categorías de la ventana
     const docentes = await prisma.docente.findMany({
       where: {
-        categoria: ventana.categoria,
+        categoria: { in: cats },
         usuario: { activo: true },
       },
       orderBy: { codigo: 'asc' },
+    });
+
+    // Ordenar docentes según el orden de categorias en la ventana, y luego por código
+    docentes.sort((a, b) => {
+      const idxA = cats.indexOf(a.categoria);
+      const idxB = cats.indexOf(b.categoria);
+      if (idxA !== idxB) return idxA - idxB;
+      return a.codigo.localeCompare(b.codigo);
     });
 
     // Crear atenciones en orden

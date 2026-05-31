@@ -692,6 +692,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       if (id && h.id === id) return false;
       if (h.diaSemana !== diaSemana) return false;
       if (h.estado === 'CANCELADO') return false;
+      if (!h.horaInicio || !h.horaFin) return false;
       const hInicio = parseInt(h.horaInicio.split(':')[0], 10);
       const hFin = parseInt(h.horaFin.split(':')[0], 10);
       return Math.max(hInicio, startHour) < Math.min(hFin, endHour);
@@ -706,6 +707,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
       if (id && h.id === id) return false;
       if (h.diaSemana !== diaSemana) return false;
       if (h.estado === 'CANCELADO') return false;
+      if (!h.horaInicio || !h.horaFin) return false;
       const hInicio = parseInt(h.horaInicio.split(':')[0], 10);
       const hFin = parseInt(h.horaFin.split(':')[0], 10);
       return Math.max(hInicio, startHour) < Math.min(hFin, endHour);
@@ -720,7 +722,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
     const horasAsignadas = cursoCarga?.horasAsignadas || 0;
 
     const horasProgramadas = allHorariosDocente
-      .filter((h: any) => h.cursoId === cursoId && h.estado !== 'CANCELADO' && (!id || h.id !== id))
+      .filter((h: any) => h.cursoId === cursoId && h.estado !== 'CANCELADO' && (!id || h.id !== id) && h.horaInicio && h.horaFin)
       .reduce((sum: number, h: any) => {
         const hInicio = parseInt(h.horaInicio.split(':')[0], 10);
         const hFin = parseInt(h.horaFin.split(':')[0], 10);
@@ -760,9 +762,10 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
     const cruces = todosLosHorarios.filter(h => {
       if (editingId && h.id === editingId) return false;
-      if (h.ambiente.id !== ambienteId) return false;
+      if (!h.ambiente || h.ambiente.id !== ambienteId) return false;
       if (h.diaSemana !== diaSemana) return false;
       if (h.estado === 'CANCELADO') return false;
+      if (!h.horaInicio || !h.horaFin) return false;
       
       const hStart = parseTime(h.horaInicio);
       const hEnd = parseTime(h.horaFin);
@@ -779,7 +782,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
   // ── Helpers de la grilla ──────────────────────────────────────────────────
   const getHorasDia = (dia: string) => {
     return allHorariosDocente
-      .filter((h: any) => h.diaSemana === dia && h.estado !== 'CANCELADO')
+      .filter((h: any) => h.diaSemana === dia && h.estado !== 'CANCELADO' && h.horaInicio && h.horaFin)
       .reduce((sum: number, h: any) => {
         const inicio = parseInt(h.horaInicio.split(':')[0], 10);
         const fin = parseInt(h.horaFin.split(':')[0], 10);
@@ -789,7 +792,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
 
   const totalHorasSemana = React.useMemo(() => {
     return allHorariosDocente
-      .filter((h: any) => h.estado !== 'CANCELADO')
+      .filter((h: any) => h.estado !== 'CANCELADO' && h.horaInicio && h.horaFin)
       .reduce((sum: number, h: any) => {
         const inicio = parseInt(h.horaInicio.split(':')[0], 10);
         const fin = parseInt(h.horaFin.split(':')[0], 10);
@@ -1039,7 +1042,9 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                           (h: any) =>
                             h.cursoId === item.curso.id &&
                             h.estado !== 'CANCELADO' &&
-                            (!formState.id || h.id !== formState.id)
+                            (!formState.id || h.id !== formState.id) &&
+                            h.horaInicio &&
+                            h.horaFin
                         )
                         .reduce((sum: number, h: any) => {
                           return (
@@ -1545,6 +1550,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                   const isCoveredDia = allHorariosDocente.some((h: any) => {
                                     if (h.diaSemana !== dia) return false;
                                     if (h.estado === 'CANCELADO') return false;
+                                    if (!h.horaInicio || !h.horaFin) return false;
                                     const inicio = parseInt(h.horaInicio.split(':')[0], 10);
                                     const fin = parseInt(h.horaFin.split(':')[0], 10);
                                     return inicio < horaNum && fin > horaNum;
@@ -1557,6 +1563,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                   const startingClasses = allHorariosDocente.filter((h: any) => {
                                     if (h.diaSemana !== dia) return false;
                                     if (h.estado === 'CANCELADO') return false;
+                                    if (!h.horaInicio || !h.horaFin) return false;
                                     return parseInt(h.horaInicio.split(':')[0], 10) === horaNum;
                                   });
 
@@ -1583,8 +1590,8 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                           {startingClasses.map((h: any) => {
                                             const col = getColorForCurso(h.curso.codigo);
                                             const esLab =
-                                              h.ambiente.codigo.toUpperCase().includes('LAB') ||
-                                              h.ambiente.tipo === 'LABORATORIO';
+                                              h.ambiente?.codigo?.toUpperCase()?.includes('LAB') ||
+                                              h.ambiente?.tipo === 'LABORATORIO';
                                             const isBorrador = h.estado === 'BORRADOR';
                                             const dur =
                                               parseInt(h.horaFin.split(':')[0], 10) -
@@ -1667,7 +1674,7 @@ export function PantallaAtencion({ ventanaId, className, onVolver }: PantallaAte
                                                   </div>
                                                   <div className="flex items-center gap-1">
                                                     <Building2 className="w-3 h-3 text-slate-400 shrink-0" />
-                                                    <span className="truncate">{h.ambiente.codigo}</span>
+                                                    <span className="truncate">{h.ambiente?.codigo || 'Sin aula'}</span>
                                                   </div>
                                                 </div>
 

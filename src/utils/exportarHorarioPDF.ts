@@ -145,13 +145,14 @@ export async function exportarHorarioPDF(
           }
         }
 
-        const isLab = startingClass.ambiente.codigo.toUpperCase().includes('LAB');
+        const isLab = startingClass.ambiente ? startingClass.ambiente.codigo.toUpperCase().includes('LAB') : false;
         const docName = startingClass.docente?.usuario 
           ? `${startingClass.docente.usuario.nombre} ${startingClass.docente.usuario.apellidos.charAt(0)}.`
           : '';
+        const ambCodigo = startingClass.ambiente ? startingClass.ambiente.codigo : 'No asignado';
 
         grid[r][colIdx] = {
-          content: `${startingClass.curso.codigo}\n${startingClass.curso.nombre}\n[${isLab ? 'LAB' : 'TEORÍA'}]\nAmb: ${startingClass.ambiente.codigo}\n${docName}${startingClass.grupo?.nombre ? ` (Gr. ${startingClass.grupo.nombre})` : ''}`,
+          content: `${startingClass.curso.codigo}\n${startingClass.curso.nombre}\n[${isLab ? 'LAB' : 'TEORÍA'}]\nAmb: ${ambCodigo}\n${docName}${startingClass.grupo?.nombre ? ` (Gr. ${startingClass.grupo.nombre})` : ''}`,
           rowSpan: duration,
           styles: {
             fillColor: colScheme.bg,
